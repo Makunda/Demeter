@@ -6,7 +6,7 @@ import com.castsoftware.tagging.exceptions.ProcedureException;
 import com.castsoftware.tagging.database.Neo4jAL;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.tagging.models.ConfigurationNode;
-import com.castsoftware.tagging.models.TagRequestNode;
+import com.castsoftware.tagging.models.TagNode;
 import com.castsoftware.tagging.models.UseCaseNode;
 import org.neo4j.graphdb.Label;
 
@@ -15,7 +15,7 @@ import java.util.List;
 
 public class UtilsController {
 
-    private static final List<String> ALL_LABELS = Arrays.asList( ConfigurationNode.getLabel(), UseCaseNode.getLabel(), TagRequestNode.getLabel());
+    private static final List<String> ALL_LABELS = Arrays.asList( ConfigurationNode.getLabel(), UseCaseNode.getLabel(), TagNode.getLabel());
 
     /**
      * Delete all the nodes related to the configuration

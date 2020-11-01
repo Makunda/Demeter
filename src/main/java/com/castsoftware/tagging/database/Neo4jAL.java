@@ -26,6 +26,7 @@ import org.neo4j.logging.Log;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class Neo4jAL {
 
@@ -77,10 +78,27 @@ public class Neo4jAL {
         try {
             return this.transaction.execute(query);
         } catch (QueryExecutionException e) {
-            throw new Neo4jQueryException("Error while executing query.", query, e, ERROR_PREFIX + "EXQS2");
+            throw new Neo4jQueryException("Error while executing query.", query, e, ERROR_PREFIX + "EXQS1");
         }
 
     }
+
+    /**
+     * Execute a single query with associated parameters
+     * @param query Cypher query to execute
+     * @param params Parameters of the query
+     * @return Result of the cypher query
+     * @throws Neo4jQueryException Exception during the processing of the query
+     */
+    public Result executeQuery(String query, Map<String,Object> params) throws Neo4jQueryException {
+        try {
+            return this.transaction.execute(query, params);
+        } catch (QueryExecutionException e) {
+            throw new Neo4jQueryException("Error while executing query with parameters.", query, e, ERROR_PREFIX + "EXQS1");
+        }
+
+    }
+
 
     /**
      * Execute a list of query. Commit only if all query were executed without errors. Rollback otherwise.
@@ -99,7 +117,7 @@ public class Neo4jAL {
             }
             return results;
         } catch (Exception e) {
-            throw new Neo4jQueryException("Cannot execute multiple queries", e , ERROR_PREFIX + "EXQS4");
+            throw new Neo4jQueryException("Cannot execute multiple queries", e , ERROR_PREFIX + "EXQS1");
         }
     }
 

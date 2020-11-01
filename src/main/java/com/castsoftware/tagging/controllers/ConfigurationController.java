@@ -6,7 +6,7 @@ import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadRequest;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.tagging.models.ConfigurationNode;
-import com.castsoftware.tagging.models.TagRequestNode;
+import com.castsoftware.tagging.models.TagNode;
 import com.castsoftware.tagging.models.UseCaseNode;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
@@ -32,7 +32,7 @@ public class ConfigurationController {
      */
     public static Long deleteConfiguration(Neo4jAL neo4jAL, Long id) throws Neo4jQueryException {
         String initQuery = String.format("MATCH p=(n:%s)-[:%s*]->(:%s)-[:%s*]->(:%s) WHERE ID(n)=%d return COUNT(p) as deleted_node",
-                ConfigurationNode.getLabel(), USE_CASE_RELATIONSHIP, UseCaseNode.getLabel(), USE_CASE_RELATIONSHIP, TagRequestNode.getLabel(), id);
+                ConfigurationNode.getLabel(), USE_CASE_RELATIONSHIP, UseCaseNode.getLabel(), USE_CASE_RELATIONSHIP, TagNode.getLabel(), id);
         try {
             Result res = neo4jAL.executeQuery(initQuery);
             return (Long) res.next().get("deleted_node");
