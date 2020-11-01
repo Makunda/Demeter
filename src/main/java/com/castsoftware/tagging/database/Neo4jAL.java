@@ -27,14 +27,14 @@ import org.neo4j.logging.Log;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Neo4jAL implements AutoCloseable {
+public class Neo4jAL {
 
-    private static String ERROR_PREFIX = "NEOALx";
+    private static final String ERROR_PREFIX = "NEOALx";
 
-    private Log log;
-    private GraphDatabaseService db;
+    private final Log log;
+    private final GraphDatabaseService db;
+
     private Transaction transaction = null;
-
     private Boolean activeTransaction = false;
 
     /**
@@ -50,14 +50,6 @@ public class Neo4jAL implements AutoCloseable {
         } catch (Neo4jQueryException e) {
             throw new Neo4jBadRequest("Cannot set the index.", indexQuery, e, ERROR_PREFIX + "SETI1");
         }
-    }
-
-    /**
-     * Return a transaction.
-     * @return
-     */
-    public Transaction getTx(){
-        return db.beginTx();
     }
 
     /**
@@ -162,19 +154,9 @@ public class Neo4jAL implements AutoCloseable {
     }
 
     public GraphDatabaseService getDb() {
-        return db;
+        return this.db;
     }
 
-
-    public Transaction openTransaction() {
-
-        if(this.transaction == null && !this.activeTransaction) {
-            this.transaction = this.db.beginTx();
-            this.activeTransaction = true;
-        }
-
-        return this.transaction;
-    }
 
     /**
      * Commit the transaction. If the transaction is closed before being committed, it will be rolledback.
@@ -191,35 +173,21 @@ public class Neo4jAL implements AutoCloseable {
         return this.activeTransaction;
     }
 
-    public void closeTransaction() {
-        if(this.transaction != null && this.activeTransaction) {
-            this.transaction.close();
-        }
-
-        this.activeTransaction = false;
-    }
-
     /**
      * Constructor for the Neo4j Layer
-     * @param db
+     * @param transaction
      * @param log
      * @throws Neo4jConnectionError If the database failed to respond in more than 15 seconds
      */
-    public Neo4jAL(GraphDatabaseService db, Log log) throws Neo4jConnectionError {
+    public Neo4jAL( GraphDatabaseService db , Transaction transaction, Log log ) throws Neo4jConnectionError {
         this.db = db;
-
-        if (!this.db.isAvailable(15000)) {
-            throw new Neo4jConnectionError("Neo4jAL is not initialized. The connection to the database failed.", ERROR_PREFIX + "CONS1");
-        }
         this.log = log;
+        this.transaction = transaction;
+        this.activeTransaction = true;
     }
 
     public void info(String message) {
         log.info(message);
     }
 
-    @Override
-    public void close() {
-        closeTransaction();
-    }
 }

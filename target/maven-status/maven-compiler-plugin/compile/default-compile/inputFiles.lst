@@ -1,6 +1,7 @@
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\exceptions\neo4j\Neo4jBadRequest.java
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\exceptions\neo4j\Neo4jNoResult.java
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\exceptions\file\FileNotFoundException.java
+E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\exceptions\neo4j\Neo4jBadNodeFormat.java
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\exceptions\neo4j\Neo4jQueryException.java
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\models\ConfigurationNode.java
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\controllers\ConfigurationController.java
@@ -9,7 +10,6 @@ E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\procedures\UseCasePr
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\models\Neo4jObject.java
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\results\RelationshipResult.java
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\procedures\ConfigurationProcedure.java
-E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\models\RequestNode.java
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\controllers\UseCaseController.java
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\exceptions\ProcedureException.java
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\exceptions\file\FileCorruptedException.java
@@ -25,5 +25,4 @@ E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\results\OutputMessag
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\results\UseCasesMessage.java
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\controllers\UtilsController.java
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\exceptions\file\FileIOException.java
-E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\models\DocumentITNode.java
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\exceptions\neo4j\Neo4jConnectionError.java

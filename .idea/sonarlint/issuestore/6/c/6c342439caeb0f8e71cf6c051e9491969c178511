@@ -1,17 +1,15 @@
 
-U
-java:S1141"5Extract this nested try block into a separate method.(¡»¢üùÿÿÿÿ8¡æ­ÌÖ.
-e
-java:S1124"EReorder the modifiers to comply with the Java Language Specification.(¡ú¶Öÿÿÿÿÿ8¡æ­ÌÖ.
-R
-java:S1068"2Remove this unused "INDEX_PROPERTY" private field.(˜ÈË“üÿÿÿÿ8¡æ­ÌÖ.
-e
-java:S1124"EReorder the modifiers to comply with the Java Language Specification.(İÿÛÆüÿÿÿÿ8¡æ­ÌÖ.
-e
-java:S1124"EReorder the modifiers to comply with the Java Language Specification.(˜ÈË“üÿÿÿÿ8¡æ­ÌÖ.
-B
-java:S1905"'Remove this unnecessary cast to "Node".(’À® 8¡æ­ÌÖ.
-e
-java:S1124"EReorder the modifiers to comply with the Java Language Specification.(ªì¥ªùÿÿÿÿ8¡æ­ÌÖ.
-v
-java:S1128"[Remove this unused import 'com.castsoftware.tagging.exceptions.neo4j.Neo4jConnectionError'.(©®‡8ê“…¬×.
+W
+java:S1141b"5Extract this nested try block into a separate method.(¡»¢üùÿÿÿÿ8¡æ­ÌÖ.
+g
+java:S1124"EReorder the modifiers to comply with the Java Language Specification.(˜ÈË“üÿÿÿÿ8¡æ­ÌÖ.
+g
+java:S1124"EReorder the modifiers to comply with the Java Language Specification.(ªì¥ªùÿÿÿÿ8¡æ­ÌÖ.
+T
+java:S1068"2Remove this unused "INDEX_PROPERTY" private field.(˜ÈË“üÿÿÿÿ8¡æ­ÌÖ.
+g
+java:S1124"EReorder the modifiers to comply with the Java Language Specification.(¡ú¶Öÿÿÿÿÿ8¡æ­ÌÖ.
+g
+java:S1124"EReorder the modifiers to comply with the Java Language Specification.(İÿÛÆüÿÿÿÿ8¡æ­ÌÖ.
+D
+java:S1905c"'Remove this unnecessary cast to "Node".(’À® 8¡æ­ÌÖ.

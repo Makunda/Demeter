@@ -8,6 +8,7 @@ import com.castsoftware.tagging.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.tagging.controllers.ConfigurationController;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.*;
 
@@ -20,6 +21,9 @@ public class ConfigurationProcedure {
     public GraphDatabaseService db;
 
     @Context
+    public Transaction transaction;
+
+    @Context
     public Log log;
 
     @Procedure(value = "tagging.createConfiguration", mode = Mode.WRITE)
@@ -27,14 +31,11 @@ public class ConfigurationProcedure {
     public void createConfiguration(@Name(value = "Name") String name) throws ProcedureException {
         List<Node> nodeList = new ArrayList<>();
 
-        try (Neo4jAL nal = new Neo4jAL(db, log)){
-            nal.openTransaction(); // Open the transaction
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
             Node n = ConfigurationController.createConfiguration(nal, name);
             nodeList.add(n);
-
-            nal.commitTransaction(); // Commit the transaction
-            nal.closeTransaction();
         } catch (Neo4jBadRequest | Neo4jNoResult | Exception | Neo4jConnectionError e) {
             ProcedureException ex = new ProcedureException(e);
             ex.logException(log);

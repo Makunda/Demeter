@@ -25,6 +25,7 @@ public class ConfigurationController {
 
     /**
      * Delete a configuration and its associated nodes.
+     * @param neo4jAL Neo4J Access Layer
      * @param id ID of the configuration node to delete
      * @return The number of nodes deleted
      * @throws Neo4jQueryException

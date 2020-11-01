@@ -2,13 +2,11 @@ package com.castsoftware.tagging.models;
 
 import com.castsoftware.tagging.config.Configuration;
 import com.castsoftware.tagging.database.Neo4jAL;
+import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadNodeFormat;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadRequest;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jQueryException;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +32,34 @@ public class TagRequestNode extends Neo4jObject{
 
     public static String getNameProperty() {
         return NAME_PROPERTY;
+    }
+
+    /**
+     * Create a TagRequestNode Node object from a neo4j node
+     * @param neo4jAL Neo4j Access Layer
+     * @param node Node associated to the object
+     * @return <code>TagRequestNode</code> the object associated to the node.
+     * @throws Neo4jBadNodeFormat If the conversion from the node failed due to a missing or malformed property.
+     */
+    public static TagRequestNode fromNode(Neo4jAL neo4jAL, Node node) throws Neo4jBadNodeFormat {
+
+        if(!node.hasLabel(Label.label(LABEL))) {
+            throw new Neo4jBadNodeFormat("The node does not contain the correct label. Expected to have : " + LABEL, ERROR_PREFIX + "FROMN1");
+        }
+
+        try {
+            String name = (String) node.getProperty(NAME_PROPERTY);
+            Boolean active = (Boolean) node.getProperty(ACTIVE_PROPERTY);
+            String request = (String) node.getProperty(REQUEST_PROPERTY);
+
+            // Initialize the node
+            TagRequestNode trn = new TagRequestNode(neo4jAL, name, active, request);
+            trn.setNode(node);
+
+            return trn;
+        } catch (NotFoundException | NullPointerException | ClassCastException e) {
+            throw new Neo4jBadNodeFormat(LABEL + " instantiation from node.", ERROR_PREFIX + "FROMN2");
+        }
     }
 
     @Override
@@ -77,17 +103,12 @@ public class TagRequestNode extends Neo4jObject{
             while ( resIt.hasNext() ) {
                 try {
                     Node node = (Node) resIt.next();
-                    String name = (String) node.getProperty(NAME_PROPERTY);
-                    Boolean active = Boolean.parseBoolean((String) node.getProperty(ACTIVE_PROPERTY));
-                    String request = (String) node.getProperty(REQUEST_PROPERTY);
 
-                    // Initialize the node
-                    TagRequestNode cn = new TagRequestNode(neo4jAL, name, active, request);
-                    cn.setNode(node);
+                    TagRequestNode trn = TagRequestNode.fromNode(neo4jAL, node);
+                    trn.setNode(node);
 
-                    resList.add(cn);
-                }  catch (NoSuchElementException |
-                        NullPointerException e) {
+                    resList.add(trn);
+                }  catch (NoSuchElementException | NullPointerException | Neo4jBadNodeFormat e) {
                     throw new Neo4jNoResult(LABEL + " nodes retrieving failed",  "findQuery", e, ERROR_PREFIX+"GAN1");
                 }
             }

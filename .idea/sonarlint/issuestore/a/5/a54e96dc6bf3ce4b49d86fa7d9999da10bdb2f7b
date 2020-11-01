@@ -1,5 +1,9 @@
 
-p	java:S117"QRename this local variable to match the regular expression '^[a-z][a-zA-Z0-9]*$'.(ˆõö×øÿÿÿÿ8¬„‚ğ×.
-Z
-java:S1118":Add a private constructor to hide the implicit public one.(ã¥æÍùÿÿÿÿ8 Úï×.
-p	java:S117"QRename this local variable to match the regular expression '^[a-z][a-zA-Z0-9]*$'.(Ô¯¿çüÿÿÿÿ8Ÿƒğ×.
+\
+java:S1118":Add a private constructor to hide the implicit public one.(ã¥æÍùÿÿÿÿ8 Úï×.
+r
+java:S1149b"PReplace the synchronized class "Stack" by an unsynchronized one such as "Deque".(°ò‰Àûÿÿÿÿ8ÎäØ.
+O
+java:S1128"-Remove this unused import 'java.util.Arrays'.(î–˜Éüÿÿÿÿ8ÎäØ.
+P
+java:S2175p".A "List<UseCaseNode>" cannot contain a "Node".(Ñ†×Ïùÿÿÿÿ8Õ´˜¡Ø.

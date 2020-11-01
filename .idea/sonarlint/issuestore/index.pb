@@ -1,10 +1,4 @@
 
-N
-Examples/KFZ CleanupObj.cypher,9\c\9cf0740bc9aaad362d4c95e76f03ada18fb4342b
-W
-'Examples/KFZ DocumentsITCreation.cypher,f\0\f0ecadefce9ab0cc2ad24d7b8d1e51631cd524bf
-P
- Examples/KFZ TagsCreation.cypher,0\d\0d7b4f463ccc6de593c85576257422b56963521f
 7
 pom.xml,4\4\442292b8a7efeabbe4cc176709b833b1792140ec
 w
@@ -33,8 +27,6 @@ v
 Fsrc/main/java/com/castsoftware/tagging/results/RelationshipResult.java,c\b\cbf47f4b8528e36f280cf2c2d36681f4f7544abe
 F
 scripts/export_jar.bat,8\4\8477e73dbadae3fd87a1362fcb7f625ab314ba8b
-n
->src/main/java/com/castsoftware/tagging/models/RequestNode.java,d\5\d55ae6742893f53ab969de8b32503d876897b4cc
 p
 @src/main/java/com/castsoftware/tagging/config/Configuration.java,9\1\918e98ba6ecb5e29fc649715aeeb16553c025614
 n
@@ -45,8 +37,6 @@ n
 >src/main/java/com/castsoftware/tagging/results/NodeResult.java,c\f\cf5d82f6a625231bff8d4f60a060e230885dbb75
 n
 >src/main/java/com/castsoftware/tagging/models/Neo4jObject.java,4\2\42c23da5f842ab12c242b9e61b43ed17257c42ce
-q
-Asrc/main/java/com/castsoftware/tagging/models/DocumentITNode.java,0\4\04a612822081a2a6e4ae0d75a1cc09c7baa44a21
 l
 <src/main/java/com/castsoftware/tagging/database/Neo4jAL.java,3\7\376d62ee4c3eae9a60520b0b793a4efc88cc5fe1
 q
@@ -65,3 +55,14 @@ u
 Esrc/main/java/com/castsoftware/tagging/procedures/UtilsProcedure.java,f\3\f37791f1345eb37a86b0f5196c6794db904f4edb
 w
 Gsrc/main/java/com/castsoftware/tagging/controllers/UtilsController.java,6\2\622d5118e14a5a43ae3b3bc41cd019ca0451db53
+>
+.gitattributes,2\4\24139dae656713ba861751fb2c2ac38839349a7a
+:
+
+.gitignore,a\5\a5cc2925ca8258af241be7e5b0381edf30266302
+7
+LICENSE,0\3\0398ccd0f49298b10a3d76a47800d2ebecd49859
+z
+Jsrc/main/java/com/castsoftware/tagging/exceptions/neo4j/Neo4jNoResult.java,8\2\821f1a5a982e379244ddd512ae2f496d1e1748d9
+
+Osrc/main/java/com/castsoftware/tagging/exceptions/neo4j/Neo4jBadNodeFormat.java,8\b\8b9b298c977dc0c73af141301e5829f60f71f812

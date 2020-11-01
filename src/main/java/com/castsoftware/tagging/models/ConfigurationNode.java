@@ -2,10 +2,7 @@ package com.castsoftware.tagging.models;
 
 import com.castsoftware.tagging.config.Configuration;
 import com.castsoftware.tagging.database.Neo4jAL;
-import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadRequest;
-import com.castsoftware.tagging.exceptions.neo4j.Neo4jConnectionError;
-import com.castsoftware.tagging.exceptions.neo4j.Neo4jNoResult;
-import com.castsoftware.tagging.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.tagging.exceptions.neo4j.*;
 import org.neo4j.graphdb.*;
 
 import java.util.ArrayList;
@@ -29,6 +26,32 @@ public class ConfigurationNode extends Neo4jObject {
 
     public static String getNameProperty() {
         return NAME_PROPERTY;
+    }
+
+    /**
+     * Create a Configuration Node object from a neo4j node
+     * @param neo4jAL Neo4j Access Layer
+     * @param node Node associated to the object
+     * @return <code>ConfigurationNode</code> the object associated to the node.
+     * @throws Neo4jBadNodeFormat If the conversion from the node failed due to a missing or malformed property.
+     */
+    public static ConfigurationNode fromNode(Neo4jAL neo4jAL, Node node) throws Neo4jBadNodeFormat {
+
+        if(!node.hasLabel(Label.label(LABEL))) {
+            throw new Neo4jBadNodeFormat("The node does not contain the correct label. Expected to have : " + LABEL, ERROR_PREFIX + "FROMN1");
+        }
+
+        try {
+            String name = (String) node.getProperty(NAME_PROPERTY);
+
+            // Initialize the node
+            ConfigurationNode confn = new ConfigurationNode(neo4jAL, name);
+            confn.setNode(node);
+
+            return confn;
+        } catch (NotFoundException | NullPointerException | ClassCastException e) {
+            throw new Neo4jBadNodeFormat(LABEL + " instantiation from node.", ERROR_PREFIX + "FROMN2");
+        }
     }
 
     @Override
@@ -74,14 +97,11 @@ public class ConfigurationNode extends Neo4jObject {
             while ( resIt.hasNext() ) {
                 try {
                     Node node = (Node) resIt.next();
-                    String name = (String) node.getProperty(NAME_PROPERTY);
-                    // Initialize the node
-                    ConfigurationNode cn = new ConfigurationNode(neo4jAL, name);
-                    cn.setNode(node);
+
+                    ConfigurationNode cn = ConfigurationNode.fromNode(neo4jAL, node);
 
                     resList.add(cn);
-                }  catch (NoSuchElementException |
-                        NullPointerException e) {
+                }  catch ( Neo4jBadNodeFormat e) {
                     throw new Neo4jNoResult(LABEL + " nodes retrieving failed",  "findQuery", e, ERROR_PREFIX+"GAN1");
                 }
             }

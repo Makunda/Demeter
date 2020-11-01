@@ -19,6 +19,10 @@ package com.castsoftware.tagging.exceptions.neo4j;
 
 import com.castsoftware.tagging.exceptions.TaggingException;
 
+/**
+ * The <code>Neo4jQueryException</code> is thrown when a request produce an exception during its execution.
+ * Neo4jQueryException
+ */
 public class Neo4jQueryException extends TaggingException {
 
     private static final long serialVersionUID = 8087192855448474860L;
