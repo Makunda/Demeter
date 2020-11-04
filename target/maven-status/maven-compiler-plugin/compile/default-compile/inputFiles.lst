@@ -16,13 +16,15 @@ E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\exceptions\file\File
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\exceptions\TaggingException.java
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\exceptions\neo4j\Neo4jRuntimeException.java
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\exceptions\file\FilePermissionException.java
-E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\models\TagRequestNode.java
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\models\UseCaseNode.java
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\results\NodeResult.java
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\config\Configuration.java
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\procedures\UtilsProcedure.java
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\results\OutputMessage.java
+E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\models\TagNode.java
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\results\UseCasesMessage.java
+E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\procedures\TagProcedure.java
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\controllers\UtilsController.java
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\exceptions\file\FileIOException.java
+E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\controllers\TagController.java
 E:\CAST\tagging-proc\src\main\java\com\castsoftware\tagging\exceptions\neo4j\Neo4jConnectionError.java

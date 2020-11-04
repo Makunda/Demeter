@@ -78,6 +78,28 @@ public class UseCaseController {
     }
 
     /**
+     * Set the activation value of all use cases in the configuration
+     * @param neo4jAL Neo4j Access layer
+     * @param status New value of hte activation parameter
+     * @return <code>int</code> The number of node modified
+     * @throws Neo4jQueryException
+     */
+    public static int activateAllUseCase(Neo4jAL neo4jAL, Boolean status) throws Neo4jQueryException {
+        int changes = 0;
+
+        Label useCaseLabel = Label.label(UseCaseNode.getLabel());
+        ResourceIterator <Node> useCases = neo4jAL.findNodes(useCaseLabel);
+
+        while( useCases.hasNext() ) {
+            Node n = useCases.next();
+            n.setProperty(UseCaseNode.getActiveProperty(), status);
+            changes ++;
+        }
+
+        return changes;
+    }
+
+    /**
      * Change the status of a use case node, and of every use case node under it.
      * @param neo4jAL Neo4j access layer
      * @param id Id of the use case to modify

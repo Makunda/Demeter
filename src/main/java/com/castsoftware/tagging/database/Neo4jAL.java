@@ -167,6 +167,20 @@ public class Neo4jAL {
         }
     }
 
+    /**
+     * Get all labels
+     * @return return all the labels present in the database as a list.
+     */
+    public List<Label> getAllLabels() {
+        List<Label> labels = new ArrayList<>();
+
+        for(Label l : this.transaction.getAllLabels()) {
+            labels.add(l);
+        }
+
+        return labels;
+    }
+
     public Log getLogger() {
         return log;
     }
@@ -178,6 +192,8 @@ public class Neo4jAL {
 
     /**
      * Commit the transaction. If the transaction is closed before being committed, it will be rolledback.
+     * DO NOT USE WHEN DEALING WITH SESSION TRANSACTION
+     * @deprecated
      */
     public void commitTransaction() {
         this.transaction.commit();
@@ -186,6 +202,7 @@ public class Neo4jAL {
     public void rollbackTransaction() {
         this.transaction.rollback();
     }
+
 
     public Boolean isOpen() {
         return this.activeTransaction;

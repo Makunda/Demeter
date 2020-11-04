@@ -9,6 +9,7 @@ import com.castsoftware.tagging.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.tagging.controllers.UseCaseController;
 import com.castsoftware.tagging.models.UseCaseNode;
 import com.castsoftware.tagging.results.NodeResult;
+import com.castsoftware.tagging.results.OutputMessage;
 import com.castsoftware.tagging.results.UseCasesMessage;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -79,7 +80,7 @@ public class UseCaseProcedure {
      * @throws ProcedureException
      */
     @Procedure(value = "tagging.useCases.activate", mode = Mode.WRITE)
-    @Description("tagging.useCases.activate(Long idUseCase) - Set the activation of the use case node and all other nodes under it.")
+    @Description("tagging.useCases.activate(Long idUseCase, Boolean Activation) - Set the activation of the use case node and all other nodes under it.")
     public Stream<UseCasesMessage> activateUseCase(@Name(value="Id") Long idUseCase, @Name(value="Activation") Boolean activation) throws ProcedureException {
 
         try {
@@ -89,6 +90,25 @@ public class UseCaseProcedure {
             return useCases.stream().map(UseCasesMessage::new);
 
         } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequest e) {
+            ProcedureException ex = new ProcedureException(e);
+            ex.logException(log);
+            throw ex;
+        }
+    }
+
+    @Procedure(value = "tagging.useCases.globalActivation", mode = Mode.WRITE)
+    @Description("tagging.useCases.globalActivation(Boolean Activation) - Set the activation of every use case nodes.")
+    public Stream<OutputMessage> globalActivationUseCase(@Name(value="Activation") Boolean activation) throws ProcedureException {
+
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            int nModifications= UseCaseController.activateAllUseCase(nal, activation);
+
+            String message = String.format("The activation parameter is now set to \"%b\" on %d nodes.", activation, nModifications);
+
+            return Stream.of(new OutputMessage(message));
+
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
             ProcedureException ex = new ProcedureException(e);
             ex.logException(log);
             throw ex;

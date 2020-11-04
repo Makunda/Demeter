@@ -1,5 +1,6 @@
 package com.castsoftware.tagging.procedures;
 
+import com.castsoftware.exporter.results.OutputMessage;
 import com.castsoftware.tagging.database.Neo4jAL;
 import com.castsoftware.tagging.exceptions.ProcedureException;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jConnectionError;
@@ -10,6 +11,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.*;
+
+import java.util.stream.Stream;
 
 public class UtilsProcedure {
 
@@ -24,14 +27,14 @@ public class UtilsProcedure {
 
     @Procedure(value = "tagging.export", mode = Mode.WRITE)
     @Description("tagging.export() - Clean the configuration tree")
-    public void exportConfiguration(@Name(value = "Path") String path, @Name(value= "Filename") String filename ) throws ProcedureException {
+    public Stream<OutputMessage> exportConfiguration(@Name(value = "Path") String path, @Name(value= "Filename") String filename ) throws ProcedureException {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
             nal.info("Starting Tagging export..");
 
-            UtilsController.exportConfiguration(nal, path, filename);
+            return UtilsController.exportConfiguration(nal, path, filename);
         } catch (Exception | Neo4jConnectionError | com.castsoftware.exporter.exceptions.ProcedureException e) {
             ProcedureException ex = new ProcedureException(e);
             ex.logException(log);
@@ -42,14 +45,14 @@ public class UtilsProcedure {
 
     @Procedure(value = "tagging.import", mode = Mode.WRITE)
     @Description("tagging.import() - Clean the configuration tree")
-    public void importConfiguration(@Name(value = "Path") String path ) throws ProcedureException {
+    public Stream<OutputMessage> importConfiguration(@Name(value = "Path") String path ) throws ProcedureException {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
             nal.info("Starting Tagging import..");
 
-            UtilsController.importConfiguration(nal, path);
+            return UtilsController.importConfiguration(nal, path);
         } catch (Exception | Neo4jConnectionError | com.castsoftware.exporter.exceptions.ProcedureException e) {
             ProcedureException ex = new ProcedureException(e);
             ex.logException(log);
@@ -65,7 +68,6 @@ public class UtilsProcedure {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
-
             nal.info("Starting Tagging clean..");
 
             UtilsController.deleteTaggingNodes(nal);

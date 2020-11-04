@@ -19,6 +19,8 @@ public class TagNode extends Neo4jObject{
     private static final String ACTIVE_PROPERTY = Configuration.get("neo4j.nodes.t_tag_node.active");
     private static final String ERROR_PREFIX = Configuration.get("neo4j.nodes.t_tag_node.error_prefix");
 
+    private static final String LABEL_ANCHOR = Configuration.get("tag.anchors.label");
+
     // Node properties
     private String tag;
     private String request;
@@ -33,6 +35,18 @@ public class TagNode extends Neo4jObject{
     }
     public static String getActiveProperty() { return ACTIVE_PROPERTY; }
     public static String getRequestProperty() { return  REQUEST_PROPERTY; }
+
+    public String getTag() {
+        return tag;
+    }
+
+    public String getRequest() {
+        return request;
+    }
+
+    public Boolean getActive() {
+        return active;
+    }
 
     /**
      * Create a TagRequestNode Node object from a neo4j node
@@ -81,7 +95,7 @@ public class TagNode extends Neo4jObject{
 
     @Override
     public Node createNode() throws Neo4jBadRequest, Neo4jNoResult {
-        String queryDomain = String.format("MERGE (p:%s { %s : '%s', %s : '%s', %s : %b }) RETURN p as node;",
+        String queryDomain = String.format("MERGE (p:%s { %s : \"%s\", %s : \"%s\", %s : %b }) RETURN p as node;",
                 LABEL, TAG_PROPERTY, tag, REQUEST_PROPERTY, request, ACTIVE_PROPERTY, this.active);
         try {
             Result res = neo4jAL.executeQuery(queryDomain);
@@ -142,19 +156,21 @@ public class TagNode extends Neo4jObject{
         // Build parameters
         Map<String,Object> params = new HashMap<>();
         params.put( "tagName", this.tag );
-        params.put( "label", applicationLabel);
+
+        String forgedReq = this.request.replace(LABEL_ANCHOR, applicationLabel);
+        this.neo4jAL.info("Request to be executed : " + forgedReq);
 
         try {
-            neo4jAL.executeQuery(this.request, params);
+            neo4jAL.executeQuery(forgedReq, params);
         } catch (Neo4jQueryException e) {
             throw new Neo4jBadRequest("The request failed to execute.", this.request, e, ERROR_PREFIX+"EXEC2");
         }
     }
 
-    public TagNode(Neo4jAL nal, String name, Boolean active, String tagRequest) {
+    public TagNode(Neo4jAL nal, String tag, Boolean active, String request) {
         super(nal);
-        this.tag = name;
+        this.tag = tag;
         this.active = active;
-        this.request = tagRequest;
+        this.request = request;
     }
 }
