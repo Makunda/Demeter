@@ -2,7 +2,7 @@
 set FILENAME=%1
 set SERVICE_NAME = "imaging-neo4j"
 set FILEPATH="%2\%1"
-set DEST_FOLDER="E:/AIP/ImagingSystem/neo4j/plugins/%FILENAME%"
+set DEST_FOLDER="C:/Program Files/CAST/ImagingSystem/neo4j/plugins/%FILENAME%"
 echo Copying %FILEPATH% to %DEST_FOLDER%
 copy %FILEPATH% %DEST_FOLDER% /Y
 echo "Done !"

@@ -1,10 +1,9 @@
 package com.castsoftware.tagging.procedures;
 
 import com.castsoftware.tagging.controllers.TagController;
-import com.castsoftware.tagging.controllers.UtilsController;
 import com.castsoftware.tagging.database.Neo4jAL;
 import com.castsoftware.tagging.exceptions.ProcedureException;
-import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadRequest;
+import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jQueryException;
@@ -46,7 +45,7 @@ public class TagProcedure {
             Node n =  TagController.addTagNode(nal, tag, activation, associatedRequest, parentId);
 
             return Stream.of(new NodeResult(n));
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequest | Neo4jNoResult e) {
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult e) {
             ProcedureException ex = new ProcedureException(e);
             ex.logException(log);
             throw ex;

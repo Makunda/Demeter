@@ -24,20 +24,20 @@ import com.castsoftware.tagging.exceptions.TaggingException;
  * The failed request can be found in logs.
  * Neo4jBadRequest
  */
-public class Neo4jBadRequest extends TaggingException {
+public class Neo4jBadRequestException extends TaggingException {
     private static final long serialVersionUID = -4369489315467963030L;
     private static final String MESSAGE_PREFIX = "Error during Neo4j request : ";
     private static final String CODE_PREFIX = "NEO_BR_";
 
-    public Neo4jBadRequest(String request, Throwable cause, String code) {
+    public Neo4jBadRequestException(String request, Throwable cause, String code) {
         super(MESSAGE_PREFIX.concat(request), cause, CODE_PREFIX.concat(code));
     }
 
-    public Neo4jBadRequest(String request,  String code) {
+    public Neo4jBadRequestException(String request, String code) {
         super(MESSAGE_PREFIX.concat(request), CODE_PREFIX.concat(code));
     }
 
-    public Neo4jBadRequest(String request, String query, Throwable cause, String code) {
+    public Neo4jBadRequestException(String request, String query, Throwable cause, String code) {
         super(MESSAGE_PREFIX.concat(request).concat(" . Query : ").concat(query), cause, CODE_PREFIX.concat(code));
     }
 }

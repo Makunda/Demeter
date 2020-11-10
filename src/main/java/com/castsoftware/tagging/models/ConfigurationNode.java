@@ -33,12 +33,12 @@ public class ConfigurationNode extends Neo4jObject {
      * @param neo4jAL Neo4j Access Layer
      * @param node Node associated to the object
      * @return <code>ConfigurationNode</code> the object associated to the node.
-     * @throws Neo4jBadNodeFormat If the conversion from the node failed due to a missing or malformed property.
+     * @throws Neo4jBadNodeFormatException If the conversion from the node failed due to a missing or malformed property.
      */
-    public static ConfigurationNode fromNode(Neo4jAL neo4jAL, Node node) throws Neo4jBadNodeFormat {
+    public static ConfigurationNode fromNode(Neo4jAL neo4jAL, Node node) throws Neo4jBadNodeFormatException {
 
         if(!node.hasLabel(Label.label(LABEL))) {
-            throw new Neo4jBadNodeFormat("The node does not contain the correct label. Expected to have : " + LABEL, ERROR_PREFIX + "FROMN1");
+            throw new Neo4jBadNodeFormatException("The node does not contain the correct label. Expected to have : " + LABEL, ERROR_PREFIX + "FROMN1");
         }
 
         try {
@@ -50,12 +50,12 @@ public class ConfigurationNode extends Neo4jObject {
 
             return confn;
         } catch (NotFoundException | NullPointerException | ClassCastException e) {
-            throw new Neo4jBadNodeFormat(LABEL + " instantiation from node.", ERROR_PREFIX + "FROMN2");
+            throw new Neo4jBadNodeFormatException(LABEL + " instantiation from node.", ERROR_PREFIX + "FROMN2");
         }
     }
 
     @Override
-    protected Node findNode() throws Neo4jBadRequest, Neo4jNoResult {
+    protected Node findNode() throws Neo4jBadRequestException, Neo4jNoResult {
         String initQuery = String.format("MATCH (n:%s) WHERE ID(n)=%d RETURN n as node LIMIT 1;", LABEL, this.getNodeId());
         try {
             Result res = neo4jAL.executeQuery(initQuery);
@@ -64,7 +64,7 @@ public class ConfigurationNode extends Neo4jObject {
             this.setNode(n);
             return n;
         } catch ( Neo4jQueryException e) {
-            throw new Neo4jBadRequest("Company node initialization failed", initQuery , e, ERROR_PREFIX+"FIN1");
+            throw new Neo4jBadRequestException("Company node initialization failed", initQuery , e, ERROR_PREFIX+"FIN1");
         } catch (NoSuchElementException |
                 NullPointerException e) {
             throw new Neo4jNoResult("You need to create the ConfigurationNode node first.",  initQuery, e, ERROR_PREFIX+"FIN2");
@@ -72,7 +72,7 @@ public class ConfigurationNode extends Neo4jObject {
     }
 
     @Override
-    public Node createNode() throws Neo4jBadRequest, Neo4jNoResult {
+    public Node createNode() throws Neo4jBadRequestException, Neo4jNoResult {
         neo4jAL.getLogger().info("Starting create node ");
         String queryDomain = String.format("CREATE (p:%s { %s : '%s' }) RETURN p as node;",
                 LABEL, NAME_PROPERTY, name );
@@ -83,14 +83,14 @@ public class ConfigurationNode extends Neo4jObject {
             neo4jAL.getLogger().info("End create node req : " + queryDomain);
             return n;
         } catch ( Neo4jQueryException e) {
-            throw new Neo4jBadRequest(LABEL + " node creation failed", queryDomain , e, ERROR_PREFIX+"CRN1");
+            throw new Neo4jBadRequestException(LABEL + " node creation failed", queryDomain , e, ERROR_PREFIX+"CRN1");
         } catch (NoSuchElementException |
                 NullPointerException e) {
             throw new Neo4jNoResult(LABEL + "node creation failed",  queryDomain, e, ERROR_PREFIX+"CRN2");
         }
     }
 
-    public static List<ConfigurationNode> getAllNodes(Neo4jAL neo4jAL) throws Neo4jBadRequest {
+    public static List<ConfigurationNode> getAllNodes(Neo4jAL neo4jAL) throws Neo4jBadRequestException {
         try {
             List<ConfigurationNode> resList = new ArrayList<>();
             ResourceIterator<Node> resIt = neo4jAL.findNodes(Label.label(LABEL));
@@ -101,24 +101,24 @@ public class ConfigurationNode extends Neo4jObject {
                     ConfigurationNode cn = ConfigurationNode.fromNode(neo4jAL, node);
 
                     resList.add(cn);
-                }  catch ( Neo4jBadNodeFormat e) {
+                }  catch ( Neo4jBadNodeFormatException e) {
                     throw new Neo4jNoResult(LABEL + " nodes retrieving failed",  "findQuery", e, ERROR_PREFIX+"GAN1");
                 }
             }
             return resList;
         } catch (Neo4jQueryException | Neo4jNoResult e) {
-            throw new Neo4jBadRequest(LABEL + " nodes retrieving failed", "findQuery" , e, ERROR_PREFIX+"GAN1");
+            throw new Neo4jBadRequestException(LABEL + " nodes retrieving failed", "findQuery" , e, ERROR_PREFIX+"GAN1");
         }
     }
 
     @Override
-    public void deleteNode() throws Neo4jBadRequest {
+    public void deleteNode() throws Neo4jBadRequestException {
         String queryDomain = String.format("MATCH (p:%s) WHERE ID(p)=%d DETACH DELETE p;",
                 LABEL, this.getNodeId());
         try {
             neo4jAL.executeQuery(queryDomain);
         } catch (Neo4jQueryException e) {
-            throw new Neo4jBadRequest(LABEL + " node deletion failed", queryDomain , e, ERROR_PREFIX+"DEL1");
+            throw new Neo4jBadRequestException(LABEL + " node deletion failed", queryDomain , e, ERROR_PREFIX+"DEL1");
         }
     }
 

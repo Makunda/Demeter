@@ -2,7 +2,7 @@ package com.castsoftware.tagging.procedures;
 
 import com.castsoftware.tagging.database.Neo4jAL;
 import com.castsoftware.tagging.exceptions.ProcedureException;
-import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadRequest;
+import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jQueryException;
@@ -45,7 +45,7 @@ public class UseCaseProcedure {
 
             return Stream.of(new NodeResult(n));
 
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequest | Neo4jNoResult e) {
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult e) {
             ProcedureException ex = new ProcedureException(e);
             ex.logException(log);
             throw ex;
@@ -65,7 +65,7 @@ public class UseCaseProcedure {
 
             return useCases.stream().map(UseCasesMessage::new);
 
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequest e) {
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException e) {
             ProcedureException ex = new ProcedureException(e);
             ex.logException(log);
             throw ex;
@@ -85,11 +85,11 @@ public class UseCaseProcedure {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            List<UseCaseNode> useCases = UseCaseController.activateUseCase(nal, idUseCase, activation);
+            List<UseCaseNode> useCases = UseCaseController.selectUseCase(nal, idUseCase, activation);
             
             return useCases.stream().map(UseCasesMessage::new);
 
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequest e) {
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException e) {
             ProcedureException ex = new ProcedureException(e);
             ex.logException(log);
             throw ex;
@@ -105,6 +105,25 @@ public class UseCaseProcedure {
             int nModifications= UseCaseController.activateAllUseCase(nal, activation);
 
             String message = String.format("The activation parameter is now set to \"%b\" on %d nodes.", activation, nModifications);
+
+            return Stream.of(new OutputMessage(message));
+
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+            ProcedureException ex = new ProcedureException(e);
+            ex.logException(log);
+            throw ex;
+        }
+    }
+
+    @Procedure(value = "tagging.useCases.globalSelection", mode = Mode.WRITE)
+    @Description("tagging.useCases.globalSelection(Boolean Activation) - Set the Selection of every use case nodes.")
+    public Stream<OutputMessage> globalSelectionUseCase(@Name(value="Activation") Boolean activation) throws ProcedureException {
+
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            int nModifications= UseCaseController.selectAllUseCase(nal, activation);
+
+            String message = String.format("The selection parameter is now set to \"%b\" on %d nodes.", activation, nModifications);
 
             return Stream.of(new OutputMessage(message));
 

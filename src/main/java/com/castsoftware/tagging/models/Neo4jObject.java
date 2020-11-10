@@ -1,7 +1,7 @@
 package com.castsoftware.tagging.models;
 
 import com.castsoftware.tagging.database.Neo4jAL;
-import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadRequest;
+import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jNoResult;
 import org.neo4j.graphdb.Node;
 
@@ -16,28 +16,50 @@ public abstract class Neo4jObject {
     }
 
     /**
+     * Parse the specified node property and extract the boolean value.
+     * During manipulations of the property, some process can accidentally convert the value of the boolean to a text format.
+     * When this happens, a classical boolean cast fails to execute and throw ClassCastException.
+     * @param value Object containing the boolean
+     * @return The value of the boolean. If no boolean is detected, return false.
+     */
+    public static Boolean castPropertyToBoolean(Object value) {
+        boolean b = false;
+
+        try {
+            b = (Boolean) value;
+        } catch (ClassCastException e) {
+            String boolAsString = (String) value;
+            if(boolAsString.matches("true|false")) {
+                b =  Boolean.parseBoolean(boolAsString);
+            }
+        }
+
+        return b;
+    }
+
+    /**
      * Find an existing node in the DB matching the same properties. The node found will be assigned to the object.
      * (Warning : will return the first node encountered if two nodes have the exact same properties)
      * @return The node found in the database
-     * @throws Neo4jBadRequest An error was thrown during the execution of the query
+     * @throws Neo4jBadRequestException An error was thrown during the execution of the query
      * @throws Neo4jNoResult The request did not return any results (and was supposed to)
      */
-    protected abstract Node findNode() throws Neo4jBadRequest, Neo4jNoResult;
+    protected abstract Node findNode() throws Neo4jBadRequestException, Neo4jNoResult;
 
     /**
      * Create a node in the database based on attributes of the object
      * @return The node created
-     * @throws Neo4jBadRequest An error was thrown during the execution of the query
+     * @throws Neo4jBadRequestException An error was thrown during the execution of the query
      * @throws Neo4jNoResult The request did not return any results (and was supposed to)
      */
-    public abstract Node createNode() throws Neo4jBadRequest, Neo4jNoResult;
+    public abstract Node createNode() throws Neo4jBadRequestException, Neo4jNoResult;
 
     /**
      * Delete the node in the database linked to the object
-     * @throws Neo4jBadRequest An error was thrown during the execution of the query
+     * @throws Neo4jBadRequestException An error was thrown during the execution of the query
      * @throws Neo4jNoResult The request did not return any results (and was supposed to)
      */
-    public abstract void deleteNode() throws Neo4jBadRequest, Neo4jNoResult;
+    public abstract void deleteNode() throws Neo4jBadRequestException, Neo4jNoResult;
 
     /**
      * Return the ID of the Neo4j node in the database
@@ -48,7 +70,7 @@ public abstract class Neo4jObject {
         return node.getId();
     }
 
-    public Node getNode() throws Neo4jBadRequest, Neo4jNoResult {
+    public Node getNode() throws Neo4jBadRequestException, Neo4jNoResult {
         if(this.node == null) {
             this.findNode();
         }

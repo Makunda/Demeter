@@ -3,7 +3,7 @@ package com.castsoftware.tagging.procedures;
 import com.castsoftware.tagging.controllers.UtilsController;
 import com.castsoftware.tagging.database.Neo4jAL;
 import com.castsoftware.tagging.exceptions.ProcedureException;
-import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadRequest;
+import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.tagging.controllers.ConfigurationController;
@@ -42,7 +42,7 @@ public class ConfigurationProcedure {
             Node n = ConfigurationController.createConfiguration(nal, name);
 
             return Stream.of(new NodeResult(n));
-        } catch (Neo4jBadRequest | Neo4jNoResult | Exception | Neo4jConnectionError e) {
+        } catch (Neo4jBadRequestException | Neo4jNoResult | Exception | Neo4jConnectionError e) {
             ProcedureException ex = new ProcedureException(e);
             ex.logException(log);
             throw ex;
@@ -56,22 +56,22 @@ public class ConfigurationProcedure {
         List<Node> nodeList = new ArrayList<>();
 
         try {
+            log.info("Launching forecast Procedure ..");
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
-            List<TagNode> lNode = UtilsController.getActiveTag(nal, configurationName);
+            List<TagNode> lNode = UtilsController.getSelectedTag(nal, configurationName);
+
             int numReq = lNode.size();
 
             String message = String.format("In this configuration %d request(s) will be executed.", numReq);
             return Stream.of(new OutputMessage(message));
 
-        } catch (Neo4jConnectionError | Neo4jQueryException | Neo4jNoResult | Neo4jBadRequest e) {
+        } catch (Neo4jConnectionError | Neo4jQueryException | Neo4jNoResult | Neo4jBadRequestException | Exception e) {
             ProcedureException ex = new ProcedureException(e);
             ex.logException(log);
             throw ex;
         }
-
     }
-
 
     @Procedure(value = "tagging.execute", mode = Mode.WRITE)
     @Description("tagging.execute( String ConfigurationName, String Application ) - Execute a configuration node")
@@ -87,13 +87,10 @@ public class ConfigurationProcedure {
 
             String message = String.format("%d tagging requests were executed in %d ms.", numExec, elapsedTime);
             return Stream.of(new OutputMessage(message));
-        } catch (Neo4jBadRequest | Neo4jNoResult | Exception | Neo4jConnectionError | Neo4jQueryException e) {
+        } catch (Neo4jBadRequestException | Neo4jNoResult | RuntimeException | Neo4jConnectionError | Neo4jQueryException e) {
             ProcedureException ex = new ProcedureException(e);
             ex.logException(log);
             throw ex;
         }
     }
-
-
-
 }

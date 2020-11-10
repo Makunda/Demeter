@@ -8,7 +8,7 @@ com\castsoftware\tagging\exceptions\file\FileIOException.class
 com\castsoftware\tagging\exceptions\neo4j\Neo4jNoResult.class
 com\castsoftware\tagging\procedures\ConfigurationProcedure.class
 com\castsoftware\tagging\models\TagNode.class
-com\castsoftware\tagging\exceptions\neo4j\Neo4jBadRequest.class
+com\castsoftware\tagging\exceptions\neo4j\Neo4jBadRequestException.class
 com\castsoftware\tagging\exceptions\TaggingException.class
 com\castsoftware\tagging\models\ConfigurationNode.class
 com\castsoftware\tagging\procedures\UseCaseProcedure.class
@@ -16,7 +16,6 @@ com\castsoftware\tagging\exceptions\neo4j\Neo4jQueryException.class
 com\castsoftware\tagging\exceptions\neo4j\Neo4jRuntimeException.class
 com\castsoftware\tagging\database\Neo4jAL.class
 com\castsoftware\tagging\exceptions\ProcedureException.class
-com\castsoftware\tagging\exceptions\neo4j\Neo4jBadNodeFormat.class
 com\castsoftware\tagging\results\RelationshipResult.class
 com\castsoftware\tagging\controllers\UseCaseController.class
 com\castsoftware\tagging\procedures\TagProcedure.class
@@ -25,6 +24,10 @@ com\castsoftware\tagging\controllers\UtilsController.class
 com\castsoftware\tagging\results\OutputMessage.class
 com\castsoftware\tagging\controllers\TagController.class
 com\castsoftware\tagging\models\Neo4jObject.class
+com\castsoftware\tagging\tags\TagProcessing.class
 com\castsoftware\tagging\procedures\UtilsProcedure.class
+com\castsoftware\tagging\exceptions\neo4j\Neo4jBadNodeFormatException.class
+com\castsoftware\tagging\exceptions\neo4j\Neo4JTemplateLanguageException.class
 com\castsoftware\tagging\config\Configuration.class
+com\castsoftware\tagging\statistics\FileLogger.class
 com\castsoftware\tagging\exceptions\file\FileNotFoundException.class

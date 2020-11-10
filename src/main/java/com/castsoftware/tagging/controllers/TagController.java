@@ -2,10 +2,9 @@ package com.castsoftware.tagging.controllers;
 
 import com.castsoftware.tagging.config.Configuration;
 import com.castsoftware.tagging.database.Neo4jAL;
-import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadRequest;
+import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.tagging.models.ConfigurationNode;
 import com.castsoftware.tagging.models.TagNode;
 import com.castsoftware.tagging.models.UseCaseNode;
 import org.neo4j.graphdb.Label;
@@ -29,10 +28,10 @@ public class TagController {
      * @param parentId Id of the parent use case
      * @return <code>Node</code> the node created
      * @throws Neo4jQueryException
-     * @throws Neo4jBadRequest
+     * @throws Neo4jBadRequestException
      * @throws Neo4jNoResult
      */
-    public static Node addTagNode(Neo4jAL neo4jAL, String tag, Boolean active, String request, Long parentId) throws Neo4jQueryException, Neo4jBadRequest, Neo4jNoResult {
+    public static Node addTagNode(Neo4jAL neo4jAL, String tag, Boolean active, String request, Long parentId) throws Neo4jQueryException, Neo4jBadRequestException, Neo4jNoResult {
         Node parent = neo4jAL.getNodeById(parentId);
 
         Label useCaseLabel = Label.label(UseCaseNode.getLabel());
@@ -46,7 +45,7 @@ public class TagController {
             }
 
             neo4jAL.info("Parents Id labels = " + String.join(" ", l));
-            throw new Neo4jBadRequest(String.format("Can only attach a %s node to a %s node.", TagNode.getLabel() ,UseCaseNode.getLabel()),
+            throw new Neo4jBadRequestException(String.format("Can only attach a %s node to a %s node.", TagNode.getLabel() ,UseCaseNode.getLabel()),
                     ERROR_PREFIX + "ADDU1");
         }
 
@@ -58,5 +57,7 @@ public class TagController {
 
         return n;
     }
+
+
 
 }

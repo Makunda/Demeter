@@ -2,7 +2,7 @@ package com.castsoftware.tagging.controllers;
 
 import com.castsoftware.tagging.config.Configuration;
 import com.castsoftware.tagging.database.Neo4jAL;
-import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadRequest;
+import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.tagging.models.ConfigurationNode;
@@ -18,7 +18,7 @@ public class ConfigurationController {
     private static final String ERROR_PREFIX = "CONFCx";
     private static final String USE_CASE_RELATIONSHIP = Configuration.get("neo4j.relationships.use_case.to_use_case");
 
-    public static Node createConfiguration(Neo4jAL neo4jAL, String name) throws Neo4jBadRequest, Neo4jNoResult {
+    public static Node createConfiguration(Neo4jAL neo4jAL, String name) throws Neo4jBadRequestException, Neo4jNoResult {
         ConfigurationNode n = new ConfigurationNode(neo4jAL, name);
         return n.createNode();
     }

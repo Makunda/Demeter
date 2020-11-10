@@ -18,7 +18,7 @@
 package com.castsoftware.tagging.database;
 
 
-import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadRequest;
+import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jQueryException;
 import org.neo4j.graphdb.*;
@@ -42,14 +42,14 @@ public class Neo4jAL {
      * Create an index on the desired property
      * @param label Label concerned by the index
      * @param property Property used for the index
-     * @throws Neo4jBadRequest is thrown if the request contains an error, or if the execution failed.
+     * @throws Neo4jBadRequestException is thrown if the request contains an error, or if the execution failed.
      */
-    private void setIndex(String label, String property) throws Neo4jBadRequest {
+    private void setIndex(String label, String property) throws Neo4jBadRequestException {
         String indexQuery = String.format("CREATE INDEX ON:%s(%s)", label, property);
         try {
             this.executeQuery(indexQuery);
         } catch (Neo4jQueryException e) {
-            throw new Neo4jBadRequest("Cannot set the index.", indexQuery, e, ERROR_PREFIX + "SETI1");
+            throw new Neo4jBadRequestException("Cannot set the index.", indexQuery, e, ERROR_PREFIX + "SETI1");
         }
     }
 
@@ -96,7 +96,6 @@ public class Neo4jAL {
         } catch (QueryExecutionException e) {
             throw new Neo4jQueryException("Error while executing query with parameters.", query, e, ERROR_PREFIX + "EXQS1");
         }
-
     }
 
 

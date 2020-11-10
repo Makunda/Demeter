@@ -72,7 +72,25 @@ public class UtilsProcedure {
 
             UtilsController.deleteTaggingNodes(nal);
 
-            nal.commitTransaction(); // Commit the transaction
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+            ProcedureException ex = new ProcedureException(e);
+            ex.logException(log);
+            throw ex;
+        }
+    }
+
+    @Procedure(value = "tagging.check", mode = Mode.WRITE)
+    @Description("tagging.check() - Check if the provided requests are valid")
+    public Stream<OutputMessage> healthCheck(@Name(value = "ApplicationContext") String applicationContext ) throws ProcedureException {
+
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+
+            nal.info("Starting health check..");
+            String info =  UtilsController.checkTags(nal, applicationContext);
+            nal.info(info);
+
+            return Stream.of(new OutputMessage(info));
 
         } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
             ProcedureException ex = new ProcedureException(e);

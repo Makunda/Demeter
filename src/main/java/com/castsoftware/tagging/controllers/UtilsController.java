@@ -6,15 +6,20 @@ import com.castsoftware.exporter.results.OutputMessage;
 import com.castsoftware.tagging.config.Configuration;
 import com.castsoftware.tagging.exceptions.ProcedureException;
 import com.castsoftware.tagging.database.Neo4jAL;
-import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadNodeFormat;
-import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadRequest;
+import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadNodeFormatException;
+import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.tagging.models.ConfigurationNode;
+import com.castsoftware.tagging.models.Neo4jObject;
 import com.castsoftware.tagging.models.TagNode;
 import com.castsoftware.tagging.models.UseCaseNode;
+import com.castsoftware.tagging.statistics.FileLogger;
 import org.neo4j.graphdb.*;
 
+import java.io.IOException;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -25,6 +30,9 @@ public class UtilsController {
     private static final List<String> ALL_LABELS = Arrays.asList( ConfigurationNode.getLabel(), UseCaseNode.getLabel(), TagNode.getLabel());
     private static final String USE_CASE_RELATIONSHIP = Configuration.get("neo4j.relationships.use_case.to_use_case");
     private static final String USE_CASE_TO_TAG_RELATIONSHIP = Configuration.get("neo4j.relationships.use_case.to_tag");
+    private static final String TAG_RETURN_LABEL_VAL = Configuration.get("tag.anchors.return.return_val");
+
+    private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd_HHmmss");
 
     /**
      * Delete all the nodes related to the configuration
@@ -52,8 +60,12 @@ public class UtilsController {
      * @return
      */
     public static Stream<OutputMessage> exportConfiguration(Neo4jAL neo4jAL, String path, String filename) throws com.castsoftware.exporter.exceptions.ProcedureException {
+        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+
+        String forgedFilename = filename + "_" + sdf.format(timestamp);
+
         Exporter exporter = new Exporter(neo4jAL.getDb(), neo4jAL.getLogger());
-        return exporter.save(ALL_LABELS, path, filename, true, false);
+        return exporter.save(ALL_LABELS, path, forgedFilename, true, false);
     }
 
     /**
@@ -75,9 +87,9 @@ public class UtilsController {
      * @return The list of activated tags
      * @throws Neo4jQueryException
      * @throws Neo4jNoResult
-     * @throws Neo4jBadRequest
+     * @throws Neo4jBadRequestException
      */
-    public static List<TagNode> getActiveTag(Neo4jAL neo4jAL, String configurationName) throws Neo4jQueryException, Neo4jNoResult, Neo4jBadRequest {
+    public static List<TagNode> getSelectedTag(Neo4jAL neo4jAL, String configurationName) throws Neo4jQueryException, Neo4jNoResult, Neo4jBadRequestException {
         String req = String.format("MATCH(o:%s) WHERE o.%s=\"%s\" RETURN o as res", ConfigurationNode.getLabel(), ConfigurationNode.getNameProperty(), configurationName);
 
         Result result = neo4jAL.executeQuery(req);
@@ -91,7 +103,7 @@ public class UtilsController {
         try {
             confNode = (Node) result.next().get("res");
         } catch (NoSuchElementException | NullPointerException e) {
-            throw new Neo4jBadRequest("Error the request didn't return results in a correct format.", req, e, "GATG2");
+            throw new Neo4jBadRequestException("Error the request didn't return results in a correct format.", req, e, "GATG2");
         }
 
         // Iterate over Active Use Case
@@ -107,8 +119,12 @@ public class UtilsController {
             // Check the activation value if useCase Node
             if(n.hasLabel( Label.label(UseCaseNode.getLabel())) ) {
                 // Check the value for active property
-                boolean b = (Boolean) n.getProperty(UseCaseNode.getActiveProperty());
-                if(!b) {
+                boolean active = Neo4jObject.castPropertyToBoolean( n.getProperty(UseCaseNode.getActiveProperty()) );
+                boolean selected = Neo4jObject.castPropertyToBoolean(n.getProperty( UseCaseNode.getSelectedProperty()) );
+
+                neo4jAL.info(String.format("Node with ID=%d ; Active : %b ; Selected : %b;", n.getId(), active, selected));
+
+                if(!active || !selected) {
                     visited.add(n);
                     continue;
                 }
@@ -135,7 +151,7 @@ public class UtilsController {
         return tags.stream().map( x -> {
             try {
                 return TagNode.fromNode(neo4jAL, x);
-            } catch (Neo4jBadNodeFormat ex) {
+            } catch (Neo4jBadNodeFormatException ex) {
                 neo4jAL.getLogger().error("Error during Tag Nodes discovery.", ex);
                 return null;
             }
@@ -150,30 +166,77 @@ public class UtilsController {
      * @throws ProcedureException
      * @return Number of tag applied in the configuration
      */
-    public static int executeConfiguration(Neo4jAL neo4jAL, String configurationName, String applicationLabel) throws Neo4jBadRequest, Neo4jQueryException, Neo4jNoResult {
-
+    public static int executeConfiguration(Neo4jAL neo4jAL, String configurationName, String applicationLabel) throws Neo4jBadRequestException, Neo4jQueryException, Neo4jNoResult {
+        FileLogger fl  = FileLogger.getLogger();
         List<Label> labels = neo4jAL.getAllLabels();
 
         // Verify if the label is present in the database
         if(!labels.contains(Label.label(applicationLabel))) {
             String message = String.format("Cannot find label \"%s\" in the database", applicationLabel);
-            throw new Neo4jBadRequest(message, ERROR_PREFIX + "EXEC1");
+            throw new Neo4jBadRequestException(message, ERROR_PREFIX + "EXEC1");
         }
 
         int nExecution = 0;
 
-        // Execute activated tags'requests
-        List<TagNode> tags = getActiveTag(neo4jAL, configurationName);
+        // Execute activated tag'requests
+        List<TagNode> tags = getSelectedTag(neo4jAL, configurationName);
         for(TagNode n : tags) {
             try {
-                n.executeRequest(applicationLabel);
+                Result res = n.executeRequest(applicationLabel);
+
+                while(res.hasNext()) {
+                    Map<String, Object> resMap = res.next();
+                    if(!resMap.containsKey(TAG_RETURN_LABEL_VAL)) continue;
+                    Node taggedNode = (Node) resMap.get(TAG_RETURN_LABEL_VAL);
+                    fl.addStatToTag(n.getTag(), FileLogger.nodeToJOSNStats(taggedNode));
+                }
+
+                neo4jAL.info("Statistics saved for tag : " + n.getTag());
                 nExecution ++;
-            } catch (Neo4jNoResult | Neo4jBadRequest err) {
+            } catch (Exception | Neo4jNoResult | Neo4jBadRequestException err) {
                 neo4jAL.getLogger().error("An error occurred during Tag request execution. Tag with Node ID : " + n.getNodeId(), err);
             }
         }
 
+        try {
+            fl.write();
+        } catch (IOException err) {
+            neo4jAL.getLogger().error("Failed to save statistics during request execution.", err);
+        }
+
         return nExecution;
+    }
+
+    /**
+     * Check all TagRequest present in the database. And return a report as a <code>String</code> indicating the percentage of working Queries.
+     * @param neo4jAL Neo4j Access Layer
+     * @param applicationContext The application to use as a context for the query
+     * @return <code>String</code> The number of working / not working nodes and the percentage of success.
+     * @throws Neo4jQueryException
+     */
+    public static String checkTags(Neo4jAL neo4jAL, String applicationContext) throws Neo4jQueryException {
+        int valid = 0;
+        int notValid = 0;
+
+        Label tagLabel = Label.label(TagNode.getLabel());
+
+        for (ResourceIterator<Node> it = neo4jAL.findNodes(tagLabel); it.hasNext(); ) {
+            Node n = it.next();
+
+            try {
+                TagNode tn = TagNode.fromNode(neo4jAL, n);
+                if(tn.checkQuery(applicationContext)) valid++;
+                else notValid++;
+
+            } catch (Exception | Neo4jBadNodeFormatException | Neo4jBadRequestException | Neo4jNoResult e) {
+                neo4jAL.getLogger().error(String.format("An error occurred while retrieving TagNode with id \"%d\" was ignored.", n.getId()), e);
+            }
+
+        }
+
+        double total = (double) (valid + notValid);
+        double p = (double) (valid ) / total ;
+        return String.format("%s TagRequest nodes were checked. %d valid node(s) were discovered. %d nonfunctional node(s) were identified. Percentage of success : %.2f", total, valid, notValid, p);
     }
 
 }
