@@ -10,10 +10,7 @@ import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.tagging.models.ConfigurationNode;
-import com.castsoftware.tagging.models.Neo4jObject;
-import com.castsoftware.tagging.models.TagNode;
-import com.castsoftware.tagging.models.UseCaseNode;
+import com.castsoftware.tagging.models.*;
 import com.castsoftware.tagging.statistics.FileLogger;
 import org.neo4j.graphdb.*;
 
@@ -27,7 +24,7 @@ import java.util.stream.Stream;
 public class UtilsController {
 
     private static final String ERROR_PREFIX = "UTICx";
-    private static final List<String> ALL_LABELS = Arrays.asList( ConfigurationNode.getLabel(), UseCaseNode.getLabel(), TagNode.getLabel());
+    private static final List<String> ALL_LABELS = Arrays.asList( ConfigurationNode.getLabel(), UseCaseNode.getLabel(), TagNode.getLabel(), StatisticNode.getLabel());
     private static final String USE_CASE_RELATIONSHIP = Configuration.get("neo4j.relationships.use_case.to_use_case");
     private static final String USE_CASE_TO_TAG_RELATIONSHIP = Configuration.get("neo4j.relationships.use_case.to_tag");
     private static final String TAG_RETURN_LABEL_VAL = Configuration.get("tag.anchors.return.return_val");
@@ -122,7 +119,7 @@ public class UtilsController {
                 boolean active = Neo4jObject.castPropertyToBoolean( n.getProperty(UseCaseNode.getActiveProperty()) );
                 boolean selected = Neo4jObject.castPropertyToBoolean(n.getProperty( UseCaseNode.getSelectedProperty()) );
 
-                neo4jAL.info(String.format("Node with ID=%d ; Active : %b ; Selected : %b;", n.getId(), active, selected));
+                neo4jAL.logInfo(String.format("Node with ID=%d ; Active : %b ; Selected : %b;", n.getId(), active, selected));
 
                 if(!active || !selected) {
                     visited.add(n);
@@ -191,7 +188,7 @@ public class UtilsController {
                     fl.addStatToTag(n.getTag(), FileLogger.nodeToJOSNStats(taggedNode));
                 }
 
-                neo4jAL.info("Statistics saved for tag : " + n.getTag());
+                neo4jAL.logInfo("Statistics saved for tag : " + n.getTag());
                 nExecution ++;
             } catch (Exception | Neo4jNoResult | Neo4jBadRequestException err) {
                 neo4jAL.getLogger().error("An error occurred during Tag request execution. Tag with Node ID : " + n.getNodeId(), err);

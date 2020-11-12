@@ -32,7 +32,7 @@ public class UtilsProcedure {
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
-            nal.info("Starting Tagging export..");
+            nal.logInfo("Starting Tagging export..");
 
             return UtilsController.exportConfiguration(nal, path, filename);
         } catch (Exception | Neo4jConnectionError | com.castsoftware.exporter.exceptions.ProcedureException e) {
@@ -50,7 +50,7 @@ public class UtilsProcedure {
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
-            nal.info("Starting Tagging import..");
+            nal.logInfo("Starting Tagging import..");
 
             return UtilsController.importConfiguration(nal, path);
         } catch (Exception | Neo4jConnectionError | com.castsoftware.exporter.exceptions.ProcedureException e) {
@@ -68,7 +68,7 @@ public class UtilsProcedure {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            nal.info("Starting Tagging clean..");
+            nal.logInfo("Starting Tagging clean..");
 
             UtilsController.deleteTaggingNodes(nal);
 
@@ -86,9 +86,9 @@ public class UtilsProcedure {
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
-            nal.info("Starting health check..");
+            nal.logInfo("Starting health check..");
             String info =  UtilsController.checkTags(nal, applicationContext);
-            nal.info(info);
+            nal.logInfo(info);
 
             return Stream.of(new OutputMessage(info));
 

@@ -37,11 +37,11 @@ public class UseCaseProcedure {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            nal.info(String.format("Adding a use case with parameters { 'Name' : '%s' , 'Active' : %b } ", name, active));
+            nal.logInfo(String.format("Adding a use case with parameters { 'Name' : '%s' , 'Active' : %b } ", name, active));
 
             Node n = UseCaseController.addUseCase(nal, name, active, idParent);
 
-            nal.info("Done !");
+            nal.logInfo("Done !");
 
             return Stream.of(new NodeResult(n));
 
@@ -59,7 +59,7 @@ public class UseCaseProcedure {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            nal.info("Starting Use Case Listing..");
+            nal.logInfo("Starting Use Case Listing..");
 
             List<UseCaseNode> useCases = UseCaseController.listUseCases(nal);
 

@@ -111,6 +111,10 @@ public class FileLogger {
         return nodeDetails;
     }
 
+    public void addParagraph(String title, String content) {
+
+    }
+
 
     public void write() throws IOException {
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());

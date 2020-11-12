@@ -31,25 +31,18 @@ public class TagController {
      * @throws Neo4jBadRequestException
      * @throws Neo4jNoResult
      */
-    public static Node addTagNode(Neo4jAL neo4jAL, String tag, Boolean active, String request, Long parentId) throws Neo4jQueryException, Neo4jBadRequestException, Neo4jNoResult {
+    public static Node addTagNode(Neo4jAL neo4jAL, String tag, Boolean active, String request, String description,  Long parentId) throws Neo4jQueryException, Neo4jBadRequestException, Neo4jNoResult {
         Node parent = neo4jAL.getNodeById(parentId);
 
         Label useCaseLabel = Label.label(UseCaseNode.getLabel());
 
         // Check if the parent is either a Configuration Node or another use case
         if(!parent.hasLabel(useCaseLabel)) {
-            List<String> l = new ArrayList<>();
-
-            for(Label lab : parent.getLabels()) {
-                l.add(lab.name());
-            }
-
-            neo4jAL.info("Parents Id labels = " + String.join(" ", l));
             throw new Neo4jBadRequestException(String.format("Can only attach a %s node to a %s node.", TagNode.getLabel() ,UseCaseNode.getLabel()),
                     ERROR_PREFIX + "ADDU1");
         }
 
-        TagNode tagNode = new TagNode(neo4jAL, tag, active, request);
+        TagNode tagNode = new TagNode(neo4jAL, tag, active, request, description);
         Node n = tagNode.createNode();
 
         // Create the relation from the use case to the tag

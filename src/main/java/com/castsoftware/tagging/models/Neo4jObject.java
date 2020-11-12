@@ -1,9 +1,16 @@
 package com.castsoftware.tagging.models;
 
 import com.castsoftware.tagging.database.Neo4jAL;
+import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jNoResult;
+import com.castsoftware.tagging.exceptions.neo4j.Neo4jQueryException;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterator;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class Neo4jObject {
 

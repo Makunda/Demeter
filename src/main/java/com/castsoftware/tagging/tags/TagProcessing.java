@@ -9,12 +9,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class TagProcessing {
-    // Properties 
+    // Properties
     public static final String ANCHOR_TAG_SET = Configuration.get("tag.anchors.tag_set");
     public static final String ANCHOR_TAG_SET_VALUE = Configuration.get("tag.anchors.tag_set.value");
 
     public static final String ANCHOR_RETURN = Configuration.get("tag.anchors.return");
     public static final String ANCHOR_RETURN_VALUE = Configuration.get("tag.anchors.return.label");
+
+    public static final String ANCHOR_COUNT_RETURN_VALUE = Configuration.get("tag.anchors.countReturn.label");
 
     public static final String LABEL_ANCHOR = Configuration.get("tag.anchors.label");
 
@@ -81,6 +83,32 @@ public class TagProcessing {
         }
 
         return request;
+    }
+
+    /**
+     * Replace the RETURN anchor by a COUNT_RETURN anchor. Remove every other anchors encountered.
+     * @param request
+     * @return
+     */
+    public static String forgeCountRequest(String request) throws Neo4JTemplateLanguageException {
+        Pattern p = Pattern.compile(ANCHOR_RETURN);
+        Matcher m = p.matcher(request);
+
+        if(m.find()) {
+            // find variable name
+            if(m.groupCount() < 1 )
+                throw new Neo4JTemplateLanguageException("Invalid count tag usage.", request, "TAGPxFCOR01");
+
+            String o = m.group(1);
+
+            // Forge new value
+            String replacer = ANCHOR_COUNT_RETURN_VALUE.replace("@", o);
+
+            // Modify original request;
+            request = request.replaceFirst(ANCHOR_RETURN, replacer);
+        }
+
+        return removeRemainingAnchors(request);
     }
 
     /**

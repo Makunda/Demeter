@@ -15,14 +15,18 @@ public class TagNode extends Neo4jObject{
     private static final String TAG_PROPERTY = Configuration.get("neo4j.nodes.t_tag_node.tag");
     private static final String REQUEST_PROPERTY = Configuration.get("neo4j.nodes.t_tag_node.request");
     private static final String ACTIVE_PROPERTY = Configuration.get("neo4j.nodes.t_tag_node.active");
+    private static final String DESCRIPTION_PROPERTY = Configuration.get("neo4j.nodes.t_use_case.description");
     private static final String ERROR_PREFIX = Configuration.get("neo4j.nodes.t_tag_node.error_prefix");
+    private static final String USECASE_TO_TAG_REL = Configuration.get("neo4j.relationships.use_case.to_tag");
 
     private static final String LABEL_ANCHOR = Configuration.get("tag.anchors.label");
+    private static final String COUNT_RETURN_VAL = Configuration.get("tag.anchors.countReturn.return_val");
 
     // Node properties
     private String tag;
     private String request;
     private Boolean active;
+    private String description;
 
     public static String getLabel() {
         return LABEL;
@@ -46,6 +50,10 @@ public class TagNode extends Neo4jObject{
         return active;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
     /**
      * Create a TagRequestNode Node object from a neo4j node
      * @param neo4jAL Neo4j Access Layer
@@ -62,22 +70,15 @@ public class TagNode extends Neo4jObject{
         try {
             String tag = (String) node.getProperty(TAG_PROPERTY);
 
-            boolean active = false;
-            try {
-                active = (Boolean) node.getProperty(UseCaseNode.getActiveProperty());
-
-            } catch (ClassCastException e) {
-                String boolAsString = (String) node.getProperty(UseCaseNode.getActiveProperty());
-                if(boolAsString.matches("true|false")) {
-                    active =  Boolean.parseBoolean(boolAsString);
-                }
-            }
-
-
+            boolean active = Neo4jObject.castPropertyToBoolean(node.getProperty(UseCaseNode.getActiveProperty()));
             String request = (String) node.getProperty(REQUEST_PROPERTY);
 
+            String description = "";
+            if(node.hasProperty(DESCRIPTION_PROPERTY))
+                description = (String) node.getProperty(DESCRIPTION_PROPERTY);
+
             // Initialize the node
-            TagNode trn = new TagNode(neo4jAL, tag, active, request);
+            TagNode trn = new TagNode(neo4jAL, tag, active, request, description);
             trn.setNode(node);
 
             return trn;
@@ -85,6 +86,7 @@ public class TagNode extends Neo4jObject{
             throw new Neo4jBadNodeFormatException(LABEL + " instantiation from node.", ERROR_PREFIX + "FROMN2");
         }
     }
+
 
     @Override
     protected Node findNode() throws Neo4jBadRequestException, Neo4jNoResult {
@@ -105,8 +107,8 @@ public class TagNode extends Neo4jObject{
 
     @Override
     public Node createNode() throws Neo4jBadRequestException, Neo4jNoResult {
-        String queryDomain = String.format("MERGE (p:%s { %s : \"%s\", %s : \"%s\", %s : %b }) RETURN p as node;",
-                LABEL, TAG_PROPERTY, tag, REQUEST_PROPERTY, request, ACTIVE_PROPERTY, this.active);
+        String queryDomain = String.format("MERGE (p:%s { %s : \"%s\", %s : \"%s\", %s : %b, %s : %s }) RETURN p as node;",
+                LABEL, TAG_PROPERTY, tag, REQUEST_PROPERTY, request, ACTIVE_PROPERTY, this.active, DESCRIPTION_PROPERTY, this.description);
         try {
             Result res = neo4jAL.executeQuery(queryDomain);
             Node n = (Node) res.next().get("node");
@@ -171,13 +173,56 @@ public class TagNode extends Neo4jObject{
             String forgedReq = TagProcessing.processApplicationContext(this.request, applicationLabel);
             forgedReq = TagProcessing.processAll(forgedReq);
 
-            neo4jAL.info("Request went from : " + this.request);
-            neo4jAL.info("To  : " + forgedReq);
-
             return neo4jAL.executeQuery(forgedReq, params);
         } catch (Neo4jQueryException | NullPointerException | Neo4JTemplateLanguageException e) {
             throw new Neo4jBadRequestException("The request failed to execute.", this.request, e, ERROR_PREFIX+"EXEC2");
         }
+    }
+
+    /**
+     * Launch the request agaist the Database, without tagging the
+     * @param applicationLabel
+     * @return
+     * @throws Neo4jBadRequestException
+     * @throws Neo4jNoResult
+     */
+    public Long forecastRequest(String applicationLabel) throws Neo4jBadRequestException, Neo4jNoResult {
+        if(this.getNode() == null)
+            throw new Neo4jBadRequestException("Cannot execute this action. Associated node does not exist.", ERROR_PREFIX+"EXEC1");
+
+        // Build parameters
+        Map<String,Object> params = new HashMap<>();
+        params.put( "tagName", this.tag );
+
+        try {
+            String forgedReq = TagProcessing.processApplicationContext(this.request, applicationLabel);
+            forgedReq = TagProcessing.forgeCountRequest(forgedReq);
+
+            neo4jAL.logInfo("Request went from : " + this.request);
+            neo4jAL.logInfo("To  : " + forgedReq);
+
+            Result res = neo4jAL.executeQuery(forgedReq, params);
+
+            Long numAffected = 0L;
+            if(res.hasNext()) {
+                numAffected = (Long) res.next().get(COUNT_RETURN_VAL);
+            }
+
+            return numAffected;
+
+        } catch (Neo4jQueryException | NullPointerException | Neo4JTemplateLanguageException e) {
+            throw new Neo4jBadRequestException("The request failed to execute.", this.request, e, ERROR_PREFIX+"EXEC2");
+        }
+    }
+
+    public UseCaseNode getParentUseCase() throws Neo4jBadRequestException, Neo4jNoResult, Neo4jBadNodeFormatException {
+        RelationshipType relName = RelationshipType.withName(USECASE_TO_TAG_REL);
+
+        Node n = getNode();
+        Relationship parentRel = n.getSingleRelationship(relName, Direction.INCOMING);
+        Node useCase = parentRel.getStartNode();
+
+        return UseCaseNode.fromNode(this.neo4jAL, useCase);
     }
 
     /**
@@ -211,10 +256,11 @@ public class TagNode extends Neo4jObject{
 
     }
 
-    public TagNode(Neo4jAL nal, String tag, Boolean active, String request) {
+    public TagNode(Neo4jAL nal, String tag, Boolean active, String request, String description) {
         super(nal);
         this.tag = tag;
         this.active = active;
         this.request = request;
+        this.description = description;
     }
 }

@@ -1,12 +1,15 @@
 C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\exceptions\file\FileIOException.java
+C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\procedures\StatisticsProcedure.java
 C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\models\ConfigurationNode.java
 C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\results\UseCasesMessage.java
 C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\config\Configuration.java
 C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\procedures\ConfigurationProcedure.java
+C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\controllers\StatisticsController.java
 C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\procedures\UseCaseProcedure.java
 C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\exceptions\neo4j\Neo4JTemplateLanguageException.java
 C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\procedures\UtilsProcedure.java
 C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\models\TagNode.java
+C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\statistics\Highlight.java
 C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\exceptions\neo4j\Neo4jBadRequestException.java
 C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\controllers\TagController.java
 C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\exceptions\neo4j\Neo4jQueryException.java
@@ -15,6 +18,7 @@ C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\t
 C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\exceptions\neo4j\Neo4jConnectionError.java
 C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\controllers\UtilsController.java
 C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\exceptions\file\FileCorruptedException.java
+C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\statistics\PreStatisticsLogger.java
 C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\procedures\TagProcedure.java
 C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\results\NodeResult.java
 C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\controllers\ConfigurationController.java
@@ -27,7 +31,9 @@ C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\t
 C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\statistics\FileLogger.java
 C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\exceptions\neo4j\Neo4jBadNodeFormatException.java
 C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\controllers\UseCaseController.java
+C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\models\StatisticNode.java
 C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\exceptions\file\FileNotFoundException.java
 C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\exceptions\ProcedureException.java
 C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\models\UseCaseNode.java
 C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\exceptions\neo4j\Neo4jNoResult.java
+C:\Users\hjo\Documents\Github\Tagging-Extension\src\main\java\com\castsoftware\tagging\statistics\HighlightCategory.java

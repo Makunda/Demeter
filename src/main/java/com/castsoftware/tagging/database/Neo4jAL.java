@@ -220,8 +220,14 @@ public class Neo4jAL {
         this.activeTransaction = true;
     }
 
-    public void info(String message) {
+    public void logInfo(String message) {
         log.info(message);
     }
 
+    public void logError(String message) {
+        log.error(message);
+    }
+    public void logError(String message, Throwable e) {
+        log.error(message, e);
+    }
 }
