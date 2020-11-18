@@ -41,7 +41,7 @@ public class DocumentController {
     public static Node addDocumentNode(Neo4jAL nal, String title, String request, Boolean active, String description, String documentDescription, Long useCaseId) throws Neo4jBadRequestException, Neo4jNoResult, Neo4jQueryException {
         Node parent = nal.getNodeById(useCaseId);
 
-        Label useCaseLabel = Label.label(DocumentNode.getLabel());
+        Label useCaseLabel = Label.label(UseCaseNode.getLabel());
 
         // Check if the parent is either a Configuration Node or another use case
         if(!parent.hasLabel(useCaseLabel)) {
@@ -82,6 +82,7 @@ public class DocumentController {
         }).filter(x -> x != null && x.getActive()).collect(Collectors.toList());
     }
 
-    
+
+
 
 }

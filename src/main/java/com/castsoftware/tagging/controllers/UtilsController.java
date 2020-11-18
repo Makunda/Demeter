@@ -23,7 +23,7 @@ import java.util.stream.Stream;
 public class UtilsController {
 
     private static final String ERROR_PREFIX = "UTICx";
-    private static final List<String> ALL_LABELS = Arrays.asList( ConfigurationNode.getLabel(), UseCaseNode.getLabel(), TagNode.getLabel(), StatisticNode.getLabel());
+    private static final List<String> ALL_LABELS = Arrays.asList( ConfigurationNode.getLabel(), UseCaseNode.getLabel(), TagNode.getLabel(), StatisticNode.getLabel(), DocumentNode.getLabel());
     private static final String USE_CASE_RELATIONSHIP = Configuration.get("neo4j.relationships.use_case.to_use_case");
     private static final String USE_CASE_TO_TAG_RELATIONSHIP = Configuration.get("neo4j.relationships.use_case.to_tag");
     private static final String TAG_RETURN_LABEL_VAL = Configuration.get("tag.anchors.return.return_val");
