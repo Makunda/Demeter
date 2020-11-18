@@ -4,7 +4,8 @@ import com.castsoftware.tagging.config.Configuration;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.tagging.models.StatisticNode;
-import org.json.simple.JSONObject;
+import com.castsoftware.tagging.statistics.Highlights.Highlight;
+import com.castsoftware.tagging.statistics.Highlights.HighlightCategory;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -37,7 +38,7 @@ public class PreStatisticsLogger implements AutoCloseable {
     }
 
     public void writeParagraph(String title, String para) {
-        buffer.append(String.format("\n-------------------------- %-36s --------------------------\n", title));
+        buffer.append(String.format("\n%s %-36s %s\n", "-".repeat(36), title, "-".repeat(50)));
         buffer.append(para);
     }
 
@@ -51,25 +52,27 @@ public class PreStatisticsLogger implements AutoCloseable {
 
         for(StatisticNode stn : statistics) {
             StringBuilder statRes = new StringBuilder();
-            statRes.append("-".repeat(40) + "\n");
+            statRes.append("-".repeat(124) + "\n");
             try {
-                statRes.append("Statistics on : " + stn.getName() + "\n");
+                statRes.append("\n\tStatistics on : ").append(stn.getName()).append("\n");
                 String description = stn.getDescription();
                 if(!description.isEmpty()) {
-                    statRes.append("Description : " + stn.getDescription() + "\n");
+                    statRes.append(" \tDescription : ")
+                            .append(stn.getDescription().replaceAll("\\n", "\n\t"))
+                            .append("\n\n");
                 }
 
-                statRes.append("Results of the statistic: \n");
+                statRes.append("\tResults of the statistics : \n");
                 String res = stn.executeStat(applicationContext);
                 statRes.append(res);
             }
-            catch (Neo4jBadRequestException | Neo4jNoResult e) {
-                statRes.append("An error occurred during the execution of this statistic.");
+            catch (Neo4jBadRequestException | Neo4jNoResult | Exception e) {
+                statRes.append("\nAn error occurred during the execution of this statistic.\n");
+                statRes.append(e.getMessage() + "\n");
             }
-
-            statRes.append("-".repeat(40) + "\n");
             buffer.append(statRes);
         }
+        buffer.append("-".repeat(124) + "\n");
 
         writeEndOfSection();
     }
@@ -85,10 +88,10 @@ public class PreStatisticsLogger implements AutoCloseable {
             if(description.isEmpty()) description = "Description not available.";
 
             // Forge the line
-            String line = String.format("- %s", h.getTitle());
-            line += "\nNumber of occurrence in the application : " + h.getFindings();
-            line += "\nUse case addressed : " + h.getUseCaseTitle();
-            line += "\nDescription : " + description;
+            String line = String.format("\t- %-18s | %s", h.getType(), h.getTitle());
+            line += "\n\n\tNumber of occurrence in the application : " + h.getFindings();
+            line += "\n\tUse case addressed : " + h.getUseCaseTitle();
+            line += "\n\tDescription : " + description;
             line += "\n\n";
 
             String value = sortedCases.getOrDefault(h.getCategory(), "\n");
@@ -98,7 +101,7 @@ public class PreStatisticsLogger implements AutoCloseable {
         }
 
         for(Map.Entry<HighlightCategory, String> entry : sortedCases.entrySet()) {
-            writeParagraph(entry.getKey().text, entry.getValue());
+            writeParagraph(entry.getKey().getText(), entry.getValue());
         }
 
         writeEndOfSection();

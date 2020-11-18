@@ -98,6 +98,22 @@ public class Neo4jAL {
         }
     }
 
+    public Result executeAtomicQuery(String query, Map<String,Object> params) throws Neo4jQueryException {
+        try (Transaction tx = db.beginTx()){
+            return tx.execute(query, params);
+        } catch (QueryExecutionException e) {
+            throw new Neo4jQueryException("Error while executing query with parameters.", query, e, ERROR_PREFIX + "EXQS1");
+        }
+    }
+
+    public Result executeAtomicQuery(String query) throws Neo4jQueryException {
+        try (Transaction tx = db.beginTx()){
+            return tx.execute(query);
+        } catch (QueryExecutionException e) {
+            throw new Neo4jQueryException("Error while executing query with parameters.", query, e, ERROR_PREFIX + "EXQS1");
+        }
+    }
+
 
     /**
      * Execute a list of query. Commit only if all query were executed without errors. Rollback otherwise.
@@ -197,11 +213,10 @@ public class Neo4jAL {
     public void commitTransaction() {
         this.transaction.commit();
     }
-
     public void rollbackTransaction() {
         this.transaction.rollback();
     }
-
+    public Transaction getTransaction() { return this.transaction; }
 
     public Boolean isOpen() {
         return this.activeTransaction;

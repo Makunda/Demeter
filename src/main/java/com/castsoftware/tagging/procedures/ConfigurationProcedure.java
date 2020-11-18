@@ -1,5 +1,6 @@
 package com.castsoftware.tagging.procedures;
 
+import com.castsoftware.tagging.controllers.TagController;
 import com.castsoftware.tagging.controllers.UtilsController;
 import com.castsoftware.tagging.database.Neo4jAL;
 import com.castsoftware.tagging.exceptions.ProcedureException;
@@ -59,7 +60,7 @@ public class ConfigurationProcedure {
             log.info("Launching forecast Procedure ..");
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
-            List<TagNode> lNode = UtilsController.getSelectedTag(nal, configurationName);
+            List<TagNode> lNode = TagController.getSelectedTags(nal, configurationName);
 
             int numReq = lNode.size();
 

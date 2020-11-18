@@ -64,7 +64,7 @@ public class TagNode extends Neo4jObject{
     public static TagNode fromNode(Neo4jAL neo4jAL, Node node) throws Neo4jBadNodeFormatException {
 
         if(!node.hasLabel(Label.label(LABEL))) {
-            throw new Neo4jBadNodeFormatException("The node does not contain the correct label. Expected to have : " + LABEL, ERROR_PREFIX + "FROMN1");
+            throw new Neo4jBadNodeFormatException(String.format("The node with Id '%d' does not contain the correct label. Expected to have : %s", node.getId(), LABEL), ERROR_PREFIX + "FROMN1");
         }
 
         try {
@@ -107,7 +107,7 @@ public class TagNode extends Neo4jObject{
 
     @Override
     public Node createNode() throws Neo4jBadRequestException, Neo4jNoResult {
-        String queryDomain = String.format("MERGE (p:%s { %s : \"%s\", %s : \"%s\", %s : %b, %s : %s }) RETURN p as node;",
+        String queryDomain = String.format("MERGE (p:%s { %s : \"%s\", %s : \"%s\", %s : %b, %s : \"%s\" }) RETURN p as node;",
                 LABEL, TAG_PROPERTY, tag, REQUEST_PROPERTY, request, ACTIVE_PROPERTY, this.active, DESCRIPTION_PROPERTY, this.description);
         try {
             Result res = neo4jAL.executeQuery(queryDomain);
@@ -180,7 +180,7 @@ public class TagNode extends Neo4jObject{
     }
 
     /**
-     * Launch the request agaist the Database, without tagging the
+     * Launch the request against the Database, without tagging the results
      * @param applicationLabel
      * @return
      * @throws Neo4jBadRequestException
@@ -198,9 +198,6 @@ public class TagNode extends Neo4jObject{
             String forgedReq = TagProcessing.processApplicationContext(this.request, applicationLabel);
             forgedReq = TagProcessing.forgeCountRequest(forgedReq);
 
-            neo4jAL.logInfo("Request went from : " + this.request);
-            neo4jAL.logInfo("To  : " + forgedReq);
-
             Result res = neo4jAL.executeQuery(forgedReq, params);
 
             Long numAffected = 0L;
@@ -215,6 +212,13 @@ public class TagNode extends Neo4jObject{
         }
     }
 
+    /**
+     * Get the parent use case attached to this TagNode
+     * @return
+     * @throws Neo4jBadRequestException
+     * @throws Neo4jNoResult
+     * @throws Neo4jBadNodeFormatException
+     */
     public UseCaseNode getParentUseCase() throws Neo4jBadRequestException, Neo4jNoResult, Neo4jBadNodeFormatException {
         RelationshipType relName = RelationshipType.withName(USECASE_TO_TAG_REL);
 

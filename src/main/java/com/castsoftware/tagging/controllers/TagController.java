@@ -2,22 +2,54 @@ package com.castsoftware.tagging.controllers;
 
 import com.castsoftware.tagging.config.Configuration;
 import com.castsoftware.tagging.database.Neo4jAL;
+import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.tagging.models.ConfigurationNode;
+import com.castsoftware.tagging.models.Neo4jObject;
 import com.castsoftware.tagging.models.TagNode;
 import com.castsoftware.tagging.models.UseCaseNode;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class TagController {
 
     private static final String ERROR_PREFIX = "TAGCx";
     private static final String USE_CASE_TO_TAG_RELATIONSHIP = Configuration.get("neo4j.relationships.use_case.to_tag");
+    private static final String USE_CASE_RELATIONSHIP = Configuration.get("neo4j.relationships.use_case.to_use_case");
+
+
+
+    /**
+     * Return all the activated node matching an "activated" use case route ( a path of use case, with the "Activate" parameter, set on "on")
+     * @param neo4jAL Neo4j access layer
+     * @param configurationName Name of the configuration to use
+     * @return The list of activated tags
+     * @throws Neo4jQueryException
+     * @throws Neo4jNoResult
+     * @throws Neo4jBadRequestException
+     */
+    public static List<TagNode> getSelectedTags(Neo4jAL neo4jAL, String configurationName) throws Neo4jQueryException, Neo4jNoResult, Neo4jBadRequestException {
+
+        Label tagNodeLabel = Label.label(TagNode.getLabel());
+        Set<Node> tags = UseCaseController.searchByLabelInActiveBranches(neo4jAL, configurationName, tagNodeLabel);
+
+
+        //TagNode.fromNode(neo4jAL, otherNode)
+        return tags.stream().map( x -> {
+            try {
+                return TagNode.fromNode(neo4jAL, x);
+            } catch (Neo4jBadNodeFormatException ex) {
+                neo4jAL.getLogger().error("Error during Tag Nodes discovery.", ex);
+                return null;
+            }
+        }).filter(x -> x != null && x.getActive()).collect(Collectors.toList());
+    }
+
+
 
     /**
      * Add a Tag Node and link it to a Use Case node.

@@ -1,4 +1,4 @@
-package com.castsoftware.tagging.statistics;
+package com.castsoftware.tagging.statistics.Highlights;
 
 public enum HighlightCategory {
     NOT_RELEVANT("Not relevant use cases"),
@@ -7,6 +7,10 @@ public enum HighlightCategory {
     LONG_TERM("Long term bets");
 
     String text;
+
+    public String getText() {
+        return this.text;
+    }
 
     HighlightCategory(String text) {
         this.text = text;

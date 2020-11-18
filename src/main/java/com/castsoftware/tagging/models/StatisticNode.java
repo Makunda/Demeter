@@ -16,7 +16,7 @@ public class StatisticNode extends Neo4jObject {
     private static final String ACTIVE_PROPERTY = Configuration.get("neo4j.nodes.t_statistic.active");
     private static final String DESCRIPTION_PROPERTY = Configuration.get("neo4j.nodes.t_statistic.description");
     private static final String ERROR_PREFIX = Configuration.get("neo4j.nodes.t_statistic.error_prefix");
-    private static final String CONF_TO_STAT_REL = Configuration.get("neo4j.relationships.configuration.to_stats");
+    private static final String CONF_TO_STAT_REL = Configuration.get("neo4j.relationships.use_case.to_stats");
 
     private static final String STAT_RETURN_STRING = Configuration.get("tag.anchors.statistics.return_as_string_val");
 
@@ -50,7 +50,7 @@ public class StatisticNode extends Neo4jObject {
     public static StatisticNode fromNode(Neo4jAL neo4jAL, Node node) throws Neo4jBadNodeFormatException {
 
         if(!node.hasLabel(Label.label(LABEL))) {
-            throw new Neo4jBadNodeFormatException("The node does not contain the correct label. Expected to have : " + LABEL, ERROR_PREFIX + "FROMN1");
+            throw new Neo4jBadNodeFormatException(String.format("The node with Id '%d' does not contain the correct label. Expected to have : %s", node.getId(), LABEL), ERROR_PREFIX + "FROMN1");
         }
 
         try {
@@ -148,22 +148,24 @@ public class StatisticNode extends Neo4jObject {
             String forgedReq = TagProcessing.processApplicationContext(this.request, applicationLabel);
             forgedReq = TagProcessing.processAll(forgedReq);
 
+            neo4jAL.logInfo("Processing statistic request : " + forgedReq);
+
             Result res =  neo4jAL.executeQuery(forgedReq);
 
             StringBuilder resultString = new StringBuilder();
 
             while(res.hasNext()) {
-                resultString.append(" - " + res.next().get(STAT_RETURN_STRING));
+                resultString.append("\t - " + res.next().get(STAT_RETURN_STRING));
                 resultString.append("\n");
             }
 
             return resultString.toString();
 
-        } catch (Neo4jQueryException | NullPointerException | Neo4JTemplateLanguageException e) {
+        } catch (Neo4jQueryException | Neo4JTemplateLanguageException | Exception e) {
+            neo4jAL.logError("An error occurred trying to process StatNode with ID" + this.getNodeId(), e);
             throw new Neo4jBadRequestException("The request failed to execute.", this.request, e, ERROR_PREFIX+"EXEC2");
         }
     }
-
 
 
     public StatisticNode(Neo4jAL neo4jAL, String name, String request, Boolean active, String description) {

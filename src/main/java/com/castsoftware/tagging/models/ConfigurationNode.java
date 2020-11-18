@@ -115,11 +115,7 @@ public class ConfigurationNode extends Neo4jObject {
     public void deleteNode() throws Neo4jBadRequestException {
         String queryDomain = String.format("MATCH (p:%s) WHERE ID(p)=%d DETACH DELETE p;",
                 LABEL, this.getNodeId());
-        try {
-            neo4jAL.executeQuery(queryDomain);
-        } catch (Neo4jQueryException e) {
-            throw new Neo4jBadRequestException(LABEL + " node deletion failed", queryDomain , e, ERROR_PREFIX+"DEL1");
-        }
+
     }
 
     public ConfigurationNode(Neo4jAL nal, String name) {

@@ -1,6 +1,8 @@
-package com.castsoftware.tagging.statistics;
+package com.castsoftware.tagging.statistics.Highlights;
 
 import com.castsoftware.tagging.config.Configuration;
+
+
 
 public class Highlight {
 
@@ -10,6 +12,7 @@ public class Highlight {
 
     private String title;
     private HighlightCategory category;
+    private HighlightType type;
     private String useCaseTitle;
     private String description;
     private Integer findings;
@@ -22,6 +25,10 @@ public class Highlight {
         this.title = title;
     }
 
+    public void setType(HighlightType type) {
+        this.type = type;
+    }
+
     public HighlightCategory getCategory() {
         return category;
     }
@@ -32,6 +39,10 @@ public class Highlight {
 
     public String getUseCaseTitle() {
         return useCaseTitle;
+    }
+
+    public HighlightType getType() {
+        return type;
     }
 
     public void setUseCaseTitle(String useCaseTitle) {
@@ -69,9 +80,9 @@ public class Highlight {
         }
     }
 
-    public Highlight(String title, String useCaseTitle, String description, Integer findings) {
+    public Highlight(String title, String useCaseTitle, String description, Integer findings, HighlightType type) {
         this.title = title;
-
+        this.type = type;
         this.useCaseTitle = useCaseTitle;
         this.description = description;
         this.findings = findings;

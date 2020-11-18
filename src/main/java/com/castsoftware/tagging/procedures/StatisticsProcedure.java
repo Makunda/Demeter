@@ -41,19 +41,19 @@ public class StatisticsProcedure {
      */
     @Procedure(value = "tagging.statistics.highlights", mode = Mode.WRITE)
     @Description("tagging.statistics.highlights( String ConfigurationName, String Application ) - Generate a pre-tagging statistics report.")
-    public Stream<OutputMessage> findHighlights( @Name(value = "Application") String applicationLabel) throws ProcedureException {
+    public Stream<OutputMessage> findHighlights(@Name(value = "Configuration") String configurationName , @Name(value = "Application") String applicationLabel) throws ProcedureException {
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
             long start = System.currentTimeMillis();
 
-            StatisticsController.writePreExecutionStatistics(nal, applicationLabel);
+            StatisticsController.writePreExecutionStatistics(nal, configurationName, applicationLabel);
 
             long end = System.currentTimeMillis();
             long elapsedTime = end - start;
 
             String message = String.format("Report generated in %d ms.", elapsedTime);
             return Stream.of(new OutputMessage(message));
-        } catch (Neo4jBadRequestException | Neo4jConnectionError | Exception  e) {
+        } catch (Neo4jBadRequestException | Neo4jConnectionError | Exception | Neo4jQueryException | Neo4jNoResult e) {
             ProcedureException ex = new ProcedureException(e);
             ex.logException(log);
             log.error("An error occurred during the execution of the request.", e);

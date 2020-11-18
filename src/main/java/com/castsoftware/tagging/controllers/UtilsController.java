@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class UtilsController {
@@ -77,83 +76,7 @@ public class UtilsController {
         return importer.load(path);
     }
 
-    /**
-     * Return all the activated node matching an "activated" use case route ( a path of use case, with the "Activate" parameter, set on "on")
-     * @param neo4jAL Neo4j access layer
-     * @param configurationName Name of the configuration to use
-     * @return The list of activated tags
-     * @throws Neo4jQueryException
-     * @throws Neo4jNoResult
-     * @throws Neo4jBadRequestException
-     */
-    public static List<TagNode> getSelectedTag(Neo4jAL neo4jAL, String configurationName) throws Neo4jQueryException, Neo4jNoResult, Neo4jBadRequestException {
-        String req = String.format("MATCH(o:%s) WHERE o.%s=\"%s\" RETURN o as res", ConfigurationNode.getLabel(), ConfigurationNode.getNameProperty(), configurationName);
 
-        Result result = neo4jAL.executeQuery(req);
-
-        if(!result.hasNext()) {
-            throw new Neo4jNoResult(String.format("The request to find Configuration node with name \"%s\" didn't produced any result.", configurationName), req, ERROR_PREFIX + "GATG1");
-        }
-
-        Node confNode = null;
-
-        try {
-            confNode = (Node) result.next().get("res");
-        } catch (NoSuchElementException | NullPointerException e) {
-            throw new Neo4jBadRequestException("Error the request didn't return results in a correct format.", req, e, "GATG2");
-        }
-
-        // Iterate over Active Use Case
-        Stack<Node> toVisit = new Stack<>();
-        Set<Node> visited = new HashSet<>();
-        Set<Node> tags = new HashSet<>();
-
-        toVisit.add(confNode);
-
-        while(!toVisit.isEmpty()) {
-            Node n = toVisit.pop();
-
-            // Check the activation value if useCase Node
-            if(n.hasLabel( Label.label(UseCaseNode.getLabel())) ) {
-                // Check the value for active property
-                boolean active = Neo4jObject.castPropertyToBoolean( n.getProperty(UseCaseNode.getActiveProperty()) );
-                boolean selected = Neo4jObject.castPropertyToBoolean(n.getProperty( UseCaseNode.getSelectedProperty()) );
-
-                neo4jAL.logInfo(String.format("Node with ID=%d ; Active : %b ; Selected : %b;", n.getId(), active, selected));
-
-                if(!active || !selected) {
-                    visited.add(n);
-                    continue;
-                }
-            }
-
-            // Check if UseCase Nodes are connected
-            for (Relationship rel : n.getRelationships(Direction.OUTGOING, RelationshipType.withName(USE_CASE_RELATIONSHIP))) {
-                Node otherNode = rel.getEndNode();
-                if(!visited.contains(otherNode)) {
-                    toVisit.add(otherNode);
-                }
-            }
-
-            // Check if Tag nodes are connected
-            for (Relationship rel : n.getRelationships(Direction.OUTGOING, RelationshipType.withName(USE_CASE_TO_TAG_RELATIONSHIP))) {
-                tags.add(rel.getEndNode());
-            }
-
-            visited.add(n);
-        }
-
-
-        //TagNode.fromNode(neo4jAL, otherNode)
-        return tags.stream().map( x -> {
-            try {
-                return TagNode.fromNode(neo4jAL, x);
-            } catch (Neo4jBadNodeFormatException ex) {
-                neo4jAL.getLogger().error("Error during Tag Nodes discovery.", ex);
-                return null;
-            }
-        }).filter(x -> x != null && x.getActive()).collect(Collectors.toList());
-    }
 
     /**
      * Execute the actual configuration
@@ -175,8 +98,8 @@ public class UtilsController {
 
         int nExecution = 0;
 
-        // Execute activated tag'requests
-        List<TagNode> tags = getSelectedTag(neo4jAL, configurationName);
+        // Execute activated tag's requests
+        List<TagNode> tags = TagController.getSelectedTags(neo4jAL, configurationName);
         for(TagNode n : tags) {
             try {
                 Result res = n.executeRequest(applicationLabel);

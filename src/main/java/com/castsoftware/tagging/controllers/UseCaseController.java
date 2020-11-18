@@ -4,12 +4,12 @@ import com.castsoftware.tagging.config.Configuration;
 import com.castsoftware.tagging.database.Neo4jAL;
 import com.castsoftware.tagging.exceptions.neo4j.*;
 import com.castsoftware.tagging.models.ConfigurationNode;
+import com.castsoftware.tagging.models.Neo4jObject;
+import com.castsoftware.tagging.models.TagNode;
 import com.castsoftware.tagging.models.UseCaseNode;
 import org.neo4j.graphdb.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -167,5 +167,79 @@ public class UseCaseController {
 
         return useCaseList;
     }
+
+
+    /**
+     * Search for nodes with a specific label inside the confirmation. The nodes with a matching label and present in an active branch will be returned.
+     * @param neo4jAL Neo4j Access Layer
+     * @param configurationName Name of the configuration to parse
+     * @param toFind Label of node
+     * @return The list of node that matched both conditions
+     * @throws Neo4jBadRequestException
+     * @throws Neo4jQueryException
+     * @throws Neo4jNoResult
+     */
+    public static Set<Node> searchByLabelInActiveBranches(Neo4jAL neo4jAL, String configurationName, Label toFind) throws Neo4jBadRequestException, Neo4jQueryException, Neo4jNoResult {
+        Label UseCaseLabel = Label.label(UseCaseNode.getLabel());
+        Set<Node> matchingNodes = new HashSet<>();
+
+        String req = String.format("MATCH(o:%s) WHERE o.%s=\"%s\" RETURN o as res", ConfigurationNode.getLabel(), ConfigurationNode.getNameProperty(), configurationName);
+        Result result = neo4jAL.executeQuery(req);
+
+        if(!result.hasNext()) {
+            throw new Neo4jNoResult(String.format("The request to find Configuration node with name \"%s\" didn't produced any result.", configurationName), req, ERROR_PREFIX + "GATG1");
+        }
+
+        Node confNode = null;
+
+        try {
+            confNode = (Node) result.next().get("res");
+        } catch (NoSuchElementException | NullPointerException e) {
+            throw new Neo4jBadRequestException("Error the request didn't return results in a correct format.", req, e, "GATG2");
+        }
+
+        // Iterate over Active Use Case
+        Stack<Node> toVisit = new Stack<>();
+        Set<Node> visited = new HashSet<>();
+
+        // Start with the configuration node
+        toVisit.add(confNode);
+
+        while(!toVisit.isEmpty()) {
+            Node n = toVisit.pop();
+
+            // Check the activation value if useCase Node
+            if(n.hasLabel( Label.label(UseCaseNode.getLabel())) ) {
+                // Check the value for active property
+                boolean active = Neo4jObject.castPropertyToBoolean( n.getProperty(UseCaseNode.getActiveProperty()) );
+                boolean selected = Neo4jObject.castPropertyToBoolean(n.getProperty( UseCaseNode.getSelectedProperty()) );
+
+                if(!active || !selected) {
+                    visited.add(n);
+                    continue;
+                }
+            }
+
+            // Check if UseCase Nodes are connected
+            for (Relationship rel : n.getRelationships(Direction.OUTGOING)) {
+                Node otherNode = rel.getEndNode();
+
+                if(otherNode.hasLabel(UseCaseLabel) || !visited.contains(otherNode)) {
+                    toVisit.add(otherNode);
+                }
+
+                if(otherNode.hasLabel(toFind)) {
+                    matchingNodes.add(rel.getEndNode());
+                }
+            }
+
+            visited.add(n);
+        }
+
+
+        //TagNode.fromNode(neo4jAL, otherNode)
+        return matchingNodes;
+    }
+
 
 }
