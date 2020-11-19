@@ -11,6 +11,7 @@ com\castsoftware\tagging\models\StatisticNode.class
 com\castsoftware\tagging\procedures\ConfigurationProcedure.class
 com\castsoftware\tagging\models\TagNode.class
 com\castsoftware\tagging\tools\DocumentItGenerator.class
+com\castsoftware\tagging\statistics\PostStatisticsLogger.class
 com\castsoftware\tagging\exceptions\neo4j\Neo4jBadRequestException.class
 com\castsoftware\tagging\procedures\StatisticsProcedure.class
 com\castsoftware\tagging\exceptions\TaggingException.class
@@ -40,6 +41,5 @@ com\castsoftware\tagging\exceptions\neo4j\Neo4jBadNodeFormatException.class
 com\castsoftware\tagging\exceptions\neo4j\Neo4JTemplateLanguageException.class
 com\castsoftware\tagging\config\Configuration.class
 com\castsoftware\tagging\controllers\DocumentController.class
-com\castsoftware\tagging\statistics\FileLogger.class
 com\castsoftware\tagging\statistics\Highlights\HighlightType.class
 com\castsoftware\tagging\exceptions\file\FileNotFoundException.class

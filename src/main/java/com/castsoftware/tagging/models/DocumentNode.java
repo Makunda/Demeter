@@ -219,9 +219,12 @@ public class DocumentNode extends Neo4jObject {
         if(this.getNode() == null)
             throw new Neo4jBadRequestException("Cannot execute this action. Associated node does not exist.", ERROR_PREFIX+"EXEC1");
 
+        String forgedReq = null;
+
         try {
-            String forgedReq = TagProcessing.processApplicationContext(this.request, applicationLabel);
-            forgedReq = TagProcessing.processAll(forgedReq);
+            forgedReq =  TagProcessing.processApplicationContext(this.request, applicationLabel);
+            forgedReq = TagProcessing.processReturn(forgedReq);
+            forgedReq = TagProcessing.removeRemainingAnchors(forgedReq);
 
             Result res = neo4jAL.executeQuery(forgedReq);
 
@@ -235,10 +238,11 @@ public class DocumentNode extends Neo4jObject {
                 }
             }
 
-            DocumentItGenerator.create(neo4jAL, title, description, toDocNode, null);
+            DocumentItGenerator.create(neo4jAL, applicationLabel, title, description, toDocNode);
             return toDocNode;
 
         } catch (Neo4jQueryException | NullPointerException | Neo4JTemplateLanguageException e) {
+            neo4jAL.logError("Cannot execute : " + forgedReq , e);
             throw new Neo4jBadRequestException("The request failed to execute.", this.request, e, ERROR_PREFIX+"EXEC2");
         }
     }

@@ -13,7 +13,7 @@ import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Map;
 
-public class FileLogger {
+public class PostStatisticsLogger {
 
     private static final String FILE_LOCATION = Configuration.get("statistics.file.path");
     private static final String FILE_EXTENSION = Configuration.get("statistics.file.extension");
@@ -25,15 +25,15 @@ public class FileLogger {
     private static final String OBJECT_TYPE_PROP = Configuration.get("imaging.node.object.type");
 
 
-    private static final String OBJECTPROPERTY_DESCRIPTION_PROP = Configuration.get("imaging.node.objectProperty.description");
+    private static final String OBJECT_PROPERTY_DESCRIPTION_PROP = Configuration.get("imaging.node.objectProperty.description");
     private static final String OBJECT_PROPERTY_RELATIONSHIP = Configuration.get("imaging.link.object_property");
     private static final String OBJECT_PROPERTY_RELATIONSHIP_VAL = Configuration.get("imaging.link.object_property.value");
 
 
-    private static FileLogger SINGLETON = new FileLogger();
+    private static PostStatisticsLogger SINGLETON = new PostStatisticsLogger();
     private Map<String, JSONArray> stats = new HashMap<>();
 
-    public static FileLogger getLogger() {
+    public static PostStatisticsLogger getLogger() {
         return SINGLETON;
     }
 
@@ -65,7 +65,6 @@ public class FileLogger {
                 JSONArray json = callersLinks.getOrDefault(relName, new JSONArray());
                 json.add(relProperties);
 
-
                 if(callersLinks.containsValue(json)) {
 
                 }
@@ -78,7 +77,7 @@ public class FileLogger {
         return JSONObject.toJSONString(callersLinks);
     }
 
-    public static JSONObject nodeToJOSNStats (Node n) {
+    public static JSONObject nodeToJSONStats(Node n) {
         JSONObject nodeDetails = new JSONObject();
         RelationshipType objectToPropertyRel = RelationshipType.withName(OBJECT_PROPERTY_RELATIONSHIP);
         Label objectLabel = Label.label(OBJECT_LABEL);
@@ -88,25 +87,7 @@ public class FileLogger {
         nodeDetails.putAll(properties);
 
         // Add properties
-        /*
-        Map<String, Object> objectProps = new HashMap<>();
-        for(Relationship rel : n.getRelationships(Direction.OUTGOING, objectToPropertyRel)) {
-            try {
-                Node otherNode = rel.getEndNode();
-                String propName = (String) otherNode.getProperty(OBJECTPROPERTY_DECRIPTION_PROP);
-                Object value = rel.getProperty(OBJECT_PROPERTY_RELATIONSHIP_VAL);
-                objectProps.put(propName, value);
-            } catch (Exception ignored) {
 
-            }
-        }
-        nodeDetails.putAll(objectProps); */
-
-        // Add Callers links
-        //nodeDetails.put("Callers Relationships", getLinkedObjectsStats(n, Direction.INCOMING));
-
-        // Add Callees links
-        //nodeDetails.put("Callees Relationships", getLinkedObjectsStats(n, Direction.OUTGOING));
 
         return nodeDetails;
     }
@@ -115,7 +96,10 @@ public class FileLogger {
 
     }
 
-
+    /**
+     * Write properties buffer to file.
+     * @throws IOException
+     */
     public void write() throws IOException {
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());
 
@@ -129,7 +113,7 @@ public class FileLogger {
 
     }
 
-    private FileLogger() {
+    private PostStatisticsLogger() {
     }
 
 }

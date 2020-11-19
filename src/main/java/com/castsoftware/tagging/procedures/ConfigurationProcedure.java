@@ -81,7 +81,7 @@ public class ConfigurationProcedure {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
             long start = System.currentTimeMillis();
 
-            int numExec = UtilsController.executeConfiguration(nal, configurationName, applicationLabel);
+            int numExec = ConfigurationController.executeConfiguration(nal, configurationName, applicationLabel);
 
             long end = System.currentTimeMillis();
             long elapsedTime = end - start;

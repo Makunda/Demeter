@@ -11,7 +11,7 @@ import com.castsoftware.tagging.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.tagging.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.tagging.models.*;
-import com.castsoftware.tagging.statistics.FileLogger;
+import com.castsoftware.tagging.statistics.PostStatisticsLogger;
 import org.neo4j.graphdb.*;
 
 import java.io.IOException;
@@ -26,7 +26,6 @@ public class UtilsController {
     private static final List<String> ALL_LABELS = Arrays.asList( ConfigurationNode.getLabel(), UseCaseNode.getLabel(), TagNode.getLabel(), StatisticNode.getLabel(), DocumentNode.getLabel());
     private static final String USE_CASE_RELATIONSHIP = Configuration.get("neo4j.relationships.use_case.to_use_case");
     private static final String USE_CASE_TO_TAG_RELATIONSHIP = Configuration.get("neo4j.relationships.use_case.to_tag");
-    private static final String TAG_RETURN_LABEL_VAL = Configuration.get("tag.anchors.return.return_val");
 
     private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd_HHmmss");
 
@@ -77,55 +76,6 @@ public class UtilsController {
     }
 
 
-
-    /**
-     * Execute the actual configuration
-     * @param neo4jAL Neo4J Access layer
-     * @param configurationName Name of the configuration to execute
-     * @param applicationLabel Label of the application on which the tag will be applied
-     * @throws ProcedureException
-     * @return Number of tag applied in the configuration
-     */
-    public static int executeConfiguration(Neo4jAL neo4jAL, String configurationName, String applicationLabel) throws Neo4jBadRequestException, Neo4jQueryException, Neo4jNoResult {
-        FileLogger fl  = FileLogger.getLogger();
-        List<Label> labels = neo4jAL.getAllLabels();
-
-        // Verify if the label is present in the database
-        if(!labels.contains(Label.label(applicationLabel))) {
-            String message = String.format("Cannot find label \"%s\" in the database", applicationLabel);
-            throw new Neo4jBadRequestException(message, ERROR_PREFIX + "EXEC1");
-        }
-
-        int nExecution = 0;
-
-        // Execute activated tag's requests
-        List<TagNode> tags = TagController.getSelectedTags(neo4jAL, configurationName);
-        for(TagNode n : tags) {
-            try {
-                Result res = n.executeRequest(applicationLabel);
-
-                while(res.hasNext()) {
-                    Map<String, Object> resMap = res.next();
-                    if(!resMap.containsKey(TAG_RETURN_LABEL_VAL)) continue;
-                    Node taggedNode = (Node) resMap.get(TAG_RETURN_LABEL_VAL);
-                    fl.addStatToTag(n.getTag(), FileLogger.nodeToJOSNStats(taggedNode));
-                }
-
-                neo4jAL.logInfo("Statistics saved for tag : " + n.getTag());
-                nExecution ++;
-            } catch (Exception | Neo4jNoResult | Neo4jBadRequestException err) {
-                neo4jAL.getLogger().error("An error occurred during Tag request execution. Tag with Node ID : " + n.getNodeId(), err);
-            }
-        }
-
-        try {
-            fl.write();
-        } catch (IOException err) {
-            neo4jAL.getLogger().error("Failed to save statistics during request execution.", err);
-        }
-
-        return nExecution;
-    }
 
     /**
      * Check all TagRequest present in the database. And return a report as a <code>String</code> indicating the percentage of working Queries.

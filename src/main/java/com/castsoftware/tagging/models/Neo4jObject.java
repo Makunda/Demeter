@@ -77,6 +77,12 @@ public abstract class Neo4jObject {
         return node.getId();
     }
 
+    /**
+     * Return the node linked to the Object
+     * @return <code>Node</code> node associated to the
+     * @throws Neo4jBadRequestException
+     * @throws Neo4jNoResult
+     */
     public Node getNode() throws Neo4jBadRequestException, Neo4jNoResult {
         if(this.node == null) {
             this.findNode();

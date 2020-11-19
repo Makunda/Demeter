@@ -21,6 +21,8 @@ public class TagNode extends Neo4jObject{
 
     private static final String LABEL_ANCHOR = Configuration.get("tag.anchors.label");
     private static final String COUNT_RETURN_VAL = Configuration.get("tag.anchors.countReturn.return_val");
+    private static final String RETURN_ANCHOR = Configuration.get("tag.anchors.return.return_val");
+
 
     // Node properties
     private String tag;
@@ -158,10 +160,11 @@ public class TagNode extends Neo4jObject{
     /**
      * Execute the request of the tag in a specific context.
      * @param applicationLabel The application that will be flagged by the request.
+     * @return The list of tagged node
      * @throws Neo4jBadRequestException
      * @throws Neo4jNoResult
      */
-    public Result executeRequest(String applicationLabel) throws Neo4jBadRequestException, Neo4jNoResult {
+    public List<Node> executeRequest(String applicationLabel) throws Neo4jBadRequestException, Neo4jNoResult {
         if(this.getNode() == null)
             throw new Neo4jBadRequestException("Cannot execute this action. Associated node does not exist.", ERROR_PREFIX+"EXEC1");
 
@@ -173,7 +176,15 @@ public class TagNode extends Neo4jObject{
             String forgedReq = TagProcessing.processApplicationContext(this.request, applicationLabel);
             forgedReq = TagProcessing.processAll(forgedReq);
 
-            return neo4jAL.executeQuery(forgedReq, params);
+            List<Node> nodeList = new ArrayList<>();
+            Result res = neo4jAL.executeQuery(forgedReq, params);
+
+            while(res.hasNext()) {
+                Node n = (Node) res.next().get(RETURN_ANCHOR);
+                nodeList.add(n);
+            }
+
+            return nodeList;
         } catch (Neo4jQueryException | NullPointerException | Neo4JTemplateLanguageException e) {
             throw new Neo4jBadRequestException("The request failed to execute.", this.request, e, ERROR_PREFIX+"EXEC2");
         }
