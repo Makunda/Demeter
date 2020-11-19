@@ -84,7 +84,13 @@ public class StatisticsController {
                 if(!doc.getActive()) continue;
 
                 Long numAffected = doc.forecastRequest(applicationContext);
-                String useCaseName = doc.getParentUseCase().getName();
+
+                UseCaseNode parent = doc.getParentUseCase();
+                String useCaseName = "Unknown";
+
+                if(parent != null) {
+                    useCaseName= parent.getName();
+                }
 
                 if(numAffected > 0) {
                     Highlight h = new Highlight(doc.getTitle(), useCaseName, doc.getDescription(), numAffected.intValue(), HighlightType.DOCUMENT);

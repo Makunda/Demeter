@@ -160,9 +160,13 @@ public class DocumentNode extends Neo4jObject {
 
         Node n = getNode();
         Relationship parentRel = n.getSingleRelationship(relName, Direction.INCOMING);
-        Node useCase = parentRel.getStartNode();
 
-        return UseCaseNode.fromNode(this.neo4jAL, useCase);
+        if(parentRel != null) {
+            Node useCase = parentRel.getStartNode();
+            return UseCaseNode.fromNode(this.neo4jAL, useCase);
+        } else {
+            return null;
+        }
     }
 
     /**

@@ -88,7 +88,7 @@ public class PreStatisticsLogger implements AutoCloseable {
             if(description.isEmpty()) description = "Description not available.";
 
             // Forge the line
-            String line = String.format("\t- %-18s | %s", h.getType(), h.getTitle());
+            String line = String.format("\t- %-18s | %s", h.getType().getText(), h.getTitle());
             line += "\n\n\tNumber of occurrence in the application : " + h.getFindings();
             line += "\n\tUse case addressed : " + h.getUseCaseTitle();
             line += "\n\tDescription : " + description;
