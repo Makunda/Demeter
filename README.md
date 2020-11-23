@@ -1,6 +1,6 @@
 # Demeter : Intelligence for CAST Imaging
 
-## Description 
+## Introduction 
 
 The Demeter is a project whose ambition is to industrialize the actions on Imaging.
 Make it easy to check for application configuration issues, quickly address a list of use cases and get statistics allowing you to get a deeper and clearer view of your application.
@@ -10,18 +10,28 @@ Furthermore, the extension includes a module to generate a report based on what 
 
 The Tagging-Extension comes as an extension for the Neo4j Database with its own enriched knowledge database.
 
+## Compatibility
+### CAST Imaging compatibility
+This extension was tested on CAST Imaging 2.0 & 2.1.0.  
+It necessitates the version 4.0 or superior of the Neo4j database 
+
 ## How to install the extension
 
-_For more information, please refer to the ["Install the extension" page](https://github.com/Makunda/Demeter/wiki/Install-the-extension)_
+### Configuration instructions
+_For more information, please refer to the ["Install the extension" page](https://github.com/CAST-Extend/com.castsoftware.uc.demeter/wiki/Install-the-extension)_
 
 ## How to use the extension
 
-_For more information, please refer to the ["Implemented functionalities" page](https://github.com/Makunda/Demeter/wiki/Implemented-functionalities)_
+_For more information, please refer to the ["Use the Demeter extension" page](https://github.com/CAST-Extend/com.castsoftware.uc.demeter/wiki/Use-the-Demeter-extension)_
 
-## Imaging supported version 
+## Known issues
+None
 
-The estension is supported by any version of Imaging >= 2.0.0-beta5. 
-It necessitates the version 4.0 or superior of the Neo4j database 
+## Release Notes
+### Version 2.0.0 
+- New knowledge base
+- DocumentIt support
+- Better report generation
 
 ## Contributing to the project 
 
