@@ -18,11 +18,11 @@ It necessitates the version 4.0 or superior of the Neo4j database
 ## How to install the extension
 
 ### Configuration instructions
-_For more information, please refer to the ["Install the extension" page](https://github.com/Makunda/Demeter/wiki/Install-the-extension)_
+_For more information, please refer to the ["Install the extension" page](https://github.com/CAST-Extend/com.castsoftware.uc.demeter/wiki/Install-the-extension)_
 
 ## How to use the extension
 
-_For more information, please refer to the ["Implemented functionalities" page](https://github.com/Makunda/Demeter/wiki/Implemented-functionalities)_
+_For more information, please refer to the ["Use the Demeter extension" page](https://github.com/CAST-Extend/com.castsoftware.uc.demeter/wiki/Use-the-Demeter-extension)_
 
 ## Known issues
 None
