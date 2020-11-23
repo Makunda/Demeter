@@ -12,7 +12,7 @@ The Tagging-Extension comes as an extension for the Neo4j Database with its own 
 
 ## Compatibility
 ### CAST Imaging compatibility
-This extension was tested on CAST Imaging 2.0 & 2.1.0
+This extension was tested on CAST Imaging 2.0 & 2.1.0.  
 It necessitates the version 4.0 or superior of the Neo4j database 
 
 ## How to install the extension
@@ -28,7 +28,10 @@ _For more information, please refer to the ["Implemented functionalities" page](
 None
 
 ## Release Notes
-- Version 2.0.0 New knowledge base, DocumentIt support.
+### Version 2.0.0 
+- New knowledge base
+- DocumentIt support
+- Better report generation
 
 ## Contributing to the project 
 
