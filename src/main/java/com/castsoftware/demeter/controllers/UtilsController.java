@@ -19,6 +19,7 @@
 
 package com.castsoftware.demeter.controllers;
 
+import com.castsoftware.demeter.exceptions.file.FileNotFoundException;
 import com.castsoftware.exporter.io.Exporter;
 import com.castsoftware.exporter.io.Importer;
 import com.castsoftware.exporter.results.OutputMessage;
@@ -44,6 +45,10 @@ public class UtilsController {
     private static final String USE_CASE_RELATIONSHIP = Configuration.get("neo4j.relationships.use_case.to_use_case");
     private static final String USE_CASE_TO_TAG_RELATIONSHIP = Configuration.get("neo4j.relationships.use_case.to_tag");
 
+    private static final String OBJECT_LABEL = Configuration.get("imaging.node.object.label");
+    private static final String OBJECT_TAG_PROPERTY = Configuration.get("imaging.link.object_property.tags");
+    private static final String TAG_PREFIX = Configuration.get("demeter.prefix.tags");
+
     private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd_HHmmss");
 
     /**
@@ -61,6 +66,43 @@ public class UtilsController {
         }
 
         return numDeleted;
+    }
+
+    /**
+     * Remove all the tags applied by the procedure
+     * @param neo4jAL Neo4J Access layer
+     * @return total number of node concerned by the removed
+     * @throws Neo4jQueryException If an error is thrown during the process
+     */
+    public static int removeTags(Neo4jAL neo4jAL) throws Neo4jQueryException {
+        // Retrieve every node label
+        int numDeleted = 0;
+
+        String forgedRemoveTags = String.format("MATCH (n:%1$s) WHERE EXISTS(n.%2$s) SET n.%2$s = [x IN n.%2$s WHERE NOT x CONTAINS '%3$s'] RETURN COUNT(n) as del", OBJECT_LABEL, OBJECT_TAG_PROPERTY, TAG_PREFIX);
+
+        Result res = neo4jAL.executeQuery(forgedRemoveTags);
+        if(res.hasNext()) {
+            Long deleted = (Long) res.next().get("del");
+            numDeleted = deleted.intValue();
+        }
+
+        return numDeleted;
+    }
+
+    /**
+     * Remove all the tags applied by the procedure
+     * @param outputDir The new directory used for reports generation
+     * @return total number of node deleted
+     * @throws Neo4jQueryException If an error is thrown during the process
+     */
+    public static String setOuputdir(String outputDir) throws FileNotFoundException {
+        // The the property
+        Configuration.set("pre_statistics.file.path", outputDir);
+
+        // Reload the configuration
+        Configuration.saveAndReload();
+
+        return Configuration.get("pre_statistics.file.path");
     }
 
     /**

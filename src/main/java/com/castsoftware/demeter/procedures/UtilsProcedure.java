@@ -19,6 +19,7 @@
 
 package com.castsoftware.demeter.procedures;
 
+import com.castsoftware.demeter.exceptions.file.FileNotFoundException;
 import com.castsoftware.exporter.results.OutputMessage;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.ProcedureException;
@@ -44,8 +45,8 @@ public class UtilsProcedure {
     @Context
     public Log log;
 
-    @Procedure(value = "tagging.export", mode = Mode.WRITE)
-    @Description("tagging.export() - Clean the configuration tree")
+    @Procedure(value = "demeter.export", mode = Mode.WRITE)
+    @Description("demeter.export() - Clean the configuration tree")
     public Stream<OutputMessage> exportConfiguration(@Name(value = "Path") String path, @Name(value= "Filename") String filename ) throws ProcedureException {
 
         try {
@@ -62,8 +63,8 @@ public class UtilsProcedure {
 
     }
 
-    @Procedure(value = "tagging.import", mode = Mode.WRITE)
-    @Description("tagging.import() - Clean the configuration tree")
+    @Procedure(value = "demeter.import", mode = Mode.WRITE)
+    @Description("demeter.import() - Clean the configuration tree")
     public Stream<OutputMessage> importConfiguration(@Name(value = "Path") String path ) throws ProcedureException {
 
         try {
@@ -81,8 +82,8 @@ public class UtilsProcedure {
     }
 
 
-    @Procedure(value = "tagging.clean", mode = Mode.WRITE)
-    @Description("tagging.clean() - Clean the configuration tree")
+    @Procedure(value = "demeter.clean", mode = Mode.WRITE)
+    @Description("demeter.clean() - Clean the configuration tree")
     public void cleanConfiguration() throws ProcedureException {
 
         try {
@@ -98,8 +99,47 @@ public class UtilsProcedure {
         }
     }
 
-    @Procedure(value = "tagging.check", mode = Mode.WRITE)
-    @Description("tagging.check() - Check if the provided requests are valid")
+    @Procedure(value = "demeter.removeTags", mode = Mode.WRITE)
+    @Description("demeter.removeTags() - Clean the application from demeter tags.")
+    public Stream<OutputMessage>  removeTags() throws ProcedureException {
+
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            nal.logInfo("Starting Tag cleaning..");
+
+            int numAffected = UtilsController.removeTags(nal);
+
+            return Stream.of(new OutputMessage(numAffected + " nodes were cleaned from Demeter Tags."));
+
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+            ProcedureException ex = new ProcedureException(e);
+            ex.logException(log);
+            throw ex;
+        }
+    }
+
+    @Procedure(value = "demeter.set.outputDirectory", mode = Mode.WRITE)
+    @Description("demeter.set.outputDirectory - Change the default output directory.")
+    public Stream<OutputMessage>  setOutputDir(@Name(value = "OutputDirectory") String outputDir) throws ProcedureException {
+
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            nal.logInfo("Changing the Output directory to :" + outputDir);
+
+            String newPath = UtilsController.setOuputdir(outputDir);
+
+            return Stream.of(new OutputMessage("Output directory was changed to : " + newPath));
+
+        } catch (Exception | Neo4jConnectionError | FileNotFoundException e) {
+            ProcedureException ex = new ProcedureException(e);
+            ex.logException(log);
+            throw ex;
+        }
+    }
+
+
+    @Procedure(value = "demeter.check", mode = Mode.WRITE)
+    @Description("demeter.check() - Check if the provided requests are valid")
     public Stream<OutputMessage> healthCheck(@Name(value = "ApplicationContext") String applicationContext ) throws ProcedureException {
 
         try {

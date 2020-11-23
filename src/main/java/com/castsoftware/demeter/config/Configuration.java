@@ -21,6 +21,7 @@ package com.castsoftware.demeter.config;
 
 import com.castsoftware.demeter.exceptions.file.FileNotFoundException;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -50,6 +51,15 @@ public class Configuration {
         }
 
         return null;
+    }
+
+    public static void saveAndReload() throws FileNotFoundException {
+        try {
+            properties.store(new FileOutputStream("procedure.properties"), null);
+            loadConfiguration();
+        } catch (IOException e) {
+            throw new FileNotFoundException("Error during property saving. File not found", "resources/procedure.properties", "CONFxSAVE1");
+        }
     }
 
     /**

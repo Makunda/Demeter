@@ -42,6 +42,8 @@ public class TagNode extends Neo4jObject{
     private static final String COUNT_RETURN_VAL = Configuration.get("tag.anchors.countReturn.return_val");
     private static final String RETURN_ANCHOR = Configuration.get("tag.anchors.return.return_val");
 
+    private static final String TAG_PREFIX = Configuration.get("demeter.prefix.tags");
+
 
     // Node properties
     private String tag;
@@ -187,9 +189,11 @@ public class TagNode extends Neo4jObject{
         if(this.getNode() == null)
             throw new Neo4jBadRequestException("Cannot execute this action. Associated node does not exist.", ERROR_PREFIX+"EXEC1");
 
+        String forgedTag  = TAG_PREFIX + this.tag;
+
         // Build parameters
         Map<String,Object> params = new HashMap<>();
-        params.put( "tagName", this.tag );
+        params.put( "tagName", forgedTag );
 
         try {
             String forgedReq = TagProcessing.processApplicationContext(this.request, applicationLabel);

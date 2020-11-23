@@ -47,8 +47,8 @@ public class TagProcedure {
     @Context
     public Log log;
 
-    @Procedure(value = "tagging.tag.add", mode = Mode.WRITE)
-    @Description("tagging.tag.add(String Tag, String AssociatedRequest, Boolean Activation, String Description, Long ParentId) - Add a tag node and link it to a use case node.")
+    @Procedure(value = "demeter.tag.add", mode = Mode.WRITE)
+    @Description("demeter.tag.add(String Tag, String AssociatedRequest, Boolean Activation, String Description, Long ParentId) - Add a tag node and link it to a use case node.")
     public Stream<NodeResult> addTagNode(@Name(value = "Tag") String tag,
                                    @Name(value= "AssociatedRequest")  String associatedRequest,
                                    @Name(value= "Activation") Boolean activation,

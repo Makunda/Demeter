@@ -54,8 +54,8 @@ public class StatisticsProcedure {
      * @return
      * @throws ProcedureException
      */
-    @Procedure(value = "tagging.statistics.highlights", mode = Mode.WRITE)
-    @Description("tagging.statistics.highlights( String ConfigurationName, String Application ) - Generate a pre-tagging statistics report.")
+    @Procedure(value = "demeter.statistics.highlights", mode = Mode.WRITE)
+    @Description("demeter.statistics.highlights( String ConfigurationName, String Application ) - Generate a pre-tagging statistics report.")
     public Stream<OutputMessage> findHighlights(@Name(value = "Configuration") String configurationName , @Name(value = "Application") String applicationLabel) throws ProcedureException {
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
@@ -76,8 +76,8 @@ public class StatisticsProcedure {
         }
     }
 
-    @Procedure(value = "tagging.statistics.add", mode = Mode.WRITE)
-    @Description("tagging.statistics.add(String Name, String request, Boolean Activation, String Description, Long ConfigurationId) - Add a Statistic node and link it to a use configuration node.")
+    @Procedure(value = "demeter.statistics.add", mode = Mode.WRITE)
+    @Description("demeter.statistics.add(String Name, String request, Boolean Activation, String Description, Long ConfigurationId) - Add a Statistic node and link it to a use configuration node.")
     public Stream<NodeResult> addTagNode(@Name(value = "Name") String name,
                                          @Name(value= "Request") String  request,
                                          @Name(value= "Active")  Boolean active,

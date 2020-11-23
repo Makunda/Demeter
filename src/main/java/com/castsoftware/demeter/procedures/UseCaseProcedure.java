@@ -50,8 +50,8 @@ public class UseCaseProcedure {
     @Context
     public Log log;
 
-    @Procedure(value = "tagging.useCases.add", mode = Mode.WRITE)
-    @Description("tagging.useCases.add( Long idParent, String name, Boolean active) - Add a use case to a configuration node or another usecase node.")
+    @Procedure(value = "demeter.useCases.add", mode = Mode.WRITE)
+    @Description("demeter.useCases.add( Long idParent, String name, Boolean active) - Add a use case to a configuration node or another usecase node.")
     public Stream<NodeResult> addUseCase(@Name(value="idParent") Long idParent, @Name(value="Name") String name, @Name(value="Active", defaultValue = "False") Boolean active ) throws ProcedureException {
 
         try {
@@ -72,8 +72,8 @@ public class UseCaseProcedure {
 
     }
 
-    @Procedure(value = "tagging.useCases.list", mode = Mode.WRITE)
-    @Description("tagging.useCases.list() - List all the use cases present.")
+    @Procedure(value = "demeter.useCases.list", mode = Mode.WRITE)
+    @Description("demeter.useCases.list() - List all the use cases present.")
     public Stream<UseCasesMessage> listUseCaseNodes() throws ProcedureException {
 
         try {
@@ -98,8 +98,8 @@ public class UseCaseProcedure {
      * @return The list of all node concerned by the modification
      * @throws ProcedureException
      */
-    @Procedure(value = "tagging.useCases.activate", mode = Mode.WRITE)
-    @Description("tagging.useCases.activate(Long idUseCase, Boolean Activation) - Set the activation of the use case node and all other nodes under it.")
+    @Procedure(value = "demeter.useCases.activate", mode = Mode.WRITE)
+    @Description("demeter.useCases.activate(Long idUseCase, Boolean Activation) - Set the activation of the use case node and all other nodes under it.")
     public Stream<UseCasesMessage> activateUseCase(@Name(value="Id") Long idUseCase, @Name(value="Activation") Boolean activation) throws ProcedureException {
 
         try {
@@ -115,8 +115,8 @@ public class UseCaseProcedure {
         }
     }
 
-    @Procedure(value = "tagging.useCases.globalActivation", mode = Mode.WRITE)
-    @Description("tagging.useCases.globalActivation(Boolean Activation) - Set the activation of every use case nodes.")
+    @Procedure(value = "demeter.useCases.globalActivation", mode = Mode.WRITE)
+    @Description("demeter.useCases.globalActivation(Boolean Activation) - Set the activation of every use case nodes.")
     public Stream<OutputMessage> globalActivationUseCase(@Name(value="Activation") Boolean activation) throws ProcedureException {
 
         try {
@@ -134,8 +134,8 @@ public class UseCaseProcedure {
         }
     }
 
-    @Procedure(value = "tagging.useCases.globalSelection", mode = Mode.WRITE)
-    @Description("tagging.useCases.globalSelection(Boolean Activation) - Set the Selection of every use case nodes.")
+    @Procedure(value = "demeter.useCases.globalSelection", mode = Mode.WRITE)
+    @Description("demeter.useCases.globalSelection(Boolean Activation) - Set the Selection of every use case nodes.")
     public Stream<OutputMessage> globalSelectionUseCase(@Name(value="Activation") Boolean activation) throws ProcedureException {
 
         try {

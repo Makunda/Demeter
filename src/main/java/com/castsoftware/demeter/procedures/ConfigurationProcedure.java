@@ -51,8 +51,8 @@ public class ConfigurationProcedure {
     @Context
     public Log log;
 
-    @Procedure(value = "tagging.createConfiguration", mode = Mode.WRITE)
-    @Description("tagging.createConfiguration(String name) - Create a configuration node")
+    @Procedure(value = "demeter.createConfiguration", mode = Mode.WRITE)
+    @Description("demeter.createConfiguration(String name) - Create a configuration node")
     public Stream<NodeResult> createConfiguration(@Name(value = "Name") String name) throws ProcedureException {
 
         try {
@@ -69,8 +69,8 @@ public class ConfigurationProcedure {
 
     }
 
-    @Procedure(value = "tagging.forecast", mode = Mode.WRITE)
-    @Description("tagging.forecast() - Get the number of request that will be executed")
+    @Procedure(value = "demeter.forecast", mode = Mode.WRITE)
+    @Description("demeter.forecast() - Get the number of request that will be executed")
     public Stream<OutputMessage> forecast(@Name(value = "Configuration") String configurationName) throws ProcedureException {
         List<Node> nodeList = new ArrayList<>();
 
@@ -92,8 +92,8 @@ public class ConfigurationProcedure {
         }
     }
 
-    @Procedure(value = "tagging.execute", mode = Mode.WRITE)
-    @Description("tagging.execute( String ConfigurationName, String Application ) - Execute a configuration node")
+    @Procedure(value = "demeter.execute", mode = Mode.WRITE)
+    @Description("demeter.execute( String ConfigurationName, String Application ) - Execute a configuration node")
     public Stream<OutputMessage> executeConfiguration(@Name(value = "Configuration") String configurationName, @Name(value = "Application") String applicationLabel) throws ProcedureException {
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
@@ -104,7 +104,7 @@ public class ConfigurationProcedure {
             long end = System.currentTimeMillis();
             long elapsedTime = end - start;
 
-            String message = String.format("%d tagging requests were executed in %d ms.", numExec, elapsedTime);
+            String message = String.format("%d demeter requests were executed in %d ms.", numExec, elapsedTime);
             return Stream.of(new OutputMessage(message));
         } catch (Neo4jBadRequestException | Neo4jNoResult | RuntimeException | Neo4jConnectionError | Neo4jQueryException e) {
             ProcedureException ex = new ProcedureException(e);
