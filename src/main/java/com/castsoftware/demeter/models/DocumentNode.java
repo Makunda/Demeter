@@ -194,15 +194,15 @@ public class DocumentNode extends Neo4jObject {
      * @return The list of node found in the database
      * @throws Neo4jBadRequestException
      */
-    public static List<StatisticNode> getAllNodes(Neo4jAL neo4jAL) throws Neo4jBadRequestException {
+    public static List<DocumentNode> getAllNodes(Neo4jAL neo4jAL) throws Neo4jBadRequestException {
         try {
-            List<StatisticNode> resList = new ArrayList<>();
+            List<DocumentNode> resList = new ArrayList<>();
             ResourceIterator<Node> resIt = neo4jAL.findNodes(Label.label(LABEL));
             while ( resIt.hasNext() ) {
                 try {
                     Node node = (Node) resIt.next();
 
-                    StatisticNode trn = StatisticNode.fromNode(neo4jAL, node);
+                    DocumentNode trn = DocumentNode.fromNode(neo4jAL, node);
                     trn.setNode(node);
 
                     resList.add(trn);

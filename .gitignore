@@ -23,3 +23,6 @@
 hs_err_pid*
 .idea/modules.xml
 .idea/Tagging-Extension.iml
+/target/
+/out/
+/.idea/
