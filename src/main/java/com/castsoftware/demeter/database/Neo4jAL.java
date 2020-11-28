@@ -33,6 +33,7 @@ import java.util.Map;
 public class Neo4jAL {
 
     private static final String ERROR_PREFIX = "NEOALx";
+    private static final String DEMETER_LOG_PREFIX = "Demeter :: ";
 
     private final Log log;
     private final GraphDatabaseService db;
@@ -238,13 +239,13 @@ public class Neo4jAL {
     }
 
     public void logInfo(String message) {
-        log.info(message);
+        log.info(DEMETER_LOG_PREFIX + message);
     }
 
     public void logError(String message) {
-        log.error(message);
+        log.error(DEMETER_LOG_PREFIX + message);
     }
     public void logError(String message, Throwable e) {
-        log.error(message, e);
+        log.error(DEMETER_LOG_PREFIX + message, e);
     }
 }
