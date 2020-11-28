@@ -118,9 +118,6 @@ public class GroupController {
         // Retrieve the First level 5 encountered
         Node oldLevel5Node = getLevel5(neo4jAL, nodeList);
 
-
-        Level5Node oldLevel5 = Level5Node.fromNode(neo4jAL, oldLevel5Node);
-
         // Update the old Level 5 and remove it is there no node linked to it
         String preReq = String.format("MATCH (n:%1$s:%2$s)-[:%3$s]->(o:%4$s) WHERE ID(n)=%5$s RETURN COUNT(o) as countNode;",
                 applicationContext, Level5Node.getLabel(), IMAGING_LEVEL_RELATIONSHIP, IMAGING_OBJECT_LABEL, oldLevel5Node.getId());
@@ -139,7 +136,7 @@ public class GroupController {
         // You cannot get it directly by looking at the relationships because there are several Level 4s linked to the same node.
 
         // remove ## for this level
-        String oldFullName = oldLevel5.getFullname();
+        String oldFullName = (String) oldLevel5Node.getProperty(Level5Node.getFullnameProperty());
         String[] splitArr = oldFullName.split("##");
         String level4FullName = String.join("##", Arrays.copyOf(splitArr, splitArr.length - 1));
 
@@ -162,14 +159,14 @@ public class GroupController {
         // Create new Level 5 and labelled them with application's name
         Label applicationLabel = Label.label(applicationContext);
 
-        String levelName = GENERATED_LEVEL_IDENTIFIER + forgedName;
+        String levelName = forgedName;
         Boolean concept = Boolean.FALSE;
         Boolean drillDown = Boolean.TRUE;
         String fullName = level4FullName + "##" + levelName;
-        String color = oldLevel5.getColor();
+        String color = (String) oldLevel5Node.getProperty(Level5Node.getColorProperty());
         Long level = 5L;
         Long count = ((Integer) nodeList.size()).longValue();
-        String shade = oldLevel5.getShade();
+        String shade = (String) oldLevel5Node.getProperty(Level5Node.getShadeProperty());
 
         Level5Node newLevel = new Level5Node(neo4jAL, levelName, concept, drillDown, fullName, color, level, count, shade);
         Node newLevelNode = newLevel.createNode();
