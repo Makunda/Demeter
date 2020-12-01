@@ -35,10 +35,10 @@ public class Level5Node extends Neo4jObject {
     private static final String LABEL = Configuration.get("imaging.node.level5.label");
     private static final String NAME_PROPERTY = Configuration.get("imaging.node.level5.name");
     private static final String CONCEPT_PROPERTY = Configuration.get("imaging.node.level5.concept");
-    private static final String DRILLDOWN_PROPERTY = Configuration.get("imaging.node.level5.alternateDrilldown");
-    private static final String FULLNAME_PROPERTY = Configuration.get("imaging.node.level5.fullName");
+    private static final String DRILL_DOWN_PROPERTY = Configuration.get("imaging.node.level5.alternateDrilldown");
+    private static final String FULL_NAME_PROPERTY = Configuration.get("imaging.node.level5.fullName");
     private static final String COLOR_PROPERTY = Configuration.get("imaging.node.level5.color");
-    private static final String LEVEL_PROPERTY = Configuration.get("imaging.node.level5.level5");
+    private static final String LEVEL_PROPERTY = Configuration.get("imaging.node.level5.level");
     private static final String COUNT_PROPERTY = Configuration.get("imaging.node.level5.count");
     private static final String SHADE_PROPERTY = Configuration.get("imaging.node.level5.shade");
 
@@ -49,8 +49,8 @@ public class Level5Node extends Neo4jObject {
     // Properties
     private String name;
     private Boolean concept;
-    private Boolean drilldown;
-    private String fullname;
+    private Boolean drillDown;
+    private String fullName;
     private String color;
     private Long level;
     private Long count;
@@ -66,11 +66,11 @@ public class Level5Node extends Neo4jObject {
     public static String getConceptProperty() {
         return CONCEPT_PROPERTY;
     }
-    public static String getDrilldownProperty() {
-        return DRILLDOWN_PROPERTY;
+    public static String getDrillDownProperty() {
+        return DRILL_DOWN_PROPERTY;
     }
-    public static String getFullnameProperty() {
-        return FULLNAME_PROPERTY;
+    public static String getFullNameProperty() {
+        return FULL_NAME_PROPERTY;
     }
     public static String getColorProperty() {
         return COLOR_PROPERTY;
@@ -92,11 +92,11 @@ public class Level5Node extends Neo4jObject {
     public Boolean getConcept() {
         return concept;
     }
-    public Boolean getDrilldown() {
-        return drilldown;
+    public Boolean getDrillDown() {
+        return drillDown;
     }
-    public String getFullname() {
-        return fullname;
+    public String getFullName() {
+        return fullName;
     }
     public String getColor() {
         return color;
@@ -111,11 +111,25 @@ public class Level5Node extends Neo4jObject {
         return shade;
     }
 
+    @Override
+    public String toString() {
+        return "Level5Node{" +
+                "name='" + name + '\'' +
+                ", concept=" + concept +
+                ", drilldown=" + drillDown +
+                ", fullname='" + fullName + '\'' +
+                ", color='" + color + '\'' +
+                ", level=" + level +
+                ", count=" + count +
+                ", shade='" + shade + '\'' +
+                '}';
+    }
+
     /**
      * Create a Level5 Node object from a neo4j node
      * @param neo4jAL Neo4j Access Layer
      * @param node Node associated to the object
-     * @return <code>ConfigurationNode</code> the object associated to the node.
+     * @return <code>Level5Node</code> the object associated to the node.
      * @throws Neo4jBadNodeFormatException If the conversion from the node failed due to a missing or malformed property.
      */
     public static Level5Node fromNode(Neo4jAL neo4jAL, Node node) throws Neo4jBadNodeFormatException {
@@ -127,18 +141,28 @@ public class Level5Node extends Neo4jObject {
             // Initialize the node
             String name = (String) node.getProperty(getNameProperty());
             Boolean concept = (Boolean) node.getProperty(getConceptProperty());
-            Boolean drilldown = (Boolean) node.getProperty(getDrilldownProperty());
-            String fullname = (String) node.getProperty(getFullnameProperty());
+            String fullname = (String) node.getProperty(getFullNameProperty());
             String color = (String) node.getProperty(getColorProperty());
             Long level = (Long) node.getProperty(getLevelProperty());
             Long count = (Long) node.getProperty(getCountProperty());
             String shade = (String) node.getProperty(getShadeProperty());
 
+            // optional properties
+            Boolean drilldown = false;
+            try{
+                drilldown = (Boolean) node.getProperty(getDrillDownProperty());
+            } catch (NotFoundException e) {
+                neo4jAL.logInfo("No 'drill down' property on level with ID="+node.getId());
+            }
+
             Level5Node level5Node = new Level5Node(neo4jAL, name, concept, drilldown, fullname, color, level, count, shade);
             level5Node.setNode(node);
 
+            neo4jAL.logInfo("Successfully created Level 5 from  node : " + level5Node.toString());
+
             return level5Node;
         } catch (NotFoundException | NullPointerException | ClassCastException e) {
+            neo4jAL.logError("Error during level 5 node creation...", e);
             throw new Neo4jBadNodeFormatException(LABEL + " instantiation from node.", ERROR_PREFIX + "FROMN2");
         }
     }
@@ -170,8 +194,8 @@ public class Level5Node extends Neo4jObject {
             // Document properties
             n.setProperty(getNameProperty(), getName());
             n.setProperty(getConceptProperty(), getConcept());
-            n.setProperty(getDrilldownProperty(), getDrilldown());
-            n.setProperty(getFullnameProperty(), getFullname());
+            n.setProperty(getDrillDownProperty(), getDrillDown());
+            n.setProperty(getFullNameProperty(), getFullName());
             n.setProperty(getColorProperty(), getColor());
             n.setProperty(getLevelProperty(), getLevel());
             n.setProperty(getCountProperty(), getCount());
@@ -185,6 +209,38 @@ public class Level5Node extends Neo4jObject {
         }
     }
 
+    /**
+     * Return the merge Request associated with this node properties
+     * @return The merge request as a String
+     * @throws Neo4jBadRequestException
+     * @throws Neo4jNoResult
+     */
+    public String toMergeRequest(String applicationContext) throws Neo4jBadRequestException, Neo4jNoResult {
+        Node n = getNode();
+
+        // The count property can't be part of the merge request, due to its variable number 'Count'
+        Map<String, Object> properties = n.getAllProperties();
+        properties.remove(Level5Node.getCountProperty());
+
+        // Add application label
+        String forgedLabel = applicationContext.concat(":").concat(LABEL);
+
+
+        return buildMergeRequest(forgedLabel, properties);
+    }
+
+    /**
+     * Create a backup node associated with this level node
+     * @param applicationContext
+     * @return
+     * @throws Neo4jBadRequestException
+     * @throws Neo4jNoResult
+     */
+    public Node createLevel5Backup(String applicationContext) throws Neo4jBadRequestException, Neo4jNoResult {
+        neo4jAL.logInfo("Creating a back up node ... ");
+        neo4jAL.logInfo("Merge cypher request generated : " + toMergeRequest(applicationContext));
+        return BackupNode.createBackup(neo4jAL, getNode(), toMergeRequest(applicationContext));
+    }
 
     /**
      * Return all Level5Node node in the database
@@ -229,31 +285,14 @@ public class Level5Node extends Neo4jObject {
         super(neo4jAL);
         this.name = name;
         this.concept = concept;
-        this.drilldown = drilldown;
-        this.fullname = fullname;
+        this.drillDown = drilldown;
+        this.fullName = fullname;
         this.color = color;
         this.level = level;
         this.count = count;
         this.shade = shade;
     }
 
-    public Level5Node(Neo4jAL neo4jAL, Map<String, Object> properties) throws Neo4jBadNodeFormatException {
-        super(neo4jAL);
 
-        try {
-            this.name = (String) properties.get(getNameProperty());
-            this.concept = (Boolean) properties.get(getConceptProperty());
-            this.drilldown = (Boolean) properties.get(getDrilldownProperty());
-            this.fullname = (String) properties.get("FullName");
-            this.color = (String) properties.get(getColorProperty());
-            this.level = (Long) properties.get(getLevelProperty());
-            this.count = (Long) properties.get(getCountProperty());
-            this.shade = (String) properties.get(getShadeProperty());
-
-        } catch (Exception e) {
-            throw new Neo4jBadNodeFormatException("Failed to instantiate Level5 node.", e, ERROR_PREFIX+"CONS1");
-        }
-
-    }
 
 }

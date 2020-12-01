@@ -19,15 +19,21 @@
 
 package com.castsoftware.demeter.models;
 
+import com.castsoftware.demeter.config.Configuration;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
 import org.neo4j.graphdb.Node;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 public abstract class Neo4jObject {
 
     private Node node = null;
     protected Neo4jAL neo4jAL;
+
 
     @Deprecated
     public String neo4jSanitize(String s) {
@@ -91,7 +97,7 @@ public abstract class Neo4jObject {
 
     /**
      * Return the node linked to the Object
-     * @return <code>Node</code> node associated to the
+     * @return <code>Node</code>  associated to the
      * @throws Neo4jBadRequestException
      * @throws Neo4jNoResult
      */
@@ -100,6 +106,46 @@ public abstract class Neo4jObject {
             this.findNode();
         }
         return this.node;
+    }
+
+    /**
+     * Build a merge request, based on the node label and its properties
+     * @param label Label of the node to create
+     * @param properties Properties to include in the merge request
+     * @return the request to execute as a String
+     */
+    public static String buildMergeRequest(String label, Map<String, Object> properties) {
+        String returnValName = Configuration.get("demeter.backup.node.node_gen_request.return_val");
+
+        List<String> valuesAsString = new ArrayList<>();
+        for(Map.Entry<String, Object> entry : properties.entrySet()) {
+            StringBuilder sb = new StringBuilder();
+
+            String propName = entry.getKey();
+            Object value = entry.getValue();
+
+            sb.append(propName).append(": ");
+
+            if(value instanceof Boolean) { // Handle boolean
+                String toInsert = (Boolean) value ? "True" : "False";
+                sb.append(toInsert);
+            } else if(value instanceof String) { // Handle String
+                sb.append("\\'").append(value).append("\\'");
+            } else {
+                sb.append(value);
+            }
+
+            valuesAsString.add(sb.toString());
+        }
+
+        StringBuilder returnSb = new StringBuilder();
+        String valAsString = String.join(", ", valuesAsString);
+        // Add Merge Value
+        returnSb.append("MERGE (o:").append(label).append(" { ");
+        returnSb.append(valAsString);
+        returnSb.append(" } RETURN o as ").append(returnValName).append(";");
+
+        return returnSb.toString();
     }
 
     /**

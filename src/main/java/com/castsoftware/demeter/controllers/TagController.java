@@ -38,8 +38,6 @@ public class TagController {
     private static final String USE_CASE_TO_TAG_RELATIONSHIP = Configuration.get("neo4j.relationships.use_case.to_tag");
     private static final String USE_CASE_RELATIONSHIP = Configuration.get("neo4j.relationships.use_case.to_use_case");
 
-
-
     /**
      * Return all the activated node matching an "activated" use case route ( a path of use case, with the "Activate" parameter, set on "on")
      * @param neo4jAL Neo4j access layer
