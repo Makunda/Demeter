@@ -63,7 +63,7 @@ public class ConfigurationProcedure {
             return Stream.of(new NodeResult(n));
         } catch (Neo4jBadRequestException | Neo4jNoResult | Exception | Neo4jConnectionError e) {
             ProcedureException ex = new ProcedureException(e);
-            ex.logException(log);
+            log.error("An error occurred while executing the procedure", e);
             throw ex;
         }
 
@@ -87,7 +87,7 @@ public class ConfigurationProcedure {
 
         } catch (Neo4jConnectionError | Neo4jQueryException | Neo4jNoResult | Neo4jBadRequestException | Exception e) {
             ProcedureException ex = new ProcedureException(e);
-            ex.logException(log);
+            log.error("An error occurred while executing the procedure", e);
             throw ex;
         }
     }
@@ -108,7 +108,7 @@ public class ConfigurationProcedure {
             return Stream.of(new OutputMessage(message));
         } catch (Neo4jBadRequestException | Neo4jNoResult | RuntimeException | Neo4jConnectionError | Neo4jQueryException e) {
             ProcedureException ex = new ProcedureException(e);
-            ex.logException(log);
+            log.error("An error occurred while executing the procedure", e);
             throw ex;
         }
     }

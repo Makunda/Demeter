@@ -119,12 +119,6 @@ public class ConfigurationController {
         }
 
 
-        /*try {
-            fl.write();
-        } catch (IOException err) {
-            neo4jAL.getLogger().error("Failed to save statistics during request execution.", err);
-        }*/
-
         return nExecution;
     }
 

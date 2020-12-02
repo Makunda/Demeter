@@ -67,7 +67,7 @@ public class DocumentController {
         }
 
         DocumentNode docNode = new DocumentNode(nal, title, request, active, description, documentDescription );
-        Node n = docNode.createNode();
+           Node n = docNode.createNode();
 
         // Create the relation to the use case
         parent.createRelationshipTo(n, RelationshipType.withName(USECASE_TO_DOC_REL));

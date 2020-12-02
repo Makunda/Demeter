@@ -30,6 +30,7 @@ import org.neo4j.graphdb.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class GroupController {
 
@@ -49,7 +50,7 @@ public class GroupController {
     // Class Conf
     private static final String ERROR_PREFIX = "GROCx";
 
-    private static void refreshLevelLinks(Neo4jAL neo4jAL, Node nodeLevel) throws Neo4jQueryException {
+    public static void refreshLevelLinks(Neo4jAL neo4jAL, Node nodeLevel) throws Neo4jQueryException {
         Label objectLabel = Label.label(IMAGING_OBJECT_LABEL);
         RelationshipType aggregatesRel = RelationshipType.withName(IMAGING_AGGREGATES);
         RelationshipType referenceRel = RelationshipType.withName(IMAGING_LEVEL_REFERENCES);
@@ -101,8 +102,6 @@ public class GroupController {
 
         }
 
-        RelationshipType relReferences = RelationshipType.withName(IMAGING_LEVEL_REFERENCES);
-
         // Link to other level 5
         for (Node toLink : toOtherLevel5) {
             nodeLevel.createRelationshipTo(toLink, referenceRel);
@@ -122,7 +121,7 @@ public class GroupController {
 
     }
 
-    private static Node refreshLevelCount(Neo4jAL neo4jAL, String applicationContext, Node levelNode) throws Neo4jQueryException {
+    public static Node refreshLevelCount(Neo4jAL neo4jAL, String applicationContext, Node levelNode) throws Neo4jQueryException {
         // Update the old Level 5 and remove it is there no node linked to it
         String forgedNumConnected = String.format("MATCH (n:%1$s:%2$s)-[:%3$s]->(o:%4$s) WHERE ID(n)=%5$s RETURN COUNT(o) as countNode;",
                 applicationContext, Level5Node.getLabel(), IMAGING_AGGREGATES, IMAGING_OBJECT_LABEL, levelNode.getId());
@@ -156,30 +155,38 @@ public class GroupController {
         return levelNode;
     }
 
-    private static Node getLevel5(Neo4jAL neo4jAL, List<Node> nodeList) throws Neo4jNoResult {
+    /**
+     * Get the level 5 present in the node list. Level are returned as a map, with the key corresponding to the level node and the value their frequency.
+     * The return map is sorted by ascending order.
+     * @param neo4jAL Neo4j Access Layer
+     * @param nodeList List of the node used to extract level5
+     * @return The map containing level5 nodes and their usage frequency as a Stream
+     * @throws Neo4jNoResult If no Level 5 were detected
+     */
+    private static Iterator<Map.Entry<Node, Integer>> getLevel5(Neo4jAL neo4jAL, List<Node> nodeList) throws Neo4jNoResult {
 
         RelationshipType relLevel = RelationshipType.withName(IMAGING_AGGREGATES);
 
         // Get Actual Level 5 and connections
-        int it = 0;
-        Node oldLevel5Node = null;
+        Map<Node, Integer> level5map = new HashMap<>();
 
-        do {
-            Node rObject = nodeList.get(it);
+        for( Node rObject : nodeList ) {
+
             Iterator<Relationship> oldRel = rObject.getRelationships(Direction.INCOMING, relLevel).iterator();
             neo4jAL.logInfo("Try to find level 5 node in node with id : " + rObject.getId());
             if (oldRel.hasNext()) {
-                oldLevel5Node = oldRel.next().getStartNode();
+                Node level5 = oldRel.next().getStartNode();
+
+                level5map.putIfAbsent(level5, 0);
+                level5map.compute(level5, (x, v) -> v + 1);
             }
+        }
 
-            it ++;
-        } while (oldLevel5Node == null && it < nodeList.size() - 1);
-
-        if(oldLevel5Node == null) {
+        if(level5map.size() == 0) {
             throw new Neo4jNoResult("Cannot find a valid Level 5 for the tag", "No relation detected between tagged node and Level5" , ERROR_PREFIX+"GROS1");
         }
 
-        return oldLevel5Node;
+        return level5map.entrySet().stream().sorted(Collections.reverseOrder(Map.Entry.comparingByValue())).iterator();
     }
 
     public static Node groupSingleTag(Neo4jAL neo4jAL, String applicationContext, String groupName, List<Node> nodeList) throws Neo4jNoResult, Neo4jQueryException, Neo4jBadNodeFormatException, Neo4jBadRequestException {
@@ -187,14 +194,26 @@ public class GroupController {
 
         neo4jAL.logInfo("### Size of nodeList : " + nodeList.size() );
 
-        // Retrieve the First level 5 encountered
-        Node oldLevel5Node = getLevel5(neo4jAL, nodeList);
+        Node oldLevel5Node = null;
+
+        // Retrieve most encountered Level 5
+        for (Iterator<Map.Entry<Node, Integer>> it = getLevel5(neo4jAL, nodeList); it.hasNext(); ) {
+            Map.Entry<Node, Integer> level5entry = it.next();
+
+            // Get first node. Corresponding to the most frequent one
+            if(oldLevel5Node == null) {
+                oldLevel5Node = level5entry.getKey();
+            }
+
+            // Save the level and their nodes
+            Level5Node level = Level5Node.fromNode(neo4jAL, level5entry.getKey());
+            level.createLevel5Backup(applicationContext);
+            neo4jAL.logInfo("Backed up Level5 node with name " + level.getName() + " used by " + level5entry.getValue() + " objects");
+        }
+
 
         neo4jAL.logInfo("Level 5 found, with Id : " + oldLevel5Node.getId());
 
-
-        Level5Node level5 = Level5Node.fromNode(neo4jAL, oldLevel5Node);
-        level5.createLevel5Backup(applicationContext);
 
         // Update the old Level 5 and remove it is there no node linked to it
         String preReq = String.format("MATCH (n:%1$s:%2$s)-[:%3$s]->(o:%4$s) WHERE ID(n)=%5$s RETURN COUNT(o) as countNode;",
@@ -240,7 +259,7 @@ public class GroupController {
         String levelName = forgedName;
         Boolean concept = Boolean.FALSE;
         Boolean drillDown = Boolean.TRUE;
-        String fullName = level4FullName + "##" + levelName;
+        String fullName = level4FullName + "##" + GENERATED_LEVEL_IDENTIFIER + levelName;
         String color = (String) oldLevel5Node.getProperty(Level5Node.getColorProperty());
         Long level = 5L;
         Long count = ((Integer) nodeList.size()).longValue();
@@ -250,7 +269,6 @@ public class GroupController {
         Node newLevelNode = newLevel.createNode();
         newLevelNode.addLabel(applicationLabel);
 
-        neo4jAL.logInfo("New Level node id :" + newLevelNode.getId());
 
         // Link new level to Level 4
         level4Node.createRelationshipTo(newLevelNode, aggregatesRel);
@@ -265,16 +283,12 @@ public class GroupController {
             }
         }
 
-        String createdRel = "To nodes with id : ";
         for (Node n : nodeList) {
             // Relink to new level
             Relationship r = newLevelNode.createRelationshipTo(n, aggregatesRel);
             // Change the level name to the new one of each node
             n.setProperty(IMAGING_OBJECT_LEVEL, forgedName);
-
-            createdRel += " to "+n.getId()+" rel with id : " + r.getId() +  " , ";
         }
-        neo4jAL.logInfo(createdRel);
 
         // Recompute for New and old
         refreshLevelLinks(neo4jAL, newLevelNode);

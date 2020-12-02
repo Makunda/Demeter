@@ -70,7 +70,7 @@ public class StatisticsProcedure {
             return Stream.of(new OutputMessage(message));
         } catch (Neo4jBadRequestException | Neo4jConnectionError | Exception | Neo4jQueryException | Neo4jNoResult e) {
             ProcedureException ex = new ProcedureException(e);
-            ex.logException(log);
+            log.error("An error occurred while executing the procedure", e);
             log.error("An error occurred during the execution of the request.", e);
             throw ex;
         }
@@ -93,7 +93,7 @@ public class StatisticsProcedure {
             return Stream.of(new NodeResult(n));
         } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult e) {
             ProcedureException ex = new ProcedureException(e);
-            ex.logException(log);
+            log.error("An error occurred while executing the procedure", e);
             throw ex;
         }
     }

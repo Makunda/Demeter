@@ -143,7 +143,7 @@ public abstract class Neo4jObject {
         // Add Merge Value
         returnSb.append("MERGE (o:").append(label).append(" { ");
         returnSb.append(valAsString);
-        returnSb.append(" } RETURN o as ").append(returnValName).append(";");
+        returnSb.append(" }) RETURN o as ").append(returnValName).append(";");
 
         return returnSb.toString();
     }

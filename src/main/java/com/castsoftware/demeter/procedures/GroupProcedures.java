@@ -62,7 +62,7 @@ public class GroupProcedures {
 
         } catch ( Exception | Neo4jConnectionError | Neo4jQueryException e) {
             ProcedureException ex = new ProcedureException(e);
-            ex.logException(log);
+            log.error("An error occurred while executing the procedure", e);
             throw ex;
         }
 

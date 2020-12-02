@@ -66,7 +66,7 @@ public class UseCaseProcedure {
 
         } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult e) {
             ProcedureException ex = new ProcedureException(e);
-            ex.logException(log);
+            log.error("An error occurred while executing the procedure", e);
             throw ex;
         }
 
@@ -86,7 +86,7 @@ public class UseCaseProcedure {
 
         } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException e) {
             ProcedureException ex = new ProcedureException(e);
-            ex.logException(log);
+            log.error("An error occurred while executing the procedure", e);
             throw ex;
         }
     }
@@ -110,7 +110,7 @@ public class UseCaseProcedure {
 
         } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException e) {
             ProcedureException ex = new ProcedureException(e);
-            ex.logException(log);
+            log.error("An error occurred while executing the procedure", e);
             throw ex;
         }
     }
@@ -129,7 +129,7 @@ public class UseCaseProcedure {
 
         } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
             ProcedureException ex = new ProcedureException(e);
-            ex.logException(log);
+            log.error("An error occurred while executing the procedure", e);
             throw ex;
         }
     }
@@ -148,7 +148,7 @@ public class UseCaseProcedure {
 
         } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
             ProcedureException ex = new ProcedureException(e);
-            ex.logException(log);
+            log.error("An error occurred while executing the procedure", e);
             throw ex;
         }
     }

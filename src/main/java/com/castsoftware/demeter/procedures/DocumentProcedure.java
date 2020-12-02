@@ -67,7 +67,7 @@ public class DocumentProcedure {
             return Stream.of(new NodeResult(n));
         } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult e) {
             ProcedureException ex = new ProcedureException(e);
-            ex.logException(log);
+            log.error("An error occurred while executing the procedure", e);
             throw ex;
         }
     }

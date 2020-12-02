@@ -57,7 +57,7 @@ public class UtilsProcedure {
             return UtilsController.exportConfiguration(nal, path, filename);
         } catch (Exception | Neo4jConnectionError | com.castsoftware.exporter.exceptions.ProcedureException e) {
             ProcedureException ex = new ProcedureException(e);
-            ex.logException(log);
+            log.error("An error occurred while executing the procedure", e);
             throw ex;
         }
 
@@ -75,7 +75,7 @@ public class UtilsProcedure {
             return UtilsController.importConfiguration(nal, path);
         } catch (Exception | Neo4jConnectionError | com.castsoftware.exporter.exceptions.ProcedureException e) {
             ProcedureException ex = new ProcedureException(e);
-            ex.logException(log);
+            log.error("An error occurred while executing the procedure", e);
             throw ex;
         }
 
@@ -94,7 +94,7 @@ public class UtilsProcedure {
 
         } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
             ProcedureException ex = new ProcedureException(e);
-            ex.logException(log);
+            log.error("An error occurred while executing the procedure", e);
             throw ex;
         }
     }
@@ -113,7 +113,7 @@ public class UtilsProcedure {
 
         } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
             ProcedureException ex = new ProcedureException(e);
-            ex.logException(log);
+            log.error("An error occurred while executing the procedure", e);
             throw ex;
         }
     }
@@ -132,7 +132,7 @@ public class UtilsProcedure {
 
         } catch (Exception | Neo4jConnectionError | FileNotFoundException e) {
             ProcedureException ex = new ProcedureException(e);
-            ex.logException(log);
+            log.error("An error occurred while executing the procedure", e);
             throw ex;
         }
     }
@@ -153,7 +153,7 @@ public class UtilsProcedure {
 
         } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
             ProcedureException ex = new ProcedureException(e);
-            ex.logException(log);
+            log.error("An error occurred while executing the procedure", e);
             throw ex;
         }
 

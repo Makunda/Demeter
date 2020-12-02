@@ -141,24 +141,22 @@ public class Level5Node extends Neo4jObject {
             // Initialize the node
             String name = (String) node.getProperty(getNameProperty());
             Boolean concept = (Boolean) node.getProperty(getConceptProperty());
-            String fullname = (String) node.getProperty(getFullNameProperty());
+            String fullName = (String) node.getProperty(getFullNameProperty());
             String color = (String) node.getProperty(getColorProperty());
             Long level = (Long) node.getProperty(getLevelProperty());
             Long count = (Long) node.getProperty(getCountProperty());
             String shade = (String) node.getProperty(getShadeProperty());
 
             // optional properties
-            Boolean drilldown = false;
+            Boolean drillDown = false;
             try{
-                drilldown = (Boolean) node.getProperty(getDrillDownProperty());
+                drillDown = (Boolean) node.getProperty(getDrillDownProperty());
             } catch (NotFoundException e) {
                 neo4jAL.logInfo("No 'drill down' property on level with ID="+node.getId());
             }
 
-            Level5Node level5Node = new Level5Node(neo4jAL, name, concept, drilldown, fullname, color, level, count, shade);
+            Level5Node level5Node = new Level5Node(neo4jAL, name, concept, drillDown, fullName, color, level, count, shade);
             level5Node.setNode(node);
-
-            neo4jAL.logInfo("Successfully created Level 5 from  node : " + level5Node.toString());
 
             return level5Node;
         } catch (NotFoundException | NullPointerException | ClassCastException e) {
@@ -236,7 +234,7 @@ public class Level5Node extends Neo4jObject {
      * @throws Neo4jBadRequestException
      * @throws Neo4jNoResult
      */
-    public Node createLevel5Backup(String applicationContext) throws Neo4jBadRequestException, Neo4jNoResult {
+    public Node createLevel5Backup(String applicationContext) throws Neo4jBadRequestException, Neo4jNoResult, Neo4jQueryException {
         neo4jAL.logInfo("Creating a back up node ... ");
         neo4jAL.logInfo("Merge cypher request generated : " + toMergeRequest(applicationContext));
         return BackupNode.createBackup(neo4jAL, getNode(), toMergeRequest(applicationContext));
@@ -254,7 +252,7 @@ public class Level5Node extends Neo4jObject {
             ResourceIterator<Node> resIt = neo4jAL.findNodes(Label.label(LABEL));
             while ( resIt.hasNext() ) {
                 try {
-                    Node node = (Node) resIt.next();
+                    Node node = resIt.next();
 
                     Level5Node trn = Level5Node.fromNode(neo4jAL, node);
                     trn.setNode(node);
