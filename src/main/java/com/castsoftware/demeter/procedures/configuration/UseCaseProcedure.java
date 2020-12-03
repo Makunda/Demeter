@@ -17,7 +17,7 @@
  *
  */
 
-package com.castsoftware.demeter.procedures;
+package com.castsoftware.demeter.procedures.configuration;
 
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.ProcedureException;
@@ -25,8 +25,8 @@ import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.demeter.controllers.UseCaseController;
-import com.castsoftware.demeter.models.UseCaseNode;
+import com.castsoftware.demeter.controllers.configuration.UseCaseController;
+import com.castsoftware.demeter.models.demeter.UseCaseNode;
 import com.castsoftware.demeter.results.NodeResult;
 import com.castsoftware.demeter.results.OutputMessage;
 import com.castsoftware.demeter.results.UseCasesMessage;

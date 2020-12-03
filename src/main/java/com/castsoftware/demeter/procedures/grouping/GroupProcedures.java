@@ -17,12 +17,13 @@
  *
  */
 
-package com.castsoftware.demeter.procedures;
+package com.castsoftware.demeter.procedures.grouping;
 
-import com.castsoftware.demeter.controllers.BackupController;
+import com.castsoftware.demeter.controllers.grouping.LevelGroupController;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.ProcedureException;
-import com.castsoftware.demeter.exceptions.neo4j.*;
+import com.castsoftware.demeter.exceptions.neo4j.Neo4jConnectionError;
+import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.results.NodeResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -33,7 +34,8 @@ import org.neo4j.procedure.*;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class BackupProcedure {
+public class GroupProcedures {
+
 
     @Context
     public GraphDatabaseService db;
@@ -44,27 +46,24 @@ public class BackupProcedure {
     @Context
     public Log log;
 
-    @Procedure(value = "demeter.undo.levels", mode = Mode.WRITE)
-    @Description("demeter.undo.levels(String ApplicationContext) - Add a tag node and link it to a use case node.")
-    public Stream<NodeResult> undoLevels(@Name(value = "ApplicationContext") String applicationContext) throws ProcedureException {
+    @Procedure(value = "demeter.group.levels", mode = Mode.WRITE)
+    @Description("demeter.group.levels(String applicationName) - Group the levels following Demeter tags applied")
+    public Stream<NodeResult> groupLevels(@Name(value = "ApplicationName") String applicationName) throws ProcedureException {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
-            String message = "Undo level procedure launched ... ";
-            nal.logInfo(message);
+            List<Node> nodes = LevelGroupController.groupAllLevels(nal, applicationName);
 
-            List<Node> recoveredLevel = BackupController.undoLevelGroup(nal, applicationContext);
-            String results = String.format("The procedure recreated %d level.", recoveredLevel.size());
-            nal.logInfo(results);
+            return nodes.stream().map(NodeResult::new);
 
-            return recoveredLevel.stream().map(NodeResult::new);
-
-
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult | Neo4jBadNodeFormatException  e) {
+        } catch ( Exception | Neo4jConnectionError | Neo4jQueryException e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
             throw ex;
         }
+
     }
+
+
 }

@@ -17,17 +17,18 @@
  *
  */
 
-package com.castsoftware.demeter.models;
+package com.castsoftware.demeter.models.demeter;
 
 import com.castsoftware.demeter.config.Configuration;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.neo4j.*;
+import com.castsoftware.demeter.models.Neo4jObject;
 import com.castsoftware.demeter.tags.TagProcessing;
 import org.neo4j.graphdb.*;
 
 import java.util.*;
 
-public class TagNode extends Neo4jObject{
+public class TagNode extends Neo4jObject {
 
     // Configuration properties
     private static final String LABEL = Configuration.get("neo4j.nodes.t_tag_node");
@@ -257,8 +258,11 @@ public class TagNode extends Neo4jObject{
         RelationshipType relName = RelationshipType.withName(USECASE_TO_TAG_REL);
 
         Node n = getNode();
-        Relationship parentRel = n.getSingleRelationship(relName, Direction.INCOMING);
-        Node useCase = parentRel.getStartNode();
+        Iterator<Relationship> relIt = n.getRelationships(Direction.INCOMING, relName).iterator();
+
+        assert relIt.hasNext() : "Use case node has no parent. Bad configuration formatting.";
+
+        Node useCase = relIt.next().getStartNode();
 
         return UseCaseNode.fromNode(this.neo4jAL, useCase);
     }

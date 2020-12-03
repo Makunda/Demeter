@@ -17,17 +17,17 @@
  *
  */
 
-package com.castsoftware.demeter.procedures;
+package com.castsoftware.demeter.procedures.configuration;
 
-import com.castsoftware.demeter.controllers.TagController;
+import com.castsoftware.demeter.controllers.configuration.TagController;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.ProcedureException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
-import com.castsoftware.demeter.controllers.ConfigurationController;
+import com.castsoftware.demeter.controllers.configuration.ConfigurationController;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.demeter.models.TagNode;
+import com.castsoftware.demeter.models.demeter.TagNode;
 import com.castsoftware.demeter.results.NodeResult;
 import com.castsoftware.demeter.results.OutputMessage;
 import org.neo4j.graphdb.GraphDatabaseService;

@@ -17,7 +17,7 @@
  *
  */
 
-package com.castsoftware.demeter.models;
+package com.castsoftware.demeter.models.demeter;
 
 import com.castsoftware.demeter.config.Configuration;
 import com.castsoftware.demeter.database.Neo4jAL;
@@ -25,6 +25,7 @@ import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.demeter.models.Neo4jObject;
 import org.neo4j.graphdb.*;
 
 import java.util.ArrayList;

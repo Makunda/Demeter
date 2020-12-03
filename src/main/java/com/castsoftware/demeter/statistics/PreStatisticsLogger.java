@@ -22,7 +22,7 @@ package com.castsoftware.demeter.statistics;
 import com.castsoftware.demeter.config.Configuration;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
-import com.castsoftware.demeter.models.StatisticNode;
+import com.castsoftware.demeter.models.demeter.StatisticNode;
 import com.castsoftware.demeter.statistics.Highlights.Highlight;
 import com.castsoftware.demeter.statistics.Highlights.HighlightCategory;
 

@@ -17,7 +17,7 @@
  *
  */
 
-package com.castsoftware.demeter.controllers;
+package com.castsoftware.demeter.controllers.configuration;
 
 import com.castsoftware.demeter.config.Configuration;
 import com.castsoftware.demeter.database.Neo4jAL;
@@ -25,8 +25,11 @@ import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.demeter.models.*;
 
+import com.castsoftware.demeter.models.demeter.DocumentNode;
+import com.castsoftware.demeter.models.demeter.StatisticNode;
+import com.castsoftware.demeter.models.demeter.TagNode;
+import com.castsoftware.demeter.models.demeter.UseCaseNode;
 import com.castsoftware.demeter.statistics.Highlights.Highlight;
 import com.castsoftware.demeter.statistics.Highlights.HighlightType;
 import com.castsoftware.demeter.statistics.PreStatisticsLogger;

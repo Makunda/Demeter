@@ -17,7 +17,7 @@
  *
  */
 
-package com.castsoftware.demeter.controllers;
+package com.castsoftware.demeter.controllers.configuration;
 
 public class PropertyController {
 }

@@ -17,14 +17,14 @@
  *
  */
 
-package com.castsoftware.demeter.controllers;
+package com.castsoftware.demeter.controllers.configuration;
 
 import com.castsoftware.demeter.config.Configuration;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.neo4j.*;
-import com.castsoftware.demeter.models.ConfigurationNode;
+import com.castsoftware.demeter.models.demeter.ConfigurationNode;
 import com.castsoftware.demeter.models.Neo4jObject;
-import com.castsoftware.demeter.models.UseCaseNode;
+import com.castsoftware.demeter.models.demeter.UseCaseNode;
 import org.neo4j.graphdb.*;
 
 import java.util.*;

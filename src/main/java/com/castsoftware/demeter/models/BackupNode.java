@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 public class BackupNode extends Neo4jObject{
 
@@ -38,6 +39,7 @@ public class BackupNode extends Neo4jObject{
     // Static Properties
     private static final String LABEL = Configuration.get("demeter.backup.node.label");
     private static final String NODE_GEN_REQUEST_PROPERTY = Configuration.get("demeter.backup.node.node_gen_request");
+    private static final String NODE_LABEL_PROPERTY = Configuration.get("demeter.backup.node.node_label");
 
     private static final String GEN_REQUEST_RETURN_VALUE= Configuration.get("demeter.backup.node.node_gen_request.return_val");
 
@@ -52,6 +54,7 @@ public class BackupNode extends Neo4jObject{
     // Properties
     private Neo4jAL neo4jAL;
     private String nodeGenReq;
+    private String nodeLabel;
 
 
     // Static getters
@@ -61,11 +64,17 @@ public class BackupNode extends Neo4jObject{
     public static String getNodeGenRequestProperty() {
         return NODE_GEN_REQUEST_PROPERTY;
     }
+    public static String getNodeLabelProperty() {
+        return  NODE_LABEL_PROPERTY;
+    }
 
     // Getters
     public String getNodeGenReq() {
         return nodeGenReq;
     }
+    public String getNodeLabel() {
+        return nodeLabel;
+    };
 
     /**
      * Create a Level5 Node object from a neo4j node
@@ -82,8 +91,9 @@ public class BackupNode extends Neo4jObject{
         try {
             // Initialize the node
             String nodeGenReq = (String) node.getProperty(getNodeGenRequestProperty());
+            String nodeLabel = (String) node.getProperty(getNodeLabelProperty());
 
-            BackupNode backupNode = new BackupNode(neo4jAL, nodeGenReq);
+            BackupNode backupNode = new BackupNode(neo4jAL, nodeGenReq, nodeLabel);
             backupNode.setNode(node);
 
             return backupNode;
@@ -113,12 +123,11 @@ public class BackupNode extends Neo4jObject{
     public Node createNode() throws Neo4jNoResult {
         // Merge existing node based on their GenerationRequest
         try {
-            Transaction tx = neo4jAL.getTransaction();
-            String forgedMergeReq = String.format("MERGE (o:%s { %s: '%s' }) RETURN o as node;", LABEL, getNodeGenRequestProperty(), getNodeGenReq());
+            Transaction tx = neo4jAL.getTransaction(); // Get actual transaction
 
-            Result res = tx.execute(forgedMergeReq);
-
-            Node n = (Node) res.next().get("node");
+            Node n = tx.createNode(Label.label(LABEL)); // Create node & add label
+            n.setProperty(getNodeGenRequestProperty(), getNodeGenReq());
+            n.setProperty(getNodeLabelProperty(), getNodeLabel());
 
             this.setNode(n);
             return n;
@@ -137,14 +146,6 @@ public class BackupNode extends Neo4jObject{
         RelationshipType copyRelationship = RelationshipType.withName(BACKUP_COPY_RELATION);
         Node backupNode = getNode();
 
-        // Generate the node
-        Result res = neo4jAL.executeQuery(getNodeGenReq());
-
-        // Throw error if no result returned by the query
-        if(!res.hasNext()) {
-            throw new Neo4jNoResult("The request supposed to generate the node produced no result.", getNodeGenReq(), ERROR_PREFIX+"GENB1");
-        }
-
         // Check if the backup node copies another node. If so, the node used will be the original one. Otherwise the node is recreated from the backup request
         Node referenceNode = null;
         Iterator<Relationship> relIt = backupNode.getRelationships(Direction.OUTGOING, copyRelationship).iterator();
@@ -154,6 +155,16 @@ public class BackupNode extends Neo4jObject{
         } else {
             // Get the node returned by the query
             try {
+                // Generate the node via the nodeGenRequest
+                String req = getNodeGenReq().replaceAll("\\\\'", "'");
+                neo4jAL.logInfo("Request to be executed : " + req);
+                Result res = neo4jAL.executeQuery(req);
+
+                // Throw error if no result returned by the query
+                if(!res.hasNext()) {
+                    throw new Neo4jNoResult("The request supposed to generate the node produced no result.", getNodeGenReq(), ERROR_PREFIX+"GENB1");
+                }
+
                 referenceNode = (Node) res.next().get(GEN_REQUEST_RETURN_VALUE);
             } catch (NullPointerException e) {
                 throw new Neo4jBadRequestException("The request supposed to generate does not return result labeled correctly'.", ERROR_PREFIX+"GENB2");
@@ -197,17 +208,29 @@ public class BackupNode extends Neo4jObject{
     /**
      * Create a backup node and backup provided node's relationships too.
      * @param neo4jAL Neo4j Access Layer
+     * @param applicationContext Application concerned by the backup
      * @param node Node to backup
      * @param backupRequest Associated backup request ( the request will be executed to recreate the node)
+     * @param nodesAffected Potentials nodes affected by this change, to avoid a full backup.
      * @return The backup node created
      */
-    public static Node createBackup(Neo4jAL neo4jAL, Node node, String backupRequest) throws Neo4jNoResult, Neo4jQueryException {
+    public static Node createBackup(Neo4jAL neo4jAL, String applicationContext, Node node, String backupRequest, List<Node> nodesAffected) throws Neo4jNoResult, Neo4jQueryException {
         RelationshipType backupRelName = RelationshipType.withName(BACKUP_NODES_RELATION);
         RelationshipType copyRelName = RelationshipType.withName(BACKUP_COPY_RELATION);
+        List<Long> affectedIds = nodesAffected.stream().map(Node::getId).collect(Collectors.toList());
+
+        List<String> labelList = new ArrayList<>();
+        // Retrieve node label
+        for(Label l : node.getLabels()) {
+            // Ignore application label
+            if(l.name().equals(applicationContext)) continue;
+            labelList.add(l.name());
+        }
 
         // Merge backup  node with associated request
-        BackupNode bkn = new BackupNode(neo4jAL, backupRequest);
-        Node bkNode = bkn.createNode();
+        BackupNode bkn = new BackupNode(neo4jAL, backupRequest, String.join(":", labelList));
+        Node bkNode = bkn.createNode(); // Create node
+        bkNode.addLabel(Label.label(applicationContext)); // Application context to the node as a label
 
         int numCreatedRel = 0;
 
@@ -216,17 +239,18 @@ public class BackupNode extends Neo4jObject{
 
         // Merge backup links
         for(Relationship rel : node.getRelationships()) {
-            if(rel.isType(backupRelName)) continue;
+            if(rel.isType(backupRelName) || rel.isType(copyRelName)) continue;
 
             String relTypeString = rel.getType().toString();
             Node otherNode = rel.getOtherNode(node);
+
+            // Check if the node id is part of potential candidates id.
+            if(!affectedIds.contains(otherNode.getId())) continue; // Ignore node not part of potential affected candidates
 
             // Create relationship between node and newly created backup node
             Relationship createdRel = null;
             String mergeRel = null;
             if(rel.getStartNodeId() == node.getId()) { // Outgoing rel
-                if(rel.getEndNodeId() == node.getId()) continue; // ignore cyclical
-
                 mergeRel = String.format("MATCH (n),(m) WHERE ID(n)=%d AND ID(m)=%d MERGE (n)-[r:%s]->(m) RETURN r as rel;", bkNode.getId(), otherNode.getId(), BACKUP_NODES_RELATION);
             } else { //  Incoming rel
                 mergeRel = String.format("MATCH (n),(m) WHERE ID(n)=%d AND ID(m)=%d MERGE (m)-[r:%s]->(n) RETURN r as rel;", bkNode.getId(), otherNode.getId(), BACKUP_NODES_RELATION);
@@ -234,21 +258,18 @@ public class BackupNode extends Neo4jObject{
 
             // Execute merge and get rel
             Result res = neo4jAL.executeQuery(mergeRel);
-
-            if(!res.hasNext()) {
+            if(!res.hasNext()) { // Is no result throw an error
                 throw new Neo4jNoResult("The request creating relationship produced no result.", mergeRel, ERROR_PREFIX+"CREA1");
             }
 
-            createdRel = (Relationship) res.next().get("rel");
-
             // Add relationship properties
+            createdRel = (Relationship) res.next().get("rel");
             createdRel.setProperty(BACKUP_NODES_OLD_REL_NAME, relTypeString);
 
             // TODO : Handle other properties for the relationship
         }
 
         neo4jAL.logInfo(numCreatedRel +  " Relations were backed up.");
-
         return bkNode;
     }
 
@@ -280,6 +301,33 @@ public class BackupNode extends Neo4jObject{
         }
     }
 
+    /**
+     * Get all backup node for a specific application and of a specific label
+     * @param neo4jAL Neo4j Access Layer
+     * @param applicationContext Application concerned by the backup
+     * @param nodeLabel Label to search in backup
+     * @return The list of Backup node matching the request
+     * @throws Neo4jBadRequestException If the request to retrieve the nodes failed
+     * @throws Neo4jBadNodeFormatException  If backup nodes aren't in the correct format
+     */
+    public static List<BackupNode> getApplicationBackupNode(Neo4jAL neo4jAL, String applicationContext, String nodeLabel) throws Neo4jBadRequestException, Neo4jBadNodeFormatException {
+        String forgedLabel = LABEL + ":" + applicationContext;
+        String bkAppQuery = String.format("MATCH (p:%s) WHERE p.%s='%s' RETURN p as node;",
+                forgedLabel, BackupNode.getNodeLabelProperty(), nodeLabel);
+        List<BackupNode> resNodes = new ArrayList<>();
+        try {
+            Result res = neo4jAL.executeQuery(bkAppQuery);
+            while(res.hasNext()) {
+                Node bkn = (Node) res.next().get("node");
+                resNodes.add(BackupNode.fromNode(neo4jAL, bkn));
+            }
+        } catch (Neo4jQueryException e) {
+            throw new Neo4jBadRequestException(LABEL + " nodes retrieving by label failed", bkAppQuery , e, ERROR_PREFIX+"DEL1");
+        }
+
+        return resNodes;
+    }
+
     @Override
     public void deleteNode() throws Neo4jBadRequestException {
         String queryDomain = String.format("MATCH (p:%s) WHERE ID(p)=%d DETACH DELETE p;",
@@ -291,9 +339,10 @@ public class BackupNode extends Neo4jObject{
         }
     }
 
-    public BackupNode(Neo4jAL neo4jAL, String nodeGenReq) {
+    public BackupNode(Neo4jAL neo4jAL, String nodeGenReq, String nodeLabel) {
         super(neo4jAL);
         this.neo4jAL = neo4jAL;
         this.nodeGenReq = nodeGenReq;
+        this.nodeLabel = nodeLabel;
     }
 }

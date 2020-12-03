@@ -17,16 +17,16 @@
  *
  */
 
-package com.castsoftware.demeter.procedures;
+package com.castsoftware.demeter.procedures.configuration;
 
-import com.castsoftware.demeter.controllers.DocumentController;
+import com.castsoftware.demeter.controllers.configuration.TagController;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.ProcedureException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.demeter.models.TagNode;
+import com.castsoftware.demeter.models.demeter.TagNode;
 import com.castsoftware.demeter.results.NodeResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -36,7 +36,7 @@ import org.neo4j.procedure.*;
 
 import java.util.stream.Stream;
 
-public class DocumentProcedure {
+public class TagProcedure {
 
     @Context
     public GraphDatabaseService db;
@@ -47,23 +47,21 @@ public class DocumentProcedure {
     @Context
     public Log log;
 
-    @Procedure(value = "demeter.document.add", mode = Mode.WRITE)
-    @Description("demeter.document.add(String Tag, String AssociatedRequest, Boolean Activation, String Description, Long ParentId) - Add a tag node and link it to a use case node.")
-    public Stream<NodeResult> addTagNode(@Name(value = "Title") String title,
-                                         @Name(value= "Request")  String request,
-                                         @Name(value= "Activation") Boolean activation,
-                                         @Name(value= "Description")  String description,
-                                         @Name(value= "DocumentDescription")  String documentDescription,
-                                         @Name(value= "ParentId")  Long parentId) throws ProcedureException {
+    @Procedure(value = "demeter.tag.add", mode = Mode.WRITE)
+    @Description("demeter.tag.add(String Tag, String AssociatedRequest, Boolean Activation, String Description, Long ParentId) - Add a tag node and link it to a use case node.")
+    public Stream<NodeResult> addTagNode(@Name(value = "Tag") String tag,
+                                   @Name(value= "AssociatedRequest")  String associatedRequest,
+                                   @Name(value= "Activation") Boolean activation,
+                                   @Name(value= "Description")  String description,
+                                   @Name(value= "ParentId")  Long parentId) throws ProcedureException {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
-            String message = String.format("Adding a %s node with parameters { 'Title' : '%s', 'Activation' : %s, 'Request' : '%s', 'Description' : '%s', 'DocumentDescription' : '%s' }.",
-                    TagNode.getLabel(), title, activation, request, description, documentDescription);
+            String message = String.format("Adding a %s node with parameters { 'Tag' : '%s', 'Activation' : %s, 'Request' : '%s' }.", TagNode.getLabel(), tag, activation, associatedRequest);
             nal.logInfo(message);
 
-            Node n =  DocumentController.addDocumentNode(nal, title, request, activation, description, documentDescription, parentId);
+            Node n =  TagController.addTagNode(nal, tag, activation, associatedRequest, description, parentId);
             return Stream.of(new NodeResult(n));
         } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult e) {
             ProcedureException ex = new ProcedureException(e);

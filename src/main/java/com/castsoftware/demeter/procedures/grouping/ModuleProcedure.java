@@ -17,16 +17,13 @@
  *
  */
 
-package com.castsoftware.demeter.procedures;
+package com.castsoftware.demeter.procedures.grouping;
 
-import com.castsoftware.demeter.controllers.TagController;
+import com.castsoftware.demeter.controllers.grouping.ModuleGroupController;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.ProcedureException;
-import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jConnectionError;
-import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.demeter.models.TagNode;
 import com.castsoftware.demeter.results.NodeResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -34,9 +31,11 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.*;
 
+import java.util.List;
 import java.util.stream.Stream;
 
-public class TagProcedure {
+public class ModuleProcedure {
+
 
     @Context
     public GraphDatabaseService db;
@@ -47,27 +46,23 @@ public class TagProcedure {
     @Context
     public Log log;
 
-    @Procedure(value = "demeter.tag.add", mode = Mode.WRITE)
-    @Description("demeter.tag.add(String Tag, String AssociatedRequest, Boolean Activation, String Description, Long ParentId) - Add a tag node and link it to a use case node.")
-    public Stream<NodeResult> addTagNode(@Name(value = "Tag") String tag,
-                                   @Name(value= "AssociatedRequest")  String associatedRequest,
-                                   @Name(value= "Activation") Boolean activation,
-                                   @Name(value= "Description")  String description,
-                                   @Name(value= "ParentId")  Long parentId) throws ProcedureException {
+    @Procedure(value = "demeter.group.modules", mode = Mode.WRITE)
+    @Description("demeter.group.modules(String applicationName) - Group the modules following Demeter tags applied")
+    public Stream<NodeResult> groupModules(@Name(value = "ApplicationName") String applicationName) throws ProcedureException {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
-            String message = String.format("Adding a %s node with parameters { 'Tag' : '%s', 'Activation' : %s, 'Request' : '%s' }.", TagNode.getLabel(), tag, activation, associatedRequest);
-            nal.logInfo(message);
+            List<Node> nodes = ModuleGroupController.groupAllModules(nal, applicationName);
 
-            Node n =  TagController.addTagNode(nal, tag, activation, associatedRequest, description, parentId);
-            return Stream.of(new NodeResult(n));
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult e) {
+            return nodes.stream().map(NodeResult::new);
+
+        } catch ( Exception | Neo4jConnectionError | Neo4jQueryException e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
             throw ex;
         }
+
     }
 
 }
