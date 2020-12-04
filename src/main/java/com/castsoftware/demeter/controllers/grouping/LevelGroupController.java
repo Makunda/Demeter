@@ -29,6 +29,9 @@ import com.castsoftware.demeter.models.imaging.Level5Node;
 import com.castsoftware.demeter.models.imaging.ModuleNode;
 import org.neo4j.graphdb.*;
 
+import javax.sql.rowset.CachedRowSet;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -112,13 +115,6 @@ public class LevelGroupController {
             fromLink.createRelationshipTo(nodeLevel, referenceRel);
         }
 
-        // Display info
-        List<String> toLevelName =  toOtherLevel5.stream().map(x -> (String) x.getProperty("Name")).collect(Collectors.toList());
-        List<String> fromLevelName =  fromOtherLevel5.stream().map(x -> (String) x.getProperty("Name")).collect(Collectors.toList());
-        neo4jAL.logInfo(toOtherLevel5.size() + " outgoing relationships were detected and created. To : " + String.join(",", toLevelName));
-        neo4jAL.logInfo(fromOtherLevel5.size() + " incoming relationships were detected and created." + String.join(",", fromLevelName));
-
-
     }
 
     /**
@@ -149,7 +145,7 @@ public class LevelGroupController {
             }
             // Delete
             levelNode.delete();
-            neo4jAL.logInfo("Level had no more relationships with objects and was deleted.");
+            neo4jAL.logInfo(String.format("Level with ID '%d' had no more relationships with objects and was deleted.", levelNode.getId()));
         } else {
             // Update count property
             levelNode.setProperty(Level5Node.getCountProperty(), numLeft);
@@ -177,7 +173,6 @@ public class LevelGroupController {
         for( Node rObject : nodeList ) {
 
             Iterator<Relationship> oldRel = rObject.getRelationships(Direction.INCOMING, relLevel).iterator();
-            neo4jAL.logInfo("Try to find level 5 node in node with id : " + rObject.getId());
             if (oldRel.hasNext()) {
                 Node level5 = oldRel.next().getStartNode();
 
@@ -199,7 +194,9 @@ public class LevelGroupController {
         neo4jAL.logInfo("### Size of nodeList : " + nodeList.size() );
 
         Node oldLevel5Node = null;
+        Instant start = Instant.now();
 
+        neo4jAL.logInfo("Creating a back up nodes for old level 5 ... ");
         // Retrieve most encountered Level 5
         for (Iterator<Map.Entry<Node, Integer>> it = getLevel5(neo4jAL, nodeList); it.hasNext(); ) {
             Map.Entry<Node, Integer> level5entry = it.next();
@@ -212,14 +209,15 @@ public class LevelGroupController {
             // Save the level and their nodes
             Level5Node level = Level5Node.fromNode(neo4jAL, level5entry.getKey());
             level.createLevel5Backup(applicationContext, nodeList);
-            neo4jAL.logInfo("Backed up Level5 node with name " + level.getName() + " used by " + level5entry.getValue() + " objects");
         }
 
+        Instant finish = Instant.now();
+        long timeElapsed = Duration.between(start, finish).toMillis();
+        neo4jAL.logInfo(String.format("Level 5 found, with Id : %d was identified in %d Milliseconds.", oldLevel5Node.getId(), timeElapsed));
 
-        neo4jAL.logInfo("Level 5 found, with Id : " + oldLevel5Node.getId());
-
-
-        // Get associated Level 4 full name
+        neo4jAL.logInfo("Creating new level 5 node ... ");
+        Instant startLevel5Creation = Instant.now();
+        // Get associated Level 4 full name and create the level 5 nodes
         // You cannot get it directly by looking at the relationships because sometimes there are several Level4 linked to the same node.
         // remove ## for this level
         String oldFullName = (String) oldLevel5Node.getProperty(Level5Node.getFullNameProperty());
@@ -273,7 +271,12 @@ public class LevelGroupController {
 
         // Link new level to Level 4
         level4Node.createRelationshipTo(newLevelNode, aggregatesRel);
+        Instant finishLevel5Creation = Instant.now();
+        long timeElapsedLevel5 = Duration.between(startLevel5Creation, finishLevel5Creation).toSeconds();
+        neo4jAL.logInfo(String.format("Level 5 was created in %d sec.", timeElapsedLevel5));
 
+        neo4jAL.logInfo("Linking the objects selected to the new Level 5 node created... ");
+        Instant startLinkObjects = Instant.now();
         //Delete old relationships, to not interfere with the new level
         for (Node n : nodeList) {
             // Find and Delete Old Relationships
@@ -288,19 +291,43 @@ public class LevelGroupController {
             // Change the level name to the new one of each node
             n.setProperty(IMAGING_OBJECT_LEVEL, forgedName);
         }
+        Instant finishLinkObjects = Instant.now();
+        long timeElapsedLinkObject = Duration.between(startLinkObjects, finishLinkObjects).toMillis();
+        neo4jAL.logInfo(String.format("%d Objects were linked to the new Level in %d Milliseconds.", nodeList.size(), timeElapsedLinkObject));
+
+        Instant startRefreshNew = Instant.now();
+        neo4jAL.logInfo("Refreshing the new level relationships and recount elements.");
 
         // Recompute for New and old
         refreshLevelLinks(neo4jAL, newLevelNode);
+        refreshLevelCount(neo4jAL, applicationContext, newLevelNode);
+
+        Instant finishRefreshNew = Instant.now();
+        long timeElapsedRefreshNew = Duration.between(startRefreshNew, finishRefreshNew).toMillis();
+        neo4jAL.logInfo(String.format("Refreshed new level in %d Milliseconds.", timeElapsedRefreshNew));
+
+        Instant startRefresh = Instant.now();
+        neo4jAL.logInfo("Refreshing the old level relationships and recount elements.");
 
         // Refresh old Level 5
-        refreshLevelCount(neo4jAL, applicationContext, oldLevel5Node);
-        refreshLevelLinks(neo4jAL, oldLevel5Node);
+        // TODO Better handle the error when the node has no more relationships and is deleted
+        try {
+            refreshLevelCount(neo4jAL, applicationContext, oldLevel5Node);
+            refreshLevelLinks(neo4jAL, oldLevel5Node);
+        } catch (Exception e) {
+            neo4jAL.logError("An error occurred during old level update. ", e);
+        }
+
+        Instant finishRefresh = Instant.now();
+        long timeElapsedRefresh = Duration.between(startRefresh, finishRefresh).toMillis();
+        neo4jAL.logInfo(String.format("Refreshed old level in %d Milliseconds.", timeElapsedRefresh));
 
         return newLevelNode;
     }
 
     public static List<Node> groupAllLevels(Neo4jAL neo4jAL, String applicationContext) throws Neo4jQueryException {
         Map<String, List<Node>> groupMap = new HashMap<>();
+        Label objectLabel = Label.label(IMAGING_OBJECT_LABEL);
 
         neo4jAL.logInfo("Starting Demeter level 5 grouping...");
 
@@ -310,6 +337,8 @@ public class LevelGroupController {
                 "RETURN o as node, g as group;", IMAGING_OBJECT_LABEL, applicationContext, IMAGING_OBJECT_TAGS, GROUP_TAG_IDENTIFIER);
 
         Result res = neo4jAL.executeQuery(forgedTagRequest);
+
+        Instant start = Instant.now();
 
         // Build the map for each group as <Tag, Node list>
         while (res.hasNext()) {
@@ -325,7 +354,9 @@ public class LevelGroupController {
             groupMap.get(group).add(node);
         }
 
-        neo4jAL.logInfo(groupMap.size() + " groups were identified.");
+        Instant finish = Instant.now();
+        long timeElapsed = Duration.between(start, finish).toMillis();
+        neo4jAL.logInfo(String.format("%d groups were identified in %d Milliseconds.", groupMap.size(), timeElapsed));
 
         List<Node> resNodes = new ArrayList<>();
 
@@ -337,7 +368,7 @@ public class LevelGroupController {
             if (nodeList.isEmpty()) continue;
 
             try {
-                neo4jAL.logInfo("# Now processing group with name : " +groupName);
+                neo4jAL.logInfo("Now processing group with name : " +groupName);
                 Node n = groupSingleTag(neo4jAL, applicationContext, groupName, nodeList);
                 resNodes.add(n);
             } catch (Exception | Neo4jNoResult | Neo4jBadNodeFormatException | Neo4jBadRequestException err) {

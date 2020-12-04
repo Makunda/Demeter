@@ -269,7 +269,6 @@ public class BackupNode extends Neo4jObject{
             // TODO : Handle other properties for the relationship
         }
 
-        neo4jAL.logInfo(numCreatedRel +  " Relations were backed up.");
         return bkNode;
     }
 

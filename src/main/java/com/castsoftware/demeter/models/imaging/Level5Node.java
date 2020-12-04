@@ -153,15 +153,13 @@ public class Level5Node extends Neo4jObject {
             Long count = 0L;
             try {
                 count = (Long) node.getProperty(getCountProperty());
-            } catch (NotFoundException e){
-                neo4jAL.logInfo("No 'count' property on level with ID="+node.getId());
+            } catch (NotFoundException ignored){
             }
 
             Boolean drillDown = false;
             try{
                 drillDown = (Boolean) node.getProperty(getDrillDownProperty());
-            } catch (NotFoundException e) {
-                neo4jAL.logInfo("No 'drill down' property on level with ID="+node.getId());
+            } catch (NotFoundException ignored) {
             }
 
             Level5Node level5Node = new Level5Node(neo4jAL, name, concept, drillDown, fullName, color, level, count, shade);
@@ -244,8 +242,6 @@ public class Level5Node extends Neo4jObject {
      * @throws Neo4jNoResult
      */
     public Node createLevel5Backup(String applicationContext, List<Node> affectedNodes) throws Neo4jBadRequestException, Neo4jNoResult, Neo4jQueryException {
-        neo4jAL.logInfo("Creating a back up node ... ");
-        neo4jAL.logInfo("Merge cypher request generated : " + toMergeRequest(applicationContext));
         return BackupNode.createBackup(neo4jAL, applicationContext, getNode(), toMergeRequest(applicationContext), affectedNodes);
     }
 
