@@ -115,9 +115,15 @@ public class ModuleNode extends Neo4jObject {
             // Initialize the node
             String aipID = (String) node.getProperty(getAipIdProperty());
             String color = (String) node.getProperty(getColorProperty());
-            Long count = (Long) node.getProperty(getCountProperty());
             String name = (String) node.getProperty(getNameProperty());
             String type = (String) node.getProperty(getTypeProperty());
+
+            // Optional parameters
+            Long count = 0L;
+            try {
+                count = (Long) node.getProperty(getCountProperty());
+            } catch (NotFoundException ignored) {
+            }
 
 
             ModuleNode moduleNode = new ModuleNode(neo4jAL, aipID, color, count, name, type);
@@ -193,8 +199,9 @@ public class ModuleNode extends Neo4jObject {
      * Create a backup node associated with this module node
      * @param applicationContext Context where the backup will be executed
      * @return The Backup node created
-     * @throws Neo4jBadRequestException
-     * @throws Neo4jNoResult
+     * @throws Neo4jBadRequestException The Backup request contains forbidden argument that led to an error
+     * @throws Neo4jNoResult Was not able to backup
+     * @throws Neo4jQueryException The backup failed due to abad query
      */
     public Node createBackup(String applicationContext, List<Node> affectedNodes) throws Neo4jBadRequestException, Neo4jNoResult, Neo4jQueryException {
         neo4jAL.logInfo(String.format("Creating a backup node for module with name '%s'. ", getName()));

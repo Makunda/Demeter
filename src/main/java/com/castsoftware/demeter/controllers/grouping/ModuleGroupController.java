@@ -30,6 +30,7 @@ import org.neo4j.graphdb.*;
 import org.w3c.dom.traversal.NodeFilter;
 
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 public class ModuleGroupController {
@@ -171,6 +172,8 @@ public class ModuleGroupController {
         RelationshipType containsRel = RelationshipType.withName(IMAGING_CONTAINS);
         RelationshipType belongToRel = RelationshipType.withName(IMAGING_BELONG_TO);
         Label moduleLabel = Label.label(IMAGING_MODULE_LABEL);
+        Label objectLabel = Label.label(IMAGING_OBJECT_LABEL);
+        Label subObjectLabel = Label.label(IMAGING_SUB_OBJECT_LABEL);
 
         // Assert the application name is not empty
         assert !applicationContext.isEmpty() : "The application name cannot be empty.";
@@ -181,14 +184,12 @@ public class ModuleGroupController {
 
         // Get other modules nodes
         Set<Node> affectedModules = new HashSet<>();
-
         for(Node n : nodeList) {
             // The node is supposed to be linked to only one module
             Iterator<Relationship> relIt = n.getRelationships(Direction.INCOMING, containsRel).iterator();
 
             if(!relIt.hasNext()) continue;
             Node modNode = relIt.next().getStartNode();
-
             // Assert that the node is a module
             if(!modNode.hasLabel(moduleLabel)) continue;
 
@@ -196,7 +197,7 @@ public class ModuleGroupController {
             affectedModules.add(modNode);
         }
 
-        // Backup nodes
+        // Backup Modules
         for(Node mod : affectedModules ) {
             ModuleNode nodeMode = ModuleNode.fromNode(neo4jAL, mod);
             nodeMode.createBackup(applicationContext, nodeList);
@@ -227,15 +228,99 @@ public class ModuleGroupController {
         }
 
         // Treat objects
+        // Link all the objects tagged to you modules.
+        // SubObjects referring the object should also be linked
+        // And SubObjects can also have SubObjects
         int numSubObjects = 0;
         neo4jAL.logInfo("About to re-link " + nodeList.size() + " objects.");
 
-        Set<Node> visited = new HashSet<>();
         Set<Long> affectedModuleId = affectedModules.stream().map(Node::getId).collect(Collectors.toSet());
-        for(Node rObject : nodeList) {
 
-            // Remove node relationships to modules
-            for(Relationship rel : rObject.getRelationships(Direction.INCOMING, containsRel)) {
+        List<Node> subObjectList = new CopyOnWriteArrayList<>(nodeList);
+        Set<Long> visitedNodes = new HashSet<>();
+        Set<Long> visitedObjects = new HashSet<>();
+
+        // Treat node in a first pass
+        for (Node rObject : nodeList) {
+
+            // Treat sub object
+            if(rObject.hasLabel(subObjectLabel)) {
+                // Add the object to the node List
+                subObjectList.add(rObject);
+            }
+
+            // Treat Objects
+            if(rObject.hasLabel(objectLabel)) {
+
+                // Remove node relationships to other modules and create new one
+                for(Relationship rel : rObject.getRelationships(Direction.INCOMING, containsRel)) {
+                    Node startModule = rel.getStartNode();
+                    if(affectedModuleId.contains(startModule.getId())) {
+                        rel.delete();
+                    }
+                }
+
+                // Create the contains relationship to the object
+                newModule.createRelationshipTo(rObject, containsRel);
+                // Apply new Module name
+
+                // If the node has a module property, replace it
+                rObject.setProperty(MODULE_PROPERTY, groupName);
+
+                // Get relationship to subObject (only belong_to relationships)
+                for(Relationship rel : rObject.getRelationships(belongToRel)) {
+                    Node otherNode = rel.getOtherNode(rObject);
+
+                    // If otherNode is a SubObject, and was not already visited
+                    if(otherNode.hasLabel(subObjectLabel)){
+                        if(!visitedNodes.contains(otherNode.getId())) {
+                            subObjectList.add(rObject);
+                        } else {
+                            continue;
+                        }
+                    }
+                }
+
+                // Add to the visited node list
+                visitedNodes.add(rObject.getId());
+                visitedObjects.add(rObject.getId());
+            }
+        }
+
+        Stack<Node> toInvestigate = new Stack<>();
+
+        // Filter SubObjects, verify they're linked to object added
+        for(Node subObj : subObjectList) {
+            Long id = subObj.getId();
+            String forgeReq = String.format("MATCH (n)-[:"+IMAGING_BELONG_TO+"*]->(o:"+IMAGING_OBJECT_LABEL+":"+ applicationContext+ ") WHERE ID(n)=%d RETURN ID(o) as idObj;", id);
+
+            Result res = neo4jAL.executeQuery(forgeReq);
+            while (res.hasNext()) {
+                Long idObj =  (Long) res.next().get("idObj");
+                if(visitedObjects.contains(idObj)) {
+                    toInvestigate.add(subObj);
+                    break;
+                }
+            }
+        }
+
+        // Investigate only on subObjects linked to nodes
+        Set<Long> visited = new HashSet<>();
+        while (!toInvestigate.empty()) {
+            Node n = toInvestigate.pop();
+
+            // Get relationship to subObject (only belong_to relationships)
+            for(Relationship rel : n.getRelationships(belongToRel)) {
+                Node otherNode = rel.getOtherNode(n);
+
+                if(!visited.contains(otherNode.getId())) {
+                    toInvestigate.add(otherNode);
+                }
+
+            }
+
+            // Remove node relationships to other modules and create new one
+            for(Relationship rel : n.getRelationships(Direction.INCOMING, containsRel)) {
                 Node startModule = rel.getStartNode();
                 if(affectedModuleId.contains(startModule.getId())) {
                     rel.delete();
@@ -243,38 +328,34 @@ public class ModuleGroupController {
             }
 
             // Create the contains relationship to the object
-            newModule.createRelationshipTo(rObject, containsRel);
-            // Apply new Module name
+            newModule.createRelationshipTo(n, containsRel);
 
-            // If the node has a module property, replace it
-            if(rObject.hasProperty(MODULE_PROPERTY)) {
-                rObject.setProperty(MODULE_PROPERTY, groupName);
-            }
-
-            // If the node has a subset property, replace it
-            if(rObject.hasLabel(Label.label(IMAGING_OBJECT_LABEL))) {
-                visited.add(rObject);
-            }
-
-
-
+            visited.add(n.getId());
         }
+
 
         neo4jAL.logInfo(numSubObjects + " Sub-objects were relinked during the process");
 
         // Count
-        moduleRecount(neo4jAL, newModule);
-        refreshModuleLinks(neo4jAL, newModule);
+        try {
+            moduleRecount(neo4jAL, newModule);
+            refreshModuleLinks(neo4jAL, newModule);
+        } catch (Exception e) {
+            neo4jAL.logError("Refresh failed for new module.", e);
+        }
 
         // Update old modules w/ recount
         for(Node mod : affectedModules) {
-            moduleRecount(neo4jAL, mod);
-            refreshModuleLinks(neo4jAL, mod);
+            try {
+                moduleRecount(neo4jAL, mod);
+                refreshModuleLinks(neo4jAL, mod);
+            } catch (Exception e) {
+                neo4jAL.logError("Refresh failed for old module.", e);
+            }
         }
 
         return  newModule;
     }
-
 
 
     public static List<Node> groupAllModules(Neo4jAL neo4jAL, String applicationContext) throws Neo4jQueryException {
@@ -294,8 +375,6 @@ public class ModuleGroupController {
             Map<String, Object> resMap = res.next();
             String group = (String) resMap.get("group");
             Node node = (Node) resMap.get("node");
-
-
 
             // Add to  the specific group
             if (!groupMap.containsKey(group)) {
