@@ -56,7 +56,6 @@ public class BackupNode extends Neo4jObject{
     private String nodeGenReq;
     private String nodeLabel;
 
-
     // Static getters
     public static String getLabel() {
         return LABEL;

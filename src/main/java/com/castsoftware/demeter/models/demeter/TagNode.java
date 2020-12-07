@@ -36,6 +36,7 @@ public class TagNode extends Neo4jObject {
     private static final String REQUEST_PROPERTY = Configuration.get("neo4j.nodes.t_tag_node.request");
     private static final String ACTIVE_PROPERTY = Configuration.get("neo4j.nodes.t_tag_node.active");
     private static final String DESCRIPTION_PROPERTY = Configuration.get("neo4j.nodes.t_use_case.description");
+    private static final String IGNORE_PREFIX_PROPERTY = Configuration.get("neo4j.nodes.t_tag_node.ignore_prefix");
     private static final String ERROR_PREFIX = Configuration.get("neo4j.nodes.t_tag_node.error_prefix");
     private static final String USECASE_TO_TAG_REL = Configuration.get("neo4j.relationships.use_case.to_tag");
 
@@ -51,6 +52,7 @@ public class TagNode extends Neo4jObject {
     private String request;
     private Boolean active;
     private String description;
+    private Boolean ignorePrefix;
 
     public static String getLabel() {
         return LABEL;
@@ -61,6 +63,7 @@ public class TagNode extends Neo4jObject {
     }
     public static String getActiveProperty() { return ACTIVE_PROPERTY; }
     public static String getRequestProperty() { return  REQUEST_PROPERTY; }
+    public static String getIgnorePrefixProperty() { return  IGNORE_PREFIX_PROPERTY; }
 
     public String getTag() {
         return tag;
@@ -77,6 +80,8 @@ public class TagNode extends Neo4jObject {
     public String getDescription() {
         return description;
     }
+
+    public Boolean getIgnorePrefix() { return ignorePrefix; }
 
     /**
      * Create a TagRequestNode Node object from a neo4j node
@@ -101,8 +106,13 @@ public class TagNode extends Neo4jObject {
             if(node.hasProperty(DESCRIPTION_PROPERTY))
                 description = (String) node.getProperty(DESCRIPTION_PROPERTY);
 
+            Boolean ignorePrefix = false;
+            if(node.hasProperty(IGNORE_PREFIX_PROPERTY)) {
+                ignorePrefix = (Boolean) node.getProperty(IGNORE_PREFIX_PROPERTY);
+            }
+
             // Initialize the node
-            TagNode trn = new TagNode(neo4jAL, tag, active, request, description);
+            TagNode trn = new TagNode(neo4jAL, tag, active, request, description, ignorePrefix);
             trn.setNode(node);
 
             return trn;
@@ -190,7 +200,12 @@ public class TagNode extends Neo4jObject {
         if(this.getNode() == null)
             throw new Neo4jBadRequestException("Cannot execute this action. Associated node does not exist.", ERROR_PREFIX+"EXEC1");
 
-        String forgedTag  = TAG_PREFIX + this.tag;
+        String forgedTag;
+        if(!ignorePrefix) {
+            forgedTag = TAG_PREFIX + this.tag;
+        } else {
+            forgedTag = this.tag;
+        }
 
         // Build parameters
         Map<String,Object> params = new HashMap<>();
@@ -304,5 +319,17 @@ public class TagNode extends Neo4jObject {
         this.active = active;
         this.request = request;
         this.description = description;
+        this.ignorePrefix = false;
     }
+
+    public TagNode(Neo4jAL nal, String tag, Boolean active, String request, String description, Boolean ignorePrefix) {
+        super(nal);
+        this.tag = tag;
+        this.active = active;
+        this.request = request;
+        this.description = description;
+        this.ignorePrefix = ignorePrefix;
+    }
+
+
 }

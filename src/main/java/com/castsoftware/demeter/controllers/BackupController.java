@@ -77,11 +77,9 @@ public class BackupController {
 
         // Relink objects to their parent levels for each deleted level
         // Due to the "Level" Property
-        String forgedLabel = null;
-        String forgeRequest = null;
+        String forgedLabel;
+        String forgeRequest;
         for(String levelName : deletedLevelName ) {
-
-            neo4jAL.logInfo("Reassign tags for old level with name : " + levelName);
             forgedLabel = IMAGING_OBJECT_LABEL + ":" + applicationContext;
 
             // Find nodes with the ancient level 5 name
