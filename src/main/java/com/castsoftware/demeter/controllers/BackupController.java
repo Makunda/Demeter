@@ -90,14 +90,12 @@ public class BackupController {
 
         // Recount level
         for(Level5Node level : toCheckLevels) {
-            LevelGroupController.refreshLevelLinks(neo4jAL, level.getNode());
-            LevelGroupController.refreshLevelCount(neo4jAL, applicationContext, level.getNode());
+            LevelGroupController.refreshLevel(neo4jAL, applicationContext, level.getNode());
         }
 
         List<Node> returnNodes = new ArrayList<>();
         for(Level5Node level : backupedNodes) {
-            LevelGroupController.refreshLevelLinks(neo4jAL, level.getNode());
-            LevelGroupController.refreshLevelCount(neo4jAL, applicationContext, level.getNode());
+            LevelGroupController.refreshLevel(neo4jAL, applicationContext, level.getNode());
             returnNodes.add(level.getNode());
         }
 

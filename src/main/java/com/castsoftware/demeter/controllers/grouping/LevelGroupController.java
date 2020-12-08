@@ -53,60 +53,35 @@ public class LevelGroupController {
     // Class Conf
     private static final String ERROR_PREFIX = "GROCx";
 
-    public static Node refreshLevelLinks(Neo4jAL neo4jAL, Node nodeLevel) throws Neo4jQueryException {
-        Label objectLabel = Label.label(IMAGING_OBJECT_LABEL);
-        RelationshipType aggregatesRel = RelationshipType.withName(IMAGING_AGGREGATES);
+    public static Node refreshLevelLinks(Neo4jAL neo4jAL, String applicationContext, Node nodeLevel) throws Neo4jQueryException {
         RelationshipType referenceRel = RelationshipType.withName(IMAGING_LEVEL_REFERENCES);
-
-        // Link the objects to the New Level 5
-        Set<Node> toOtherLevel5 = new HashSet<>();
-        Set<Node> fromOtherLevel5 = new HashSet<>();
 
         //Remove actual level relationships
         for(Relationship rel : nodeLevel.getRelationships(referenceRel)) {
             rel.delete();
         }
 
-        //Get node list
-        for (Relationship rel: nodeLevel.getRelationships(Direction.OUTGOING, aggregatesRel)) {
+        String forgedToOtherLevel5 = String.format("MATCH (inil:%1$s:%2$s)-[:%3$s]->(inio:%4$s:%2$s)-->(o:%4$s:%2$s)<-[:%3$s]-(l:%1$s) WHERE ID(inil)=%5$s AND inil.%6$s=inio.%7$s  AND l.%6$s=o.%7$s RETURN DISTINCT l as level;",
+                Level5Node.getLabel(), applicationContext, IMAGING_AGGREGATES, IMAGING_OBJECT_LABEL, nodeLevel.getId(), Level5Node.getNameProperty(), IMAGING_OBJECT_LEVEL );
+        // List incoming level 5
+        String forgedFromOtherLevel5 = String.format("MATCH (inil:%1$s:%2$s)-[:%3$s]->(inio:%4$s:%2$s)<--(o:%4$s:%2$s)<-[:%3$s]-(l:%1$s) WHERE ID(inil)=%5$s AND inil.%6$s=inio.%7$s  AND l.%6$s=o.%7$s RETURN DISTINCT l as level;",
+                Level5Node.getLabel(), applicationContext, IMAGING_AGGREGATES, IMAGING_OBJECT_LABEL, nodeLevel.getId(), Level5Node.getNameProperty(), IMAGING_OBJECT_LEVEL );
 
-            // Get objects
-            Node n = rel.getEndNode();
-            if(!n.hasLabel(objectLabel)) continue;
 
+        Result resTo = neo4jAL.executeQuery(forgedToOtherLevel5);
+        while (resTo.hasNext()) {
+            Node resToNode = (Node) resTo.next().get("level");
+            if( resToNode.getId() == nodeLevel.getId()) continue;// Ignore self relationships
 
-            // List outgoing level 5
-            String forgedToOtherLevel5 = String.format("MATCH (n)-->(o:%1$s)<--(l:%2$s) WHERE ID(n)=%3$s AND l.%4$s=o.%5$s RETURN l as level",
-                    IMAGING_OBJECT_LABEL, Level5Node.getLabel(), n.getId(), Level5Node.getNameProperty(), IMAGING_OBJECT_LEVEL );
-            // List incoming level 5
-            String forgedFromOtherLevel5 = String.format("MATCH (n)<--(o:%1$s)<--(l:%2$s) WHERE ID(n)=%3$s AND l.%4$s=o.%5$s RETURN l as level",
-                    IMAGING_OBJECT_LABEL, Level5Node.getLabel(), n.getId(), Level5Node.getNameProperty(), IMAGING_OBJECT_LEVEL  );
-
-            Result resTo = neo4jAL.executeQuery(forgedToOtherLevel5);
-            while (resTo.hasNext()) {
-                Node resToNode = (Node) resTo.next().get("level");
-                Long id = resToNode.getId();
-
-                if( id == nodeLevel.getId()) continue;
-                toOtherLevel5.add(resToNode);
-            }
-
-            Result resFrom = neo4jAL.executeQuery(forgedFromOtherLevel5);
-            while (resFrom.hasNext()) {
-                Node resToNode = (Node) resFrom.next().get("level");
-                if( resToNode.getId() == nodeLevel.getId()) continue;
-                fromOtherLevel5.add(resToNode);
-            }
+            nodeLevel.createRelationshipTo(resToNode, referenceRel);;
         }
 
-        // Link to other level 5
-        for (Node toLink : toOtherLevel5) {
-            nodeLevel.createRelationshipTo(toLink, referenceRel);
-        }
+        Result resFrom = neo4jAL.executeQuery(forgedFromOtherLevel5);
+        while (resFrom.hasNext()) {
+            Node resFromNode = (Node) resFrom.next().get("level");
+            if( resFromNode.getId() == nodeLevel.getId()) continue;// Ignore self relationships
 
-        // Link level 5 from other level 5
-        for (Node fromLink : fromOtherLevel5) {
-            fromLink.createRelationshipTo(nodeLevel, referenceRel);
+            resFromNode.createRelationshipTo(nodeLevel, referenceRel);
         }
 
         return nodeLevel;
@@ -164,7 +139,7 @@ public class LevelGroupController {
         Node n = refreshLevelCount(neo4jAL, applicationContext, node);
         if(n == null) return null; // Stop the refresh if the node was deleted
 
-        return refreshLevelLinks(neo4jAL, node);
+        return refreshLevelLinks(neo4jAL, applicationContext, node);
     }
 
     /**
