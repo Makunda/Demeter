@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 
 public class PreStatisticsLogger implements AutoCloseable {
-    private static final String FILE_LOCATION = Configuration.get("pre_statistics.file.path");
+
     private static final String FILE_EXTENSION = Configuration.get("pre_statistics.file.extension");
     private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd_HHmmss");
     private static final SimpleDateFormat cdf = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
@@ -71,7 +71,7 @@ public class PreStatisticsLogger implements AutoCloseable {
 
         for(StatisticNode stn : statistics) {
             StringBuilder statRes = new StringBuilder();
-            statRes.append("-".repeat(124) + "\n");
+            statRes.append("-".repeat(124)).append("\n");
             try {
                 statRes.append("\n\tStatistics on : ").append(stn.getName()).append("\n");
                 String description = stn.getDescription();
@@ -87,11 +87,11 @@ public class PreStatisticsLogger implements AutoCloseable {
             }
             catch (Neo4jBadRequestException | Neo4jNoResult | Exception e) {
                 statRes.append("\nAn error occurred during the execution of this statistic.\n");
-                statRes.append(e.getMessage() + "\n");
+                statRes.append(e.getMessage()).append("\n");
             }
             buffer.append(statRes);
         }
-        buffer.append("-".repeat(124) + "\n");
+        buffer.append("-".repeat(124)).append("\n");
 
         writeEndOfSection();
     }
@@ -147,10 +147,11 @@ public class PreStatisticsLogger implements AutoCloseable {
 
 
     public PreStatisticsLogger(String applicationContext) throws IOException {
+        String outputDirectory = Configuration.get("pre_statistics.file.path");
         this.applicationContext = applicationContext;
 
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-        String forgedPath = String.format("%sPre_Statistics_for_%s_on%s.%s", FILE_LOCATION, applicationContext, sdf.format(timestamp), FILE_EXTENSION);
+        String forgedPath = String.format("%s/Pre_Statistics_for_%s_on%s.%s", outputDirectory, applicationContext, sdf.format(timestamp), FILE_EXTENSION);
         file = new FileWriter(forgedPath);
 
         flushBuffer();

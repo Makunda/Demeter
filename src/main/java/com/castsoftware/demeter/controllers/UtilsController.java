@@ -34,6 +34,8 @@ import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.models.*;
 import org.neo4j.graphdb.*;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -99,13 +101,18 @@ public class UtilsController {
      * @throws Neo4jQueryException If an error is thrown during the process
      */
     public static String setOuputdir(String outputDir) throws FileNotFoundException {
-        // The the property
-        Configuration.set("pre_statistics.file.path", outputDir);
 
+        Path newDirectory = Path.of(outputDir);
+        if (!Files.exists(newDirectory)) {
+            return "The directory specified doesn't exist. Make sure the directory exists.";
+        }
+        // The the property
+        Configuration.set("pre_statistics.file.path", newDirectory.toString());
+        Configuration.set("statistics.file.path", newDirectory.toString());
         // Reload the configuration
         Configuration.saveAndReload();
 
-        return Configuration.get("pre_statistics.file.path");
+        return "Output directory was changed to : " + Configuration.get("pre_statistics.file.path");
     }
 
     /**

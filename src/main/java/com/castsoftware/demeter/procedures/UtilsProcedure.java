@@ -128,7 +128,7 @@ public class UtilsProcedure {
 
             String newPath = UtilsController.setOuputdir(outputDir);
 
-            return Stream.of(new OutputMessage("Output directory was changed to : " + newPath));
+            return Stream.of(new OutputMessage(newPath));
 
         } catch (Exception | Neo4jConnectionError | FileNotFoundException e) {
             ProcedureException ex = new ProcedureException(e);
