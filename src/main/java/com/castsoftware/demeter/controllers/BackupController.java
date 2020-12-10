@@ -28,6 +28,7 @@ import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.models.BackupNode;
 import com.castsoftware.demeter.models.imaging.Level5Node;
+import com.castsoftware.demeter.utils.LevelsUtils;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 
@@ -90,14 +91,17 @@ public class BackupController {
 
         // Recount level
         for(Level5Node level : toCheckLevels) {
-            LevelGroupController.refreshLevel(neo4jAL, applicationContext, level.getNode());
+            LevelsUtils.refreshLevel5(neo4jAL, applicationContext, level.getNode());
         }
 
         List<Node> returnNodes = new ArrayList<>();
         for(Level5Node level : backupedNodes) {
-            LevelGroupController.refreshLevel(neo4jAL, applicationContext, level.getNode());
+            LevelsUtils.refreshLevel5(neo4jAL, applicationContext, level.getNode());
             returnNodes.add(level.getNode());
         }
+
+        // Refresh abstract levels
+        LevelsUtils.refreshAllAbstractLevel(neo4jAL, applicationContext);
 
         return returnNodes;
     }

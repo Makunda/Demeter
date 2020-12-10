@@ -27,6 +27,7 @@ import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.models.imaging.Level5Node;
 import com.castsoftware.demeter.models.imaging.ModuleNode;
+import com.castsoftware.demeter.utils.LevelsUtils;
 import org.neo4j.graphdb.*;
 
 import javax.sql.rowset.CachedRowSet;
@@ -53,94 +54,9 @@ public class LevelGroupController {
     // Class Conf
     private static final String ERROR_PREFIX = "GROCx";
 
-    public static Node refreshLevelLinks(Neo4jAL neo4jAL, String applicationContext, Node nodeLevel) throws Neo4jQueryException {
-        RelationshipType referenceRel = RelationshipType.withName(IMAGING_LEVEL_REFERENCES);
-
-        //Remove actual level relationships
-        for(Relationship rel : nodeLevel.getRelationships(referenceRel)) {
-            rel.delete();
-        }
-
-        String forgedToOtherLevel5 = String.format("MATCH (inil:%1$s:%2$s)-[:%3$s]->(inio:%4$s:%2$s)-->(o:%4$s:%2$s)<-[:%3$s]-(l:%1$s) WHERE ID(inil)=%5$s AND inil.%6$s=inio.%7$s  AND l.%6$s=o.%7$s RETURN DISTINCT l as level;",
-                Level5Node.getLabel(), applicationContext, IMAGING_AGGREGATES, IMAGING_OBJECT_LABEL, nodeLevel.getId(), Level5Node.getNameProperty(), IMAGING_OBJECT_LEVEL );
-        // List incoming level 5
-        String forgedFromOtherLevel5 = String.format("MATCH (inil:%1$s:%2$s)-[:%3$s]->(inio:%4$s:%2$s)<--(o:%4$s:%2$s)<-[:%3$s]-(l:%1$s) WHERE ID(inil)=%5$s AND inil.%6$s=inio.%7$s  AND l.%6$s=o.%7$s RETURN DISTINCT l as level;",
-                Level5Node.getLabel(), applicationContext, IMAGING_AGGREGATES, IMAGING_OBJECT_LABEL, nodeLevel.getId(), Level5Node.getNameProperty(), IMAGING_OBJECT_LEVEL );
 
 
-        Result resTo = neo4jAL.executeQuery(forgedToOtherLevel5);
-        while (resTo.hasNext()) {
-            Node resToNode = (Node) resTo.next().get("level");
-            if( resToNode.getId() == nodeLevel.getId()) continue;// Ignore self relationships
 
-            nodeLevel.createRelationshipTo(resToNode, referenceRel);;
-        }
-
-        Result resFrom = neo4jAL.executeQuery(forgedFromOtherLevel5);
-        while (resFrom.hasNext()) {
-            Node resFromNode = (Node) resFrom.next().get("level");
-            if( resFromNode.getId() == nodeLevel.getId()) continue;// Ignore self relationships
-
-            resFromNode.createRelationshipTo(nodeLevel, referenceRel);
-        }
-
-        return nodeLevel;
-    }
-
-    /**
-     * Refresh the count parameter for a level ( Counting objects linked to it )
-     * @param neo4jAL Neo4j access layer
-     * @param applicationContext Application concerned by the change
-     * @param levelNode Level node necessitating a
-     * @return The Node updated
-     * @throws Neo4jQueryException
-     */
-    public static Node refreshLevelCount(Neo4jAL neo4jAL, String applicationContext, Node levelNode) throws Neo4jQueryException {
-        // Update the old Level 5 and remove it is there no node linked to it
-        String forgedNumConnected = String.format("MATCH (n:%1$s:%2$s)-[:%3$s]->(o:%4$s) WHERE ID(n)=%5$s AND n.%6$s=o.%7$s RETURN COUNT(o) as countNode;",
-                applicationContext, Level5Node.getLabel(), IMAGING_AGGREGATES, IMAGING_OBJECT_LABEL, levelNode.getId(), Level5Node.getNameProperty(), IMAGING_OBJECT_LEVEL);
-
-        Result resNumConnected = neo4jAL.executeQuery(forgedNumConnected);
-
-        Long numLeft = 0L;
-        if(resNumConnected.hasNext()) {
-            numLeft = (Long) resNumConnected.next().get("countNode");
-        }
-
-        // Delete the oldLevel node if it's empty
-        if (numLeft == 0) {
-            // Detach
-            for(Relationship rel : levelNode.getRelationships()) {
-                rel.delete();
-            }
-            // Delete
-            levelNode.delete();
-            neo4jAL.logInfo(String.format("Level with ID '%d' had no more relationships with objects and was deleted.", levelNode.getId()));
-            return null;
-        } else {
-            // Update count property
-            levelNode.setProperty(Level5Node.getCountProperty(), numLeft);
-            neo4jAL.logInfo("Level still has " + numLeft + " relationships with objects and will not be deleted.");
-            return levelNode;
-        }
-
-
-    }
-
-    /**
-     * Refresh both links and count in a level 5 node
-     * @param neo4jAL Neo4JAccess Layer
-     * @param applicationContext Name of the application you're working on
-     * @param node Level 5 node to treat
-     * @return The Node
-     * @throws Neo4jQueryException
-     */
-    public static Node refreshLevel(Neo4jAL neo4jAL, String applicationContext, Node node) throws Neo4jQueryException {
-        Node n = refreshLevelCount(neo4jAL, applicationContext, node);
-        if(n == null) return null; // Stop the refresh if the node was deleted
-
-        return refreshLevelLinks(neo4jAL, applicationContext, node);
-    }
 
     /**
      * Get the level 5 present in the node list. Level are returned as a map, with the key corresponding to the level node and the value their frequency.
@@ -283,10 +199,10 @@ public class LevelGroupController {
         startTimer = Instant.now();
         neo4jAL.logInfo("Refreshing the new level relationships and recount elements.");
 
-        refreshLevel(neo4jAL, applicationContext, newLevelNode); // refresh new level
+        LevelsUtils.refreshLevel5(neo4jAL, applicationContext, newLevelNode); // refresh new level
         affectedLevels.forEach(x -> {
             try {
-                refreshLevel(neo4jAL, applicationContext, x.getNode()); // refresh old levels
+                LevelsUtils.refreshLevel5(neo4jAL, applicationContext, x.getNode()); // refresh old levels
             } catch (Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult e) {
                 neo4jAL.logInfo(String.format("An error occurred trying to refresh level with name '%s'.", x.getName()));
             }
@@ -295,6 +211,9 @@ public class LevelGroupController {
 
         finishTimer = Instant.now();
         neo4jAL.logInfo(String.format("Refreshed levels in %d Milliseconds.", Duration.between(startTimer, finishTimer).toMillis()));
+
+        neo4jAL.logInfo("Now refreshing abstract levels..");
+        LevelsUtils.refreshAllAbstractLevel(neo4jAL, applicationContext);
 
         return newLevelNode;
     }
