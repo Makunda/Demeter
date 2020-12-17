@@ -27,6 +27,10 @@ import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.models.demeter.TagNode;
 import com.castsoftware.demeter.models.demeter.UseCaseNode;
+import com.castsoftware.demeter.results.demeter.TagResult;
+import com.castsoftware.demeter.statistics.Highlights.Highlight;
+import com.castsoftware.demeter.statistics.Highlights.HighlightType;
+import com.castsoftware.exporter.exceptions.neo4j.Neo4jBadRequest;
 import org.neo4j.graphdb.*;
 
 import java.util.*;
@@ -98,6 +102,59 @@ public class TagController {
         return n;
     }
 
+    /**
+     * Return the forecast of the tag on a specific application as a list of TagResult
+     * @param neo4jAL Neo4j Access Layer
+     * @param configurationName Name of the configuration to use
+     * @param applicationName Name of the configuration
+     * @return The list of TagResults
+     * @throws Neo4jQueryException
+     * @throws Neo4jBadRequestException
+     * @throws Neo4jNoResult
+     */
+    public static List<TagResult> forecastTag(Neo4jAL neo4jAL, String configurationName, String applicationName) throws Neo4jQueryException, Neo4jBadRequestException, Neo4jNoResult {
+        List<TagNode> tagNodeList = TagController.getSelectedTags(neo4jAL, configurationName);
+        List<TagResult> tagResultList = new ArrayList<>();
 
+        for(TagNode tn : tagNodeList) {
+            try {
+                // Ignored non active requests
+                if(!tn.getActive()) continue;
+
+                Long numAffected = tn.forecastRequest(applicationName);
+                String useCaseName = tn.getParentUseCase().getName();
+                TagResult tr = new TagResult(tn.getNodeId(), tn.getTag(), tn.getDescription(), numAffected, tn.getCategories(), useCaseName);
+                tagResultList.add(tr);
+            } catch (Neo4jNoResult | Neo4jBadNodeFormatException neo4jNoResult) {
+                neo4jAL.logError(String.format("Tag with Id '%d' produced an error during forecasting.", tn.getNodeId()), neo4jNoResult);
+            }
+        }
+        return tagResultList;
+    }
+
+    /**
+     * Execute specified tag request
+     * @param neo4jAL Neo4j Access Layer
+     * @param id Id of the Tag Node
+     * @param applicationContext Application target
+     * @return Return Tag result
+     * @throws Neo4jQueryException
+     * @throws Neo4jBadRequestException
+     * @throws Neo4jBadNodeFormatException
+     * @throws Neo4jNoResult
+     */
+    public static TagResult executeTag(Neo4jAL neo4jAL, Long id, String applicationContext) throws Neo4jQueryException, Neo4jBadRequestException, Neo4jBadNodeFormatException, Neo4jNoResult {
+        Label tagLabel = Label.label(TagNode.getLabel());
+        Node tagNode = neo4jAL.getNodeById(id);
+
+        if(!tagNode.hasLabel(tagLabel))
+            throw new Neo4jBadRequestException("The provided Id does not correspond to a Tag Node", ERROR_PREFIX+"EXET1");
+
+        TagNode tn = TagNode.fromNode(neo4jAL, tagNode);
+
+        int numAffected = tn.executeRequest(applicationContext).size();
+        String useCaseName = tn.getParentUseCase().getName();
+        return new TagResult(tn.getNodeId(), tn.getTag(), tn.getDescription(), (long) numAffected, tn.getCategories(), useCaseName);
+    }
 
 }

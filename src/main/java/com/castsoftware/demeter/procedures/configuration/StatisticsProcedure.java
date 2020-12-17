@@ -29,12 +29,14 @@ import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.models.demeter.StatisticNode;
 import com.castsoftware.demeter.results.NodeResult;
 import com.castsoftware.demeter.results.OutputMessage;
+import com.castsoftware.demeter.results.demeter.StatisticResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.*;
 
+import java.util.List;
 import java.util.stream.Stream;
 
 public class StatisticsProcedure {
@@ -75,6 +77,23 @@ public class StatisticsProcedure {
             throw ex;
         }
     }
+
+    @Procedure(value = "demeter.statistics.getAsList", mode = Mode.WRITE)
+    @Description("demeter.statistics.getAsList( String ConfigurationName, String Application ) - Get the result of Statistics as a list.")
+    public Stream<StatisticResult> getStatisticsAsList(@Name(value = "Configuration") String configurationName , @Name(value = "Application") String applicationLabel) throws ProcedureException {
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            List<StatisticResult> statisticResults =  StatisticsController.getStatisticsResult(nal, configurationName, applicationLabel);
+
+            return statisticResults.stream();
+        } catch (Neo4jBadRequestException | Neo4jConnectionError | Exception | Neo4jQueryException | Neo4jNoResult e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            log.error("An error occurred during the execution of the request.", e);
+            throw ex;
+        }
+    }
+
 
     @Procedure(value = "demeter.statistics.add", mode = Mode.WRITE)
     @Description("demeter.statistics.add(String Name, String request, Boolean Activation, String Description, Long ConfigurationId) - Add a Statistic node and link it to a use configuration node.")

@@ -36,6 +36,7 @@ public class TagNode extends Neo4jObject {
     private static final String REQUEST_PROPERTY = Configuration.get("neo4j.nodes.t_tag_node.request");
     private static final String ACTIVE_PROPERTY = Configuration.get("neo4j.nodes.t_tag_node.active");
     private static final String DESCRIPTION_PROPERTY = Configuration.get("neo4j.nodes.t_use_case.description");
+    private static final String CATEGORIES_PROPERTY = Configuration.get("neo4j.nodes.t_tag_node.categories");
     private static final String IGNORE_PREFIX_PROPERTY = Configuration.get("neo4j.nodes.t_tag_node.ignore_prefix");
     private static final String ERROR_PREFIX = Configuration.get("neo4j.nodes.t_tag_node.error_prefix");
     private static final String USECASE_TO_TAG_REL = Configuration.get("neo4j.relationships.use_case.to_tag");
@@ -52,6 +53,7 @@ public class TagNode extends Neo4jObject {
     private String request;
     private Boolean active;
     private String description;
+    private String categories;
     private Boolean ignorePrefix;
 
     public static String getLabel() {
@@ -64,6 +66,7 @@ public class TagNode extends Neo4jObject {
     public static String getActiveProperty() { return ACTIVE_PROPERTY; }
     public static String getRequestProperty() { return  REQUEST_PROPERTY; }
     public static String getIgnorePrefixProperty() { return  IGNORE_PREFIX_PROPERTY; }
+    public static String getCategoriesProperty() { return  CATEGORIES_PROPERTY; }
 
     public String getTag() {
         return tag;
@@ -77,11 +80,19 @@ public class TagNode extends Neo4jObject {
         return active;
     }
 
+    public String getCategories() {
+        return categories;
+    }
+
     public String getDescription() {
         return description;
     }
 
     public Boolean getIgnorePrefix() { return ignorePrefix; }
+
+    public void setCategories(String categories) {
+        this.categories = categories;
+    }
 
     /**
      * Create a TagRequestNode Node object from a neo4j node
@@ -106,6 +117,10 @@ public class TagNode extends Neo4jObject {
             if(node.hasProperty(DESCRIPTION_PROPERTY))
                 description = (String) node.getProperty(DESCRIPTION_PROPERTY);
 
+            String categories = "";
+            if(node.hasProperty(CATEGORIES_PROPERTY))
+                categories = (String) node.getProperty(CATEGORIES_PROPERTY);
+
             Boolean ignorePrefix = false;
             if(node.hasProperty(IGNORE_PREFIX_PROPERTY)) {
                 ignorePrefix = (Boolean) node.getProperty(IGNORE_PREFIX_PROPERTY);
@@ -113,6 +128,7 @@ public class TagNode extends Neo4jObject {
 
             // Initialize the node
             TagNode trn = new TagNode(neo4jAL, tag, active, request, description, ignorePrefix);
+            trn.setCategories(categories);
             trn.setNode(node);
 
             return trn;

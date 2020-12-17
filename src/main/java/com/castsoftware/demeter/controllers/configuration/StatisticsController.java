@@ -30,6 +30,7 @@ import com.castsoftware.demeter.models.demeter.DocumentNode;
 import com.castsoftware.demeter.models.demeter.StatisticNode;
 import com.castsoftware.demeter.models.demeter.TagNode;
 import com.castsoftware.demeter.models.demeter.UseCaseNode;
+import com.castsoftware.demeter.results.demeter.StatisticResult;
 import com.castsoftware.demeter.statistics.Highlights.Highlight;
 import com.castsoftware.demeter.statistics.Highlights.HighlightType;
 import com.castsoftware.demeter.statistics.PreStatisticsLogger;
@@ -44,8 +45,17 @@ public class StatisticsController {
     private static final String USECASE_TO_STAT_REL = Configuration.get("neo4j.relationships.use_case.to_stats");
     private static final String USE_CASE_RELATIONSHIP = Configuration.get("neo4j.relationships.use_case.to_use_case");
 
-
-    public static List<StatisticNode> getSelectedStatistics(Neo4jAL nal, String configurationName) throws Neo4jNoResult, Neo4jBadRequestException, Neo4jQueryException {
+    /**
+     * Get the active statistics nodes
+     * @param nal Neo4j Access Layer
+     * @param configurationName Name of the configuration
+     * @return The list of active statistics for the specified configuration
+     * @throws Neo4jNoResult
+     * @throws Neo4jBadRequestException
+     * @throws Neo4jQueryException
+     */
+    public static List<StatisticNode> getSelectedStatistics(Neo4jAL nal, String configurationName)
+            throws Neo4jNoResult, Neo4jBadRequestException, Neo4jQueryException {
 
         Label statisticsLabel = Label.label(StatisticNode.getLabel());
         Set<Node> statistics = UseCaseController.searchByLabelInActiveBranches(nal, configurationName, statisticsLabel);
@@ -59,6 +69,31 @@ public class StatisticsController {
                 return null;
             }
         }).filter(x -> x != null && x.getActive()).collect(Collectors.toList());
+    }
+
+
+    /**
+     * Get the result of statistics
+     * @param nal Neo4j Access Layer
+     * @param applicationContext Application label to use
+     * @param configurationName
+     * @return List of statistics results
+     * @throws Neo4jBadRequestException
+     * @throws Neo4jNoResult
+     * @throws Neo4jQueryException
+     */
+    public static List<StatisticResult> getStatisticsResult(Neo4jAL nal, String configurationName, String applicationContext)
+            throws Neo4jBadRequestException, Neo4jNoResult, Neo4jQueryException {
+        List<StatisticResult> resultList = new ArrayList<>();
+        List<StatisticNode> nodes = getSelectedStatistics(nal, configurationName);
+
+        for(StatisticNode sn : nodes) {
+            String result = sn.executeStat(applicationContext);
+            StatisticResult sr = new StatisticResult(sn.getName(), sn.getDescription(), result);
+            resultList.add(sr);
+        }
+
+        return resultList;
     }
 
     /**

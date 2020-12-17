@@ -29,6 +29,7 @@ import com.castsoftware.demeter.models.Neo4jObject;
 import org.neo4j.graphdb.*;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -40,6 +41,7 @@ public class UseCaseNode extends Neo4jObject {
     private final static String NAME_PROPERTY = Configuration.get("neo4j.nodes.t_use_case.name");
     private final static String ACTIVE_PROPERTY = Configuration.get("neo4j.nodes.t_use_case.active");
     private final static String SELECTED_PROPERTY = Configuration.get("neo4j.nodes.t_use_case.selected");
+    private final static String DEMETER_DEFINES_RELATION = Configuration.get("neo4j.relationships.use_case.to_use_case");
 
     private final static String ERROR_PREFIX = Configuration.get("neo4j.nodes.t_use_case.error_prefix");
 
@@ -169,6 +171,29 @@ public class UseCaseNode extends Neo4jObject {
             return resList;
         } catch (Neo4jQueryException e) {
             throw new Neo4jBadRequestException(LABEL + " nodes retrieving failed", "findQuery" , e, ERROR_PREFIX+"GAN1");
+        }
+    }
+
+    /**
+     * Return the name of the parent use-case. Return ROOT if no parent use case was detected. Return UNDEFINED in case of error.
+     * @return The name of the parent use-case
+     */
+    public String getParentUseCase() throws Neo4jBadRequestException, Neo4jNoResult {
+        RelationshipType rl = RelationshipType.withName(DEMETER_DEFINES_RELATION);
+        Label nodeLabel = Label.label(LABEL);
+
+        Node n = this.getNode();
+
+        Iterator<Relationship> relIt = n.getRelationships(Direction.INCOMING, rl).iterator();
+
+        if(relIt.hasNext()) {
+            Node parent = relIt.next().getStartNode();
+            if(!parent.hasLabel(nodeLabel)) return "ROOT";
+            if(!parent.hasProperty(NAME_PROPERTY)) return "UNDEFINED";
+
+            return (String) parent.getProperty(NAME_PROPERTY);
+        } else {
+            return "ROOT";
         }
     }
 

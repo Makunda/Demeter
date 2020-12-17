@@ -62,6 +62,7 @@ public class PostStatisticsLogger {
         stats.put(tag, jsonArr);
     }
 
+
     public static String getLinkedObjectsStats(Node n, Direction direction) {
 
         Label objectLabel = Label.label(OBJECT_LABEL);

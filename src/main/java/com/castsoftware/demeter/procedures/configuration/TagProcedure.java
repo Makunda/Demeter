@@ -22,18 +22,17 @@ package com.castsoftware.demeter.procedures.configuration;
 import com.castsoftware.demeter.controllers.configuration.TagController;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.ProcedureException;
-import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
-import com.castsoftware.demeter.exceptions.neo4j.Neo4jConnectionError;
-import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
-import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.demeter.exceptions.neo4j.*;
 import com.castsoftware.demeter.models.demeter.TagNode;
 import com.castsoftware.demeter.results.NodeResult;
+import com.castsoftware.demeter.results.demeter.TagResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.*;
 
+import java.util.List;
 import java.util.stream.Stream;
 
 public class TagProcedure {
@@ -64,6 +63,37 @@ public class TagProcedure {
             Node n =  TagController.addTagNode(nal, tag, activation, associatedRequest, description, parentId);
             return Stream.of(new NodeResult(n));
         } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
+
+    @Procedure(value = "demeter.tag.getAsList", mode = Mode.WRITE)
+    @Description("demeter.tag.getAsList( String ConfigurationName, String ApplicationName ) - Get the result of the Tag on a specific application as a List.")
+    public Stream<TagResult> getTagResultsAsList(@Name(value = "ConfigurationName") String configurationName,
+                                          @Name(value= "ApplicationName")  String applicationName) throws ProcedureException {
+
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            List<TagResult> resultList =  TagController.forecastTag(nal, configurationName, applicationName);
+            return resultList.stream();
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
+
+    @Procedure(value = "demeter.tag.execute", mode = Mode.WRITE)
+    @Description("demeter.tag.execute( Long id, String ApplicationName ) - Get the result of the Tag on a specific application as a List.")
+    public Stream<TagResult> executeTag(@Name(value = "Id") Long tagId,
+                                                 @Name(value= "ApplicationName")  String applicationName) throws ProcedureException {
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            TagResult result =  TagController.executeTag(nal, tagId, applicationName);
+            return Stream.of(result);
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult | Neo4jBadNodeFormatException e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
             throw ex;

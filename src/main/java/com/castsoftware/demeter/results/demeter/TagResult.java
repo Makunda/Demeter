@@ -17,30 +17,22 @@
  *
  */
 
-package com.castsoftware.demeter.results;
+package com.castsoftware.demeter.results.demeter;
 
-import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
-import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
-import com.castsoftware.demeter.models.demeter.UseCaseNode;
-
-public class UseCasesMessage {
-    public String name;
-    public String parentName;
-    public Boolean active;
+public class TagResult {
     public Long id;
+    public String tag;
+    public String description;
+    public Long numMatch;
+    public String categories;
+    public String useCase;
 
-    public UseCasesMessage(String name, Boolean active,  Long id) {
-        super();
-        this.name = name;
-        this.active = active;
+    public TagResult(Long id, String tag, String description, Long numMatch, String categories, String useCase) {
         this.id = id;
-    }
-
-    public UseCasesMessage(UseCaseNode n) throws Neo4jBadRequestException, Neo4jNoResult {
-        super();
-        this.name = n.getName();
-        this.active = n.getActive();
-        this.id = n.getNodeId();
-        this.parentName = n.getParentUseCase();
+        this.tag = tag;
+        this.description = description;
+        this.numMatch = numMatch;
+        this.categories = categories;
+        this.useCase = useCase;
     }
 }

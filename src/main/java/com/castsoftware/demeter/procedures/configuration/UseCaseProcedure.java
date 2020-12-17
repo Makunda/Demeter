@@ -36,7 +36,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.*;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class UseCaseProcedure {
@@ -81,10 +83,14 @@ public class UseCaseProcedure {
             nal.logInfo("Starting Use Case Listing..");
 
             List<UseCaseNode> useCases = UseCaseController.listUseCases(nal);
+            List<UseCasesMessage> messages = new ArrayList<>();
+            for (UseCaseNode useCase : useCases) {
+                messages.add(new UseCasesMessage(useCase));
+            }
 
-            return useCases.stream().map(UseCasesMessage::new);
+            return messages.stream();
 
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException e) {
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
             throw ex;
@@ -105,10 +111,15 @@ public class UseCaseProcedure {
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
             List<UseCaseNode> useCases = UseCaseController.selectUseCase(nal, idUseCase, activation);
-            
-            return useCases.stream().map(UseCasesMessage::new);
+            List<UseCasesMessage> messages = new ArrayList<>();
 
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException e) {
+            for (UseCaseNode useCase : useCases) {
+                messages.add(new UseCasesMessage(useCase));
+            }
+
+            return messages.stream();
+
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
             throw ex;
