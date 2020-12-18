@@ -27,7 +27,21 @@ _For more information, please refer to the ["Use the Demeter extension" page](ht
 ## Known issues
 None
 
+## Roadmap
+### Next release 
+- Module Grouping 
+- Enriched Demeter Configuration
+
+### Future releases
+- Graphical Demeter
+- Better statistic generator 
+
+
 ## Release Notes
+### Version 2.2.0 
+- Level 5 Grouping 
+- Microservices extraction
+- Daemonized Demeter
 ### Version 2.0.0 
 - New knowledge base
 - DocumentIt support
