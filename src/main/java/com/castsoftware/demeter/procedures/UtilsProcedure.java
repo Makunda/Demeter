@@ -19,6 +19,7 @@
 
 package com.castsoftware.demeter.procedures;
 
+import com.castsoftware.demeter.config.Configuration;
 import com.castsoftware.demeter.exceptions.file.FileNotFoundException;
 import com.castsoftware.exporter.results.OutputMessage;
 import com.castsoftware.demeter.database.Neo4jAL;
@@ -80,7 +81,6 @@ public class UtilsProcedure {
         }
 
     }
-
 
     @Procedure(value = "demeter.clean", mode = Mode.WRITE)
     @Description("demeter.clean() - Clean the configuration tree")
@@ -156,6 +156,20 @@ public class UtilsProcedure {
             log.error("An error occurred while executing the procedure", e);
             throw ex;
         }
-
     }
+
+    @Procedure(value = "demeter.getVersion", mode = Mode.WRITE)
+    @Description("demeter.getVersion() - Get the version of the Extension")
+    public Stream<OutputMessage> getVersion() throws ProcedureException {
+
+        try {
+            String version = Configuration.get("demeter.version");
+            return Stream.of(new OutputMessage(version));
+        } catch (Exception e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
+
 }

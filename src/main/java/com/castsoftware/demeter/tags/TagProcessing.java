@@ -131,6 +131,28 @@ public class TagProcessing {
     }
 
     /**
+     * Check the presence of a Count anchor request
+     * @param request The request to test
+     * @return True if the anchor was detected in the request
+     */
+    public static boolean isCountAnchorPresent(String request) {
+        Pattern p = Pattern.compile(ANCHOR_RETURN);
+        Matcher m = p.matcher(request);
+        return m.find();
+    }
+
+    /**
+     * Check the presence of a return anchor request
+     * @param request The request to test
+     * @return True if the anchor was detected in the request
+     */
+    public static boolean isReturnAnchorPresent(String request) {
+        Pattern p = Pattern.compile(ANCHOR_RETURN);
+        Matcher m = p.matcher(request);
+        return m.find();
+    }
+
+    /**
      * Remove anchors still present in the code
      * @param request The request to "Sanitize" from anchors
      * @return <code>String</code> Request cleaned

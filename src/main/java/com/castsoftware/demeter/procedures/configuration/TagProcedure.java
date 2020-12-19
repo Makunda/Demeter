@@ -24,6 +24,7 @@ import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.ProcedureException;
 import com.castsoftware.demeter.exceptions.neo4j.*;
 import com.castsoftware.demeter.models.demeter.TagNode;
+import com.castsoftware.demeter.results.BooleanResult;
 import com.castsoftware.demeter.results.NodeResult;
 import com.castsoftware.demeter.results.demeter.TagResult;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -88,12 +89,26 @@ public class TagProcedure {
     @Procedure(value = "demeter.tag.execute", mode = Mode.WRITE)
     @Description("demeter.tag.execute( Long id, String ApplicationName ) - Get the result of the Tag on a specific application as a List.")
     public Stream<TagResult> executeTag(@Name(value = "Id") Long tagId,
-                                                 @Name(value= "ApplicationName")  String applicationName) throws ProcedureException {
+                                        @Name(value= "ApplicationName")  String applicationName) throws ProcedureException {
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
             TagResult result =  TagController.executeTag(nal, tagId, applicationName);
             return Stream.of(result);
         } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult | Neo4jBadNodeFormatException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
+
+    @Procedure(value = "demeter.tag.validateQuery", mode = Mode.WRITE)
+    @Description("demeter.tag.validateQuery( String queryToValidate ) - Return the validity of the request.")
+    public Stream<BooleanResult> validateQuery(@Name(value= "Request")  String request) throws ProcedureException {
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            boolean result =  TagController.validateQuery(nal, request);
+            return Stream.of(new BooleanResult(result));
+        } catch (Exception | Neo4jConnectionError e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
             throw ex;

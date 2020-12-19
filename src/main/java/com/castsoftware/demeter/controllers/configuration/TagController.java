@@ -21,15 +21,13 @@ package com.castsoftware.demeter.controllers.configuration;
 
 import com.castsoftware.demeter.config.Configuration;
 import com.castsoftware.demeter.database.Neo4jAL;
-import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadNodeFormatException;
-import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
-import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
-import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.demeter.exceptions.neo4j.*;
 import com.castsoftware.demeter.models.demeter.TagNode;
 import com.castsoftware.demeter.models.demeter.UseCaseNode;
 import com.castsoftware.demeter.results.demeter.TagResult;
 import com.castsoftware.demeter.statistics.Highlights.Highlight;
 import com.castsoftware.demeter.statistics.Highlights.HighlightType;
+import com.castsoftware.demeter.tags.TagProcessing;
 import com.castsoftware.exporter.exceptions.neo4j.Neo4jBadRequest;
 import org.neo4j.graphdb.*;
 
@@ -93,6 +91,12 @@ public class TagController {
                     ERROR_PREFIX + "ADDU1");
         }
 
+        // Check the validity of the query
+        if(!validateQuery(neo4jAL, request)) {
+            throw new Neo4jBadRequestException(String.format("The request provided is in incorrect format. Request : '%s'", request), ERROR_PREFIX+"ADDU2");
+        }
+
+
         TagNode tagNode = new TagNode(neo4jAL, tag, active, request, description);
         Node n = tagNode.createNode();
 
@@ -155,6 +159,37 @@ public class TagController {
         int numAffected = tn.executeRequest(applicationContext).size();
         String useCaseName = tn.getParentUseCase().getName();
         return new TagResult(tn.getNodeId(), tn.getTag(), tn.getDescription(), (long) numAffected, tn.getCategories(), useCaseName);
+    }
+
+    /**
+     * Check the validity of a query provided
+     * @param neo4jAL Neo4j Access Layer
+     * @param request The request to test
+     * @return True is the test was a success, false otherwise
+     */
+    public static boolean validateQuery(Neo4jAL neo4jAL, String request) {
+        // Check the validity og the provided request
+        try {
+            // Sanitization, keep, everything but semi-colons
+            // TODO : Review the sanitization
+            request = request.replaceAll(";", "");
+
+            // Check the presence of anchors in the request
+            if(!TagProcessing.isCountAnchorPresent(request) || ! TagProcessing.isReturnAnchorPresent(request)) {
+                return false;
+            }
+
+            // Replace anchors and Execute explain
+            String forgedReq = "EXPLAIN " + TagProcessing.processAll(request);
+            neo4jAL.logInfo("Request to execute :" + forgedReq);
+            Result result = neo4jAL.executeQuery(forgedReq);
+
+            return true;
+
+        } catch (Neo4jQueryException | Neo4JTemplateLanguageException e) {
+            return false;
+        }
+
     }
 
 }
