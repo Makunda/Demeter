@@ -54,8 +54,33 @@ public class BackupProcedure {
             String message = "Undo level procedure launched ... ";
             nal.logInfo(message);
 
-            List<Node> recoveredLevel = BackupController.undoLevelGroup(nal, applicationContext);
+            List<Node> recoveredLevel = BackupController.undoLevelGroups(nal, applicationContext);
             String results = String.format("The procedure recreated %d level.", recoveredLevel.size());
+            nal.logInfo(results);
+
+            return recoveredLevel.stream().map(NodeResult::new);
+
+
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult | Neo4jBadNodeFormatException  e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
+
+    @Procedure(value = "demeter.undo.oneLevel", mode = Mode.WRITE)
+    @Description("demeter.undo.oneLevel(String ApplicationContext, String levelName) - Add a tag node and link it to a use case node.")
+    public Stream<NodeResult> undoOneLevelGroup(@Name(value = "ApplicationContext") String applicationContext,
+                                         @Name(value = "LevelName") String levelName) throws ProcedureException {
+
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+
+            String message = "Undoing one level procedure launched ... ";
+            nal.logInfo(message);
+
+            List<Node> recoveredLevel = BackupController.undoOneLevelGroup(nal, applicationContext, levelName);
+            String results = String.format("The procedure recreated level %s.", recoveredLevel.size());
             nal.logInfo(results);
 
             return recoveredLevel.stream().map(NodeResult::new);

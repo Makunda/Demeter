@@ -27,10 +27,7 @@ import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import org.neo4j.graphdb.*;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class BackupNode extends Neo4jObject{
@@ -335,6 +332,12 @@ public class BackupNode extends Neo4jObject{
         } catch (Neo4jQueryException e) {
             throw new Neo4jBadRequestException(LABEL + " node deletion failed", queryDomain , e, ERROR_PREFIX+"DEL1");
         }
+    }
+
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(nodeGenReq);
     }
 
     public BackupNode(Neo4jAL neo4jAL, String nodeGenReq, String nodeLabel) {

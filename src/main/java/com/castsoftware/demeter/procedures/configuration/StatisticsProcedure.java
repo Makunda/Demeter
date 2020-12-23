@@ -51,7 +51,7 @@ public class StatisticsProcedure {
     public Log log;
 
     /**
-     * Extract the best candidates for Imaging value demo
+     * Extract the best candidates for an Imaging value demo
      * @param applicationLabel
      * @return
      * @throws ProcedureException
@@ -63,13 +63,15 @@ public class StatisticsProcedure {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
             long start = System.currentTimeMillis();
 
-            StatisticsController.writePreExecutionStatistics(nal, configurationName, applicationLabel);
+            List<String> resList = StatisticsController.writePreExecutionStatistics(nal, configurationName, applicationLabel);
 
             long end = System.currentTimeMillis();
             long elapsedTime = end - start;
 
             String message = String.format("Report generated in %d ms.", elapsedTime);
-            return Stream.of(new OutputMessage(message));
+            resList.add(message);
+
+            return resList.stream().map(OutputMessage::new);
         } catch (Neo4jBadRequestException | Neo4jConnectionError | Exception | Neo4jQueryException | Neo4jNoResult e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);

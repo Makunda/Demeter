@@ -108,8 +108,9 @@ public class StatisticsController {
      * @throws Neo4jQueryException
      * @throws Neo4jNoResult
      */
-    public static String writePreExecutionStatistics(Neo4jAL nal, String configurationName, String applicationContext) throws Neo4jBadRequestException, Exception, Neo4jQueryException, Neo4jNoResult {
+    public static List<String> writePreExecutionStatistics(Neo4jAL nal, String configurationName, String applicationContext) throws Neo4jBadRequestException, Exception, Neo4jQueryException, Neo4jNoResult {
 
+        List<String> returnList = new ArrayList<>();
         List<Highlight> highlightList = new ArrayList<>();
         List<TagNode> tagNodeList = TagController.getSelectedTags(nal, configurationName);
 
@@ -170,7 +171,10 @@ public class StatisticsController {
             pl.save();
         }
 
-        return String.format("%d tags and %d statistics were processed.",nExecution, statList.size());
+        returnList.add(String.format("%d tags and %d statistics were processed.",nExecution, statList.size()));
+        returnList.add(String.format("The report was saved at '%s'.", PreStatisticsLogger.getOutputDirectory()));
+
+        return returnList;
     }
 
     public static Node addStatisticNode(Neo4jAL nal, String name, String request, Boolean active, String description, Long useCaseId) throws Neo4jBadRequestException, Neo4jNoResult, Neo4jQueryException {

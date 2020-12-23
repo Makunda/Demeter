@@ -172,4 +172,16 @@ public class UtilsProcedure {
         }
     }
 
+    @Procedure(value = "demeter.change.workspace", mode = Mode.WRITE)
+    @Description("demeter.change.workspace(String WorkspacePath) - Change the path of Demeter's Workspace")
+    public Stream<OutputMessage> changeWorkspacePath(@Name(value = "WorkspacePath") String path) throws ProcedureException {
+        try {
+            String pathMsg = UtilsController.changeWorkspacePath(path);
+            return Stream.of(new OutputMessage(pathMsg));
+        } catch (Exception | FileNotFoundException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
 }

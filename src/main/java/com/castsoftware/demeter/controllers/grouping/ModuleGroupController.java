@@ -57,81 +57,30 @@ public class ModuleGroupController {
     private static final String IMAGING_REFERENCES = Configuration.get("imaging.node.module.links.to_modules");
     private static final String IMAGING_BELONG_TO = Configuration.get("imaging.node.sub_object.link.to_objects");
 
-
+    /**
+     * Refresh the links between the modules, and recreate the correct links
+     *
+     * @param neo4jAL    Neo4j access layer
+     * @param nodeModule Node to refresh
+     * @throws Neo4jQueryException
+     */
     public static void refreshModuleLinks(Neo4jAL neo4jAL, Node nodeModule) throws Neo4jQueryException {
-        RelationshipType containsRel = RelationshipType.withName(IMAGING_CONTAINS);
-        RelationshipType referencesRel = RelationshipType.withName(IMAGING_REFERENCES);
+        String forgedToOtherModules = String.format("MATCH (n)-->(:Object)<-[:%1$s]-(l:%2$s) WHERE ID(n)=%3$s AND n<>l MERGE (n)-[:References]->(l);",
+                IMAGING_CONTAINS, IMAGING_MODULE_LABEL, nodeModule.getId());
 
-        // Link the objects to the New Level 5
-        Set<Node> toOtherModule = new HashSet<>();
-        Set<Node> fromOtherModule = new HashSet<>();
+        // List incoming modules
+        String forgedFromOtherModules = String.format("MATCH (n)<--(:Object)<-[:%1$s]-(l:%2$s) WHERE ID(n)=%3$s AND n<>l MERGE (l)-[:References]->(n);",
+                IMAGING_CONTAINS, IMAGING_MODULE_LABEL, nodeModule.getId());
 
-        //Get node list
-        for (Relationship rel: nodeModule.getRelationships(Direction.OUTGOING, containsRel)) {
-
-            // Get objects and assert they are objects
-            Node n = rel.getEndNode();
-            // Assert the node has a module parameter
-            if(!n.hasProperty(MODULE_PROPERTY)) continue;
-
-            // List outgoing modules
-            String forgedToOtherModules = String.format("MATCH (n)-->()<-[:%1$s]-(l:%2$s) WHERE ID(n)=%3$s RETURN l as module",
-                    IMAGING_CONTAINS, IMAGING_MODULE_LABEL, n.getId() );
-
-            // List incoming modules
-            String forgedFromOtherModules = String.format("MATCH (n)<--()<-[:%1$s]-(l:%2$s) WHERE ID(n)=%3$s RETURN l as module",
-                    IMAGING_CONTAINS, IMAGING_MODULE_LABEL, n.getId() );
-
-            Result resTo = neo4jAL.executeQuery(forgedToOtherModules);
-            while (resTo.hasNext()) {
-                Node resToNode = (Node) resTo.next().get("module");
-                Long id = resToNode.getId();
-
-                if( id == nodeModule.getId()) continue;
-                toOtherModule.add(resToNode);
-            }
-
-            Result resFrom = neo4jAL.executeQuery(forgedFromOtherModules);
-            while (resFrom.hasNext()) {
-                Node resToNode = (Node) resFrom.next().get("module");
-                Long id = resToNode.getId();
-
-                if( id == nodeModule.getId()) continue;
-                fromOtherModule.add(resToNode);
-            }
-
-
-        }
-
-        // Merge Link to other Modules
-        for (Node toLink : toOtherModule) {
-            boolean existsRel = false;
-            for(Relationship rels : nodeModule.getRelationships(Direction.OUTGOING, referencesRel)) {
-                if(rels.getEndNodeId() == toLink.getId()) existsRel=true;
-            }
-            if(!existsRel) nodeModule.createRelationshipTo(toLink, referencesRel);
-        }
-
-        // Merge Link Modules from other Modules
-        for (Node fromLink : fromOtherModule) {
-            boolean existsRel = false;
-            for(Relationship rels : nodeModule.getRelationships(Direction.INCOMING, referencesRel)) {
-                if(rels.getStartNodeId() == fromLink.getId()) existsRel=true;
-            }
-            if(!existsRel) fromLink.createRelationshipTo(nodeModule, referencesRel);
-        }
-
-        // Display info
-        List<String> toLevelName =  toOtherModule.stream().map(x -> (String) x.getProperty("Name")).collect(Collectors.toList());
-        List<String> fromLevelName =  fromOtherModule.stream().map(x -> (String) x.getProperty("Name")).collect(Collectors.toList());
-        neo4jAL.logInfo(toOtherModule.size() + " outgoing relationships were detected and created. To : " + String.join(",", toLevelName));
-        neo4jAL.logInfo(fromOtherModule.size() + " incoming relationships were detected and created." + String.join(",", fromLevelName));
+        Result resTo = neo4jAL.executeQuery(forgedToOtherModules);
+        Result resFrom = neo4jAL.executeQuery(forgedFromOtherModules);
     }
 
 
     /**
      * Refresh count for modules
-     * @param neo4jAL Neo4j access layer
+     *
+     * @param neo4jAL    Neo4j access layer
      * @param moduleNode Level node necessitating a
      * @return
      * @throws Neo4jQueryException
@@ -144,14 +93,14 @@ public class ModuleGroupController {
         Result resNumConnected = neo4jAL.executeQuery(forgedNumConnected);
 
         Long numLeft = 0L;
-        if(resNumConnected.hasNext()) {
+        if (resNumConnected.hasNext()) {
             numLeft = (Long) resNumConnected.next().get("countNode");
         }
 
         // Delete the old module node if it's empty
         if (numLeft == 0) {
             // Detach
-            for(Relationship rel : moduleNode.getRelationships()) {
+            for (Relationship rel : moduleNode.getRelationships()) {
                 rel.delete();
             }
             // Delete
@@ -166,7 +115,18 @@ public class ModuleGroupController {
         return moduleNode;
     }
 
-
+    /**
+     * Group modules in a specific application
+     * @param neo4jAL Neo4j access Layer
+     * @param applicationContext Application concerned by the module grouping
+     * @param groupName Name of the group to be merge
+     * @param nodeList List of nodes
+     * @return
+     * @throws Neo4jNoResult
+     * @throws Neo4jQueryException
+     * @throws Neo4jBadNodeFormatException
+     * @throws Neo4jBadRequestException
+     */
     public static Node groupModule(Neo4jAL neo4jAL, String applicationContext, String groupName, List<Node> nodeList) throws Neo4jNoResult, Neo4jQueryException, Neo4jBadNodeFormatException, Neo4jBadRequestException {
 
         RelationshipType containsRel = RelationshipType.withName(IMAGING_CONTAINS);
@@ -177,28 +137,28 @@ public class ModuleGroupController {
 
         // Assert the application name is not empty
         assert !applicationContext.isEmpty() : "The application name cannot be empty.";
-        neo4jAL.logInfo(nodeList + " Potential candidates for grouping on module with name : "+groupName);
+        neo4jAL.logInfo(nodeList + " Potential candidates for grouping on module with name : " + groupName);
 
         // Clean the group name by removing the Demeter Prefix
         groupName = groupName.replaceAll(GROUP_MODULE_TAG_IDENTIFIER, "");
 
         // Get other modules nodes
         Set<Node> affectedModules = new HashSet<>();
-        for(Node n : nodeList) {
+        for (Node n : nodeList) {
             // The node is supposed to be linked to only one module
             Iterator<Relationship> relIt = n.getRelationships(Direction.INCOMING, containsRel).iterator();
 
-            if(!relIt.hasNext()) continue;
+            if (!relIt.hasNext()) continue;
             Node modNode = relIt.next().getStartNode();
             // Assert that the node is a module
-            if(!modNode.hasLabel(moduleLabel)) continue;
+            if (!modNode.hasLabel(moduleLabel)) continue;
 
             // Add to set
             affectedModules.add(modNode);
         }
 
         // Backup Modules
-        for(Node mod : affectedModules ) {
+        for (Node mod : affectedModules) {
             ModuleNode nodeMode = ModuleNode.fromNode(neo4jAL, mod);
             nodeMode.createBackup(applicationContext, nodeList);
         }
@@ -210,7 +170,7 @@ public class ModuleGroupController {
         Node newModule = null;
 
         Result result = neo4jAL.executeQuery(forgedFindModule);
-        if(result.hasNext()) {
+        if (result.hasNext()) {
             // Module with same name was found, and results will be merge into it
             newModule = (Node) result.next().get("node");
         } else {
@@ -234,107 +194,16 @@ public class ModuleGroupController {
         int numSubObjects = 0;
         neo4jAL.logInfo("About to re-link " + nodeList.size() + " objects.");
 
-        Set<Long> affectedModuleId = affectedModules.stream().map(Node::getId).collect(Collectors.toSet());
-
-        List<Node> subObjectList = new CopyOnWriteArrayList<>(nodeList);
-        Set<Long> visitedNodes = new HashSet<>();
-        Set<Long> visitedObjects = new HashSet<>();
-
         // Treat node in a first pass
+        String forgedRequest;
         for (Node rObject : nodeList) {
+            // Link objects
+            forgedRequest = String.format("MATCH (m:Module:%1$s),(o:Object:%1$s) WHERE ID(m)=%2$s AND ID(o)=%3$s CREATE (m)-[:Contains]->(o);",
+                    applicationContext, newModule.getId(), rObject.getId());
 
-            // Treat sub object
-            if(rObject.hasLabel(subObjectLabel)) {
-                // Add the object to the node List
-                subObjectList.add(rObject);
-            }
-
-            // Treat Objects
-            if(rObject.hasLabel(objectLabel)) {
-
-                // Remove node relationships to other modules and create new one
-                for(Relationship rel : rObject.getRelationships(Direction.INCOMING, containsRel)) {
-                    Node startModule = rel.getStartNode();
-                    if(affectedModuleId.contains(startModule.getId())) {
-                        rel.delete();
-                    }
-                }
-
-                // Create the contains relationship to the object
-                newModule.createRelationshipTo(rObject, containsRel);
-                // Apply new Module name
-
-                // If the node has a module property, replace it
-                rObject.setProperty(MODULE_PROPERTY, groupName);
-
-                // Get relationship to subObject (only belong_to relationships)
-                for(Relationship rel : rObject.getRelationships(belongToRel)) {
-                    Node otherNode = rel.getOtherNode(rObject);
-
-                    // If otherNode is a SubObject, and was not already visited
-                    if(otherNode.hasLabel(subObjectLabel)){
-                        if(!visitedNodes.contains(otherNode.getId())) {
-                            subObjectList.add(rObject);
-                        } else {
-                            continue;
-                        }
-                    }
-                }
-
-                // Add to the visited node list
-                visitedNodes.add(rObject.getId());
-                visitedObjects.add(rObject.getId());
-            }
+            neo4jAL.executeQuery(forgedRequest);
         }
 
-        Stack<Node> toInvestigate = new Stack<>();
-
-        // Filter SubObjects, verify they're linked to object added
-        for(Node subObj : subObjectList) {
-            Long id = subObj.getId();
-            String forgeReq = String.format("MATCH (n)-[:"+IMAGING_BELONG_TO+"*]->(o:"+IMAGING_OBJECT_LABEL+":"+ applicationContext+ ") WHERE ID(n)=%d RETURN ID(o) as idObj;", id);
-
-            Result res = neo4jAL.executeQuery(forgeReq);
-            while (res.hasNext()) {
-                Long idObj =  (Long) res.next().get("idObj");
-                if(visitedObjects.contains(idObj)) {
-                    toInvestigate.add(subObj);
-                    break;
-                }
-            }
-        }
-
-        // Investigate only on subObjects linked to nodes
-        Set<Long> visited = new HashSet<>();
-        while (!toInvestigate.empty()) {
-            Node n = toInvestigate.pop();
-
-            // Get relationship to subObject (only belong_to relationships)
-            for(Relationship rel : n.getRelationships(belongToRel)) {
-                Node otherNode = rel.getOtherNode(n);
-
-                if(!visited.contains(otherNode.getId())) {
-                    toInvestigate.add(otherNode);
-                }
-
-            }
-
-            // Remove node relationships to other modules and create new one
-            for(Relationship rel : n.getRelationships(Direction.INCOMING, containsRel)) {
-                Node startModule = rel.getStartNode();
-                if(affectedModuleId.contains(startModule.getId())) {
-                    rel.delete();
-                }
-            }
-
-            // Create the contains relationship to the object
-            newModule.createRelationshipTo(n, containsRel);
-
-            visited.add(n.getId());
-        }
-
-
-        neo4jAL.logInfo(numSubObjects + " Sub-objects were relinked during the process");
 
         // Count
         try {
@@ -345,7 +214,7 @@ public class ModuleGroupController {
         }
 
         // Update old modules w/ recount
-        for(Node mod : affectedModules) {
+        for (Node mod : affectedModules) {
             try {
                 moduleRecount(neo4jAL, mod);
                 refreshModuleLinks(neo4jAL, mod);
@@ -354,10 +223,16 @@ public class ModuleGroupController {
             }
         }
 
-        return  newModule;
+        return newModule;
     }
 
-
+    /**
+     * Group all Module present in an application
+     * @param neo4jAL Neo4j Access Layer
+     * @param applicationContext Application where the nodes are going to be merged
+     * @return The list of new modules created
+     * @throws Neo4jQueryException
+     */
     public static List<Node> groupAllModules(Neo4jAL neo4jAL, String applicationContext) throws Neo4jQueryException {
         Map<String, List<Node>> groupMap = new HashMap<>();
 
@@ -397,7 +272,7 @@ public class ModuleGroupController {
             if (nodeList.isEmpty()) continue;
 
             try {
-                neo4jAL.logInfo("# Now processing group with name : " +groupName);
+                neo4jAL.logInfo("# Now processing group with name : " + groupName);
                 Node n = groupModule(neo4jAL, applicationContext, groupName, nodeList);
                 resNodes.add(n);
             } catch (Exception | Neo4jNoResult | Neo4jBadNodeFormatException | Neo4jBadRequestException err) {
@@ -413,9 +288,9 @@ public class ModuleGroupController {
                 applicationContext, IMAGING_OBJECT_TAGS, GROUP_MODULE_TAG_IDENTIFIER);
         Result tagRemoveRes = neo4jAL.executeQuery(removeTagsQuery);
 
-        if(tagRemoveRes.hasNext()) {
+        if (tagRemoveRes.hasNext()) {
             Long nDel = (Long) tagRemoveRes.next().get("removedTags");
-            neo4jAL.logInfo( "# " + nDel + " demeter 'module group tags' were removed from the database.");
+            neo4jAL.logInfo("# " + nDel + " demeter 'module group tags' were removed from the database.");
         }
 
         neo4jAL.logInfo("Cleaning Done !");

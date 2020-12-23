@@ -34,6 +34,7 @@ import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.models.*;
 import org.neo4j.graphdb.*;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Timestamp;
@@ -176,6 +177,42 @@ public class UtilsController {
         double total = (double) (valid + notValid);
         double p = (double) (valid ) / total ;
         return String.format("%s TagRequest nodes were checked. %d valid node(s) were discovered. %d nonfunctional node(s) were identified. Percentage of success : %.2f", total, valid, notValid, p);
+    }
+
+    /**
+     * Change workspace to another directory.
+     * @param workspacePath The new path of the workspace
+     * @return Message indicating the new value of the path.
+     * @throws FileNotFoundException
+     */
+    public static String changeWorkspacePath(String workspacePath) throws FileNotFoundException {
+        // Create Workspace folder
+        File workspaceDir = new File(workspacePath);
+        if (!workspaceDir.exists()){
+            workspaceDir.mkdirs();
+        }
+
+        Configuration.set("demeter.workspace.path", workspaceDir.getAbsolutePath());
+        // Reload the configuration
+        Configuration.saveAndReload();
+
+        // Create Statistics folders
+        String statisticsDirectory = Configuration.get("demeter.workspace.path") + Configuration.get("pre_statistics.file.path");
+        File statisticsDir = new File(statisticsDirectory);
+
+        if(!statisticsDir.exists()) {
+            statisticsDir.mkdirs();
+        }
+
+        // Create Metamodels path
+        String metaModelDirectory = Configuration.get("demeter.workspace.path") + Configuration.get("meta.model.path");
+        File metaModelDir = new File(metaModelDirectory);
+
+        if(!metaModelDir.exists()) {
+            metaModelDir.mkdirs();
+        }
+
+        return String.format("The workspace path is now set to '%s'.", workspaceDir.getAbsolutePath());
     }
 
 }

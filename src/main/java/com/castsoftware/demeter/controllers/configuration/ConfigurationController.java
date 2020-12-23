@@ -29,7 +29,6 @@ import com.castsoftware.demeter.models.demeter.ConfigurationNode;
 import com.castsoftware.demeter.models.demeter.DocumentNode;
 import com.castsoftware.demeter.models.demeter.TagNode;
 import com.castsoftware.demeter.models.demeter.UseCaseNode;
-import com.castsoftware.demeter.statistics.PostStatisticsLogger;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
@@ -46,8 +45,9 @@ public class ConfigurationController {
 
     /**
      * Create a new configuration node
+     *
      * @param neo4jAL Neo4j Access Layer
-     * @param name Name of the new configuration
+     * @param name    Name of the new configuration
      * @return The configuration node created
      * @throws Neo4jBadRequestException
      * @throws Neo4jNoResult
@@ -59,8 +59,9 @@ public class ConfigurationController {
 
     /**
      * Delete a configuration and its associated nodes.
+     *
      * @param neo4jAL Neo4J Access Layer
-     * @param id ID of the configuration node to delete
+     * @param id      ID of the configuration node to delete
      * @return The number of nodes deleted
      * @throws Neo4jQueryException
      */
@@ -71,24 +72,24 @@ public class ConfigurationController {
             Result res = neo4jAL.executeQuery(initQuery);
             return (Long) res.next().get("deleted_node");
         } catch (NoSuchElementException ex) {
-            throw new Neo4jQueryException(String.format("Cannot delete the configuration with ID : %d", id), initQuery , ex,  ERROR_PREFIX + "DELC1");
+            throw new Neo4jQueryException(String.format("Cannot delete the configuration with ID : %d", id), initQuery, ex, ERROR_PREFIX + "DELC1");
         }
     }
 
     /**
      * Execute the actual configuration
-     * @param neo4jAL Neo4J Access layer
+     *
+     * @param neo4jAL           Neo4J Access layer
      * @param configurationName Name of the configuration to execute
-     * @param applicationLabel Label of the application on which the tag will be applied
-     * @throws ProcedureException
+     * @param applicationLabel  Label of the application on which the tag will be applied
      * @return Number of tag applied in the configuration
+     * @throws ProcedureException
      */
     public static int executeConfiguration(Neo4jAL neo4jAL, String configurationName, String applicationLabel) throws Neo4jBadRequestException, Neo4jQueryException, Neo4jNoResult {
-        PostStatisticsLogger fl  = PostStatisticsLogger.getLogger();
         List<Label> labels = neo4jAL.getAllLabels();
 
         // Verify if the label is present in the database
-        if(!labels.contains(Label.label(applicationLabel))) {
+        if (!labels.contains(Label.label(applicationLabel))) {
             String message = String.format("Cannot find label \"%s\" in the database", applicationLabel);
             throw new Neo4jBadRequestException(message, ERROR_PREFIX + "EXEC1");
         }
@@ -98,11 +99,11 @@ public class ConfigurationController {
         // Execute activated tag's requests
         List<TagNode> tags = TagController.getSelectedTags(neo4jAL, configurationName);
 
-        for(TagNode n : tags) {
+        for (TagNode n : tags) {
             try {
                 List<Node> res = n.executeRequest(applicationLabel); // Results need to be processed
                 neo4jAL.logInfo("Statistics saved for tag : " + n.getTag());
-                nExecution ++;
+                nExecution++;
             } catch (Exception | Neo4jNoResult | Neo4jBadRequestException err) {
                 neo4jAL.getLogger().error("An error occurred during Tag request execution. Tag with Node ID : " + n.getNodeId(), err);
             }
@@ -110,7 +111,7 @@ public class ConfigurationController {
 
         // Execute DocumentIt
         List<DocumentNode> documents = DocumentController.getSelectedDocuments(neo4jAL, configurationName);
-        for(DocumentNode d : documents) {
+        for (DocumentNode d : documents) {
             try {
                 List<Node> res = d.execute(applicationLabel); // Results need to be processed
             } catch (Exception | Neo4jNoResult | Neo4jBadRequestException err) {

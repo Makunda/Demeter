@@ -26,6 +26,7 @@ import com.castsoftware.demeter.models.demeter.StatisticNode;
 import com.castsoftware.demeter.statistics.Highlights.Highlight;
 import com.castsoftware.demeter.statistics.Highlights.HighlightCategory;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.sql.Timestamp;
@@ -145,9 +146,19 @@ public class PreStatisticsLogger implements AutoCloseable {
         flushBuffer();
     }
 
-
+    /**
+     * Constructor
+     * @param applicationContext Name of the application concerned by these statistics
+     * @throws IOException If the PreStatisticsLogger failed to create the statistics file
+     */
     public PreStatisticsLogger(String applicationContext) throws IOException {
-        String outputDirectory = Configuration.get("pre_statistics.file.path");
+        String outputDirectory = Configuration.get("demeter.workspace.path") + Configuration.get("pre_statistics.file.path");
+        File statisticsDir = new File(outputDirectory);
+
+        if(!statisticsDir.exists()) {
+            statisticsDir.mkdirs();
+        }
+
         this.applicationContext = applicationContext;
 
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());
@@ -155,6 +166,14 @@ public class PreStatisticsLogger implements AutoCloseable {
         file = new FileWriter(forgedPath);
 
         flushBuffer();
+    }
+
+    /**
+     * Get output directory where the pre-statistics files are saved
+     * @return The path of the directory
+     */
+    public static String getOutputDirectory() {
+        return  Configuration.get("demeter.workspace.path") + Configuration.get("pre_statistics.file.path");
     }
 
 
