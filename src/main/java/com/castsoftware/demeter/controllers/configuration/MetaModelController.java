@@ -20,9 +20,8 @@
 package com.castsoftware.demeter.controllers.configuration;
 
 import com.castsoftware.demeter.database.Neo4jAL;
-import com.castsoftware.demeter.metaModel.MetaModel;
+import com.castsoftware.demeter.metaModels.MetaModel;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 

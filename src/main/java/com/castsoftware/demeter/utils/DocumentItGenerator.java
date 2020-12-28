@@ -17,7 +17,7 @@
  *
  */
 
-package com.castsoftware.demeter.tools;
+package com.castsoftware.demeter.utils;
 
 import com.castsoftware.demeter.config.Configuration;
 import com.castsoftware.demeter.database.Neo4jAL;

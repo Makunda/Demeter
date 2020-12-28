@@ -38,11 +38,11 @@ public class ModuleGroupController {
     // Static Imaging nodes
     private static final String IMAGING_SUB_OBJECT_LABEL = Configuration.get("imaging.node.sub_object.label");
     private static final String IMAGING_OBJECT_LABEL = Configuration.get("imaging.node.object.label");
-    private static final String IMAGING_RAW_LABEL = Configuration.get("imaging.node.raw.label");
     private static final String IMAGING_MODULE_LABEL = Configuration.get("imaging.node.module.label");
     private static final String IMAGING_MODULE_NAME = Configuration.get("imaging.node.module.name");
-    private static final String IMAGING_MODULE_AIP_ID = Configuration.get("imaging.node.module.aipId");
     private static final String IMAGING_OBJECT_TAGS = Configuration.get("imaging.link.object_property.tags");
+    private static final String IMAGING_MODULE_AIP_ID = Configuration.get("imaging.node.module.aipId");
+    private static final String IMAGING_RAW_LABEL = Configuration.get("imaging.node.raw.label");
 
     private static final String MODULE_PROPERTY = Configuration.get("imaging.node.module_property");
     private static final String MODULE_SUBSET_PROPERTY = Configuration.get("imaging.node.sub_object.subset_property");

@@ -24,7 +24,7 @@ import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.neo4j.*;
 import com.castsoftware.demeter.models.Neo4jObject;
 import com.castsoftware.demeter.tags.TagProcessing;
-import com.castsoftware.demeter.tools.DocumentItGenerator;
+import com.castsoftware.demeter.utils.DocumentItGenerator;
 import org.neo4j.graphdb.*;
 
 import java.util.*;

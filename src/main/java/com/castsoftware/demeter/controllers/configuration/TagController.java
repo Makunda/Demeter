@@ -50,10 +50,8 @@ public class TagController {
      * @throws Neo4jBadRequestException
      */
     public static List<TagNode> getSelectedTags(Neo4jAL neo4jAL, String configurationName) throws Neo4jQueryException, Neo4jNoResult, Neo4jBadRequestException {
-
         Label tagNodeLabel = Label.label(TagNode.getLabel());
         Set<Node> tags = UseCaseController.searchByLabelInActiveBranches(neo4jAL, configurationName, tagNodeLabel);
-
 
         //TagNode.fromNode(neo4jAL, otherNode)
         return tags.stream().map( x -> {
@@ -129,10 +127,11 @@ public class TagController {
                 String useCaseName = tn.getParentUseCase().getName();
                 TagResult tr = new TagResult(tn.getNodeId(), tn.getTag(), tn.getDescription(), numAffected, tn.getCategories(), useCaseName);
                 tagResultList.add(tr);
-            } catch (Neo4jNoResult | Neo4jBadNodeFormatException neo4jNoResult) {
+            } catch (Exception | Neo4jNoResult | Neo4jBadNodeFormatException neo4jNoResult) {
                 neo4jAL.logError(String.format("Tag with Id '%d' produced an error during forecasting.", tn.getNodeId()), neo4jNoResult);
             }
         }
+
         return tagResultList;
     }
 

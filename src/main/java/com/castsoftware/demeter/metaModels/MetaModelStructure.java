@@ -17,9 +17,11 @@
  *
  */
 
-package com.castsoftware.demeter.metaModel;
+package com.castsoftware.demeter.metaModels;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 public class MetaModelStructure {
@@ -29,6 +31,7 @@ public class MetaModelStructure {
     public boolean splitNotInTransactionsObjects;
     public boolean splitExternalObjects;
     public String[] toMergeObjectType;
+    public Map<String, Long[]> customOperations;
 
     @Override
     public boolean equals(Object o) {
@@ -39,12 +42,13 @@ public class MetaModelStructure {
                 splitExternalObjects == that.splitExternalObjects &&
                 metaModelName.equals(that.metaModelName) &&
                 language.equals(that.language) &&
+                customOperations.equals(that.customOperations) &&
                 Arrays.equals(toMergeObjectType, that.toMergeObjectType);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(metaModelName, language, splitNotInTransactionsObjects, splitExternalObjects);
+        int result = Objects.hash(metaModelName, language, splitNotInTransactionsObjects, splitExternalObjects, customOperations);
         result = 31 * result + Arrays.hashCode(toMergeObjectType);
         return result;
     }
@@ -55,5 +59,6 @@ public class MetaModelStructure {
         this.splitExternalObjects = false;
         this.splitNotInTransactionsObjects = false;
         this.toMergeObjectType = new String[]{};
+        this.customOperations = new HashMap<>();
     }
 }
