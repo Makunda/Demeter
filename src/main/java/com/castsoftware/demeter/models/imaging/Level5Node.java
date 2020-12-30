@@ -24,6 +24,7 @@ import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.neo4j.*;
 import com.castsoftware.demeter.models.BackupNode;
 import com.castsoftware.demeter.models.Neo4jObject;
+import com.castsoftware.demeter.models.demeter.SaveNode;
 import org.neo4j.graphdb.*;
 
 import java.util.ArrayList;
@@ -173,23 +174,6 @@ public class Level5Node extends Neo4jObject {
     }
 
     @Override
-    protected Node findNode() throws Neo4jBadRequestException, Neo4jNoResult {
-        String initQuery = String.format("MATCH (n:%s) WHERE ID(n)=%d RETURN n as node LIMIT 1;", LABEL, this.getNodeId());
-        try {
-            Result res = neo4jAL.executeQuery(initQuery);
-            Node n = (Node) res.next().get("node");
-            this.setNode(n);
-
-            return n;
-        } catch (Neo4jQueryException e) {
-            throw new Neo4jBadRequestException(LABEL + " node initialization failed", initQuery , e, ERROR_PREFIX+"FIN1");
-        } catch (NoSuchElementException |
-                NullPointerException e) {
-            throw new Neo4jNoResult(String.format("You need to create %s node first.", LABEL),  initQuery, e, ERROR_PREFIX+"FIN2");
-        }
-    }
-
-    @Override
     public Node createNode() throws Neo4jNoResult {
 
         try {
@@ -220,7 +204,7 @@ public class Level5Node extends Neo4jObject {
      * @throws Neo4jBadRequestException
      * @throws Neo4jNoResult
      */
-    public String toMergeRequest(String applicationContext) throws Neo4jBadRequestException, Neo4jNoResult {
+    public String toMergeRequest(String applicationContext) throws Neo4jBadRequestException, Neo4jNoResult, Neo4jQueryException {
         Node n = getNode();
 
         // The count property can't be part of the merge request, due to its variable number 'Count'
@@ -280,40 +264,20 @@ public class Level5Node extends Neo4jObject {
      * @return The list of node found in the database
      * @throws Neo4jBadRequestException If the request failed to execute
      */
-    public static List<Level5Node> getAllNodesByApplication(Neo4jAL neo4jAL, String applicationName) throws Neo4jBadRequestException {
-        List<Level5Node> resList = new ArrayList<>();
-        String forgedQuery = String.format("MATCH (p:%s:%s) RETURN p as node;", LABEL, applicationName);
+    public static List<Level5Node> getAllNodesByApplication(Neo4jAL neo4jAL, String applicationName) throws Neo4jNoResult {
+        Label label = Label.label(LABEL);
+        List<Level5Node> returnList = new ArrayList<>();
 
-        try {
-            Result resIt = neo4jAL.executeQuery(forgedQuery);
-            while ( resIt.hasNext() ) {
-                try {
-                    Node node = (Node) resIt.next().get("node");
-
-                    Level5Node trn = Level5Node.fromNode(neo4jAL, node);
-                    trn.setNode(node);
-
-                    resList.add(trn);
-                }  catch (NoSuchElementException | NullPointerException | Neo4jBadNodeFormatException e) {
-                    throw new Neo4jNoResult(LABEL + "nodes retrieving by application name failed",  "findQuery", e, ERROR_PREFIX+"GANA1");
-                }
+        for (ResourceIterator<Node> it = neo4jAL.getTransaction().findNodes(label); it.hasNext(); ) {
+            try {
+                returnList.add(fromNode(neo4jAL, it.next()));
+            }  catch (NoSuchElementException | NullPointerException | Neo4jBadNodeFormatException e) {
+                throw new Neo4jNoResult(LABEL + "nodes retrieving by application name failed",  "findQuery", e, ERROR_PREFIX+"GANA1");
             }
-            return resList;
-        } catch (Neo4jQueryException | Neo4jNoResult e) {
-            throw new Neo4jBadRequestException(LABEL + " nodes retrieving by application name failed", "findQuery" , e, ERROR_PREFIX+"GANA1");
-        }
-    }
 
-
-    @Override
-    public void deleteNode() throws Neo4jBadRequestException {
-        String queryDomain = String.format("MATCH (p:%s) WHERE ID(p)=%d DETACH DELETE p;",
-                LABEL, this.getNodeId());
-        try {
-            neo4jAL.executeQuery(queryDomain);
-        } catch (Neo4jQueryException e) {
-            throw new Neo4jBadRequestException(LABEL + " node deletion failed", queryDomain , e, ERROR_PREFIX+"DEL1");
         }
+
+        return returnList;
     }
 
     public Level5Node(Neo4jAL neo4jAL, String name, Boolean concept, Boolean drilldown, String fullname, String color, Long level, Long count, String shade) {

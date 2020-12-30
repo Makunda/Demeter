@@ -27,6 +27,7 @@ import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.models.BackupNode;
 import com.castsoftware.demeter.models.Neo4jObject;
+import com.castsoftware.demeter.models.demeter.TagNode;
 import org.neo4j.graphdb.*;
 
 import java.util.ArrayList;
@@ -136,22 +137,6 @@ public class ModuleNode extends Neo4jObject {
         }
     }
 
-    @Override
-    protected Node findNode() throws Neo4jBadRequestException, Neo4jNoResult {
-        String initQuery = String.format("MATCH (n:%s) WHERE ID(n)=%d RETURN n as node LIMIT 1;", LABEL, this.getNodeId());
-        try {
-            Result res = neo4jAL.executeQuery(initQuery);
-            Node n = (Node) res.next().get("node");
-            this.setNode(n);
-
-            return n;
-        } catch (Neo4jQueryException e) {
-            throw new Neo4jBadRequestException(LABEL + " node initialization failed", initQuery , e, ERROR_PREFIX+"FIN1");
-        } catch (NoSuchElementException |
-                NullPointerException e) {
-            throw new Neo4jNoResult(String.format("You need to create %s node first.", LABEL),  initQuery, e, ERROR_PREFIX+"FIN2");
-        }
-    }
 
     @Override
     public Node createNode() throws Neo4jNoResult {
@@ -181,7 +166,7 @@ public class ModuleNode extends Neo4jObject {
      * @throws Neo4jBadRequestException
      * @throws Neo4jNoResult
      */
-    public String toMergeRequest(String applicationContext) throws Neo4jBadRequestException, Neo4jNoResult {
+    public String toMergeRequest(String applicationContext) throws Neo4jNoResult, Neo4jQueryException {
         Node n = getNode();
 
         // The count property can't be part of the merge request, due to its variable number 'Count'
@@ -214,26 +199,20 @@ public class ModuleNode extends Neo4jObject {
      * @return The list of node found in the database
      * @throws Neo4jBadRequestException If the request failed to execute
      */
-    public static List<ModuleNode> getAllNodes(Neo4jAL neo4jAL) throws Neo4jBadRequestException {
-        try {
-            List<ModuleNode> resList = new ArrayList<>();
-            ResourceIterator<Node> resIt = neo4jAL.findNodes(Label.label(LABEL));
-            while ( resIt.hasNext() ) {
-                try {
-                    Node node = resIt.next();
+    public static List<ModuleNode> getAllNodes(Neo4jAL neo4jAL) throws Neo4jNoResult {
+        Label label = Label.label(LABEL);
+        List<ModuleNode> returnList = new ArrayList<>();
 
-                    ModuleNode trn = ModuleNode.fromNode(neo4jAL, node);
-                    trn.setNode(node);
-
-                    resList.add(trn);
-                }  catch (NoSuchElementException | NullPointerException | Neo4jBadNodeFormatException e) {
-                    throw new Neo4jNoResult(LABEL + " nodes retrieving failed",  "findQuery", e, ERROR_PREFIX+"GAN1");
-                }
+        for (ResourceIterator<Node> it = neo4jAL.getTransaction().findNodes(label); it.hasNext(); ) {
+            try {
+                returnList.add(fromNode(neo4jAL, it.next()));
+            }  catch (NoSuchElementException | NullPointerException | Neo4jBadNodeFormatException e) {
+                throw new Neo4jNoResult(LABEL + "nodes retrieving by application name failed",  "findQuery", e, ERROR_PREFIX+"GANA1");
             }
-            return resList;
-        } catch (Neo4jQueryException | Neo4jNoResult e) {
-            throw new Neo4jBadRequestException(LABEL + " nodes retrieving failed", "findQuery" , e, ERROR_PREFIX+"GAN1");
+
         }
+
+        return returnList;
     }
 
     @Override

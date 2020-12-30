@@ -89,7 +89,7 @@ public class MetaModel {
     /**
      * Save the actual user modifications
      */
-    public void saveActualState() throws Neo4jBadRequestException, Neo4jNoResult {
+    public void saveActualState() throws  Neo4jNoResult, Neo4jQueryException {
         Label objectLabel = Label.label(IMAGING_OBJECT_LABEL);
         RelationshipType aggregates = RelationshipType.withName(AGGREGATES_REL);
 

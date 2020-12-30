@@ -74,22 +74,6 @@ public class ConfigurationNode extends Neo4jObject {
         }
     }
 
-    @Override
-    protected Node findNode() throws Neo4jBadRequestException, Neo4jNoResult {
-        String initQuery = String.format("MATCH (n:%s) WHERE ID(n)=%d RETURN n as node LIMIT 1;", LABEL, this.getNodeId());
-        try {
-            Result res = neo4jAL.executeQuery(initQuery);
-            Node n = (Node) res.next().get("node");
-
-            this.setNode(n);
-            return n;
-        } catch ( Neo4jQueryException e) {
-            throw new Neo4jBadRequestException("Company node initialization failed", initQuery , e, ERROR_PREFIX+"FIN1");
-        } catch (NoSuchElementException |
-                NullPointerException e) {
-            throw new Neo4jNoResult("You need to create the ConfigurationNode node first.",  initQuery, e, ERROR_PREFIX+"FIN2");
-        }
-    }
 
     @Override
     public Node createNode() throws Neo4jBadRequestException, Neo4jNoResult {
@@ -110,33 +94,22 @@ public class ConfigurationNode extends Neo4jObject {
         }
     }
 
-    public static List<ConfigurationNode> getAllNodes(Neo4jAL neo4jAL) throws Neo4jBadRequestException {
-        try {
-            List<ConfigurationNode> resList = new ArrayList<>();
-            ResourceIterator<Node> resIt = neo4jAL.findNodes(Label.label(LABEL));
-            while ( resIt.hasNext() ) {
-                try {
-                    Node node = (Node) resIt.next();
+    public static List<ConfigurationNode> getAllNodes(Neo4jAL neo4jAL) throws Neo4jNoResult {
+        Label label = Label.label(LABEL);
+        List<ConfigurationNode> returnList = new ArrayList<>();
 
-                    ConfigurationNode cn = ConfigurationNode.fromNode(neo4jAL, node);
-
-                    resList.add(cn);
-                }  catch ( Neo4jBadNodeFormatException e) {
-                    throw new Neo4jNoResult(LABEL + " nodes retrieving failed",  "findQuery", e, ERROR_PREFIX+"GAN1");
-                }
+        for (ResourceIterator<Node> it = neo4jAL.getTransaction().findNodes(label); it.hasNext(); ) {
+            try {
+                returnList.add(fromNode(neo4jAL, it.next()));
+            }  catch (NoSuchElementException | NullPointerException | Neo4jBadNodeFormatException e) {
+                throw new Neo4jNoResult(LABEL + "nodes retrieving by application name failed",  "findQuery", e, ERROR_PREFIX+"GANA1");
             }
-            return resList;
-        } catch (Neo4jQueryException | Neo4jNoResult e) {
-            throw new Neo4jBadRequestException(LABEL + " nodes retrieving failed", "findQuery" , e, ERROR_PREFIX+"GAN1");
+
         }
+
+        return returnList;
     }
 
-    @Override
-    public void deleteNode() throws Neo4jBadRequestException {
-        String queryDomain = String.format("MATCH (p:%s) WHERE ID(p)=%d DETACH DELETE p;",
-                LABEL, this.getNodeId());
-
-    }
 
     public ConfigurationNode(Neo4jAL nal, String name) {
         super(nal);

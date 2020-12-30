@@ -78,7 +78,7 @@ public class TagController {
      * @throws Neo4jBadRequestException
      * @throws Neo4jNoResult
      */
-    public static Node addTagNode(Neo4jAL neo4jAL, String tag, Boolean active, String request, String description,  Long parentId) throws Neo4jQueryException, Neo4jBadRequestException, Neo4jNoResult {
+    public static Node addTagNode(Neo4jAL neo4jAL, String tag, Boolean active, String request, String description, String categories, Long parentId) throws Neo4jQueryException, Neo4jBadRequestException, Neo4jNoResult {
         Node parent = neo4jAL.getNodeById(parentId);
 
         Label useCaseLabel = Label.label(UseCaseNode.getLabel());
@@ -96,6 +96,7 @@ public class TagController {
 
 
         TagNode tagNode = new TagNode(neo4jAL, tag, active, request, description);
+        tagNode.setCategories(categories);
         Node n = tagNode.createNode();
 
         // Create the relation from the use case to the tag
@@ -180,6 +181,7 @@ public class TagController {
 
             // Replace anchors and Execute explain
             String forgedReq = "EXPLAIN " + TagProcessing.processAll(request);
+            forgedReq = TagProcessing.replaceDummyApplicationContext(forgedReq);
             neo4jAL.logInfo("Request to execute :" + forgedReq);
             Result result = neo4jAL.executeQuery(forgedReq);
 

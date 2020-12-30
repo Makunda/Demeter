@@ -48,11 +48,12 @@ public class TagProcedure {
     public Log log;
 
     @Procedure(value = "demeter.tag.add", mode = Mode.WRITE)
-    @Description("demeter.tag.add(String Tag, String AssociatedRequest, Boolean Activation, String Description, Long ParentId) - Add a tag node and link it to a use case node.")
+    @Description("demeter.tag.add(String Tag, String AssociatedRequest, Boolean Activation, String Description, String categories, Long ParentId) - Add a tag node and link it to a use case node.")
     public Stream<NodeResult> addTagNode(@Name(value = "Tag") String tag,
                                    @Name(value= "AssociatedRequest")  String associatedRequest,
                                    @Name(value= "Activation") Boolean activation,
                                    @Name(value= "Description")  String description,
+                                   @Name(value= "Categories")  String categories,
                                    @Name(value= "ParentId")  Long parentId) throws ProcedureException {
 
         try {
@@ -61,7 +62,7 @@ public class TagProcedure {
             String message = String.format("Adding a %s node with parameters { 'Tag' : '%s', 'Activation' : %s, 'Request' : '%s' }.", TagNode.getLabel(), tag, activation, associatedRequest);
             nal.logInfo(message);
 
-            Node n =  TagController.addTagNode(nal, tag, activation, associatedRequest, description, parentId);
+            Node n =  TagController.addTagNode(nal, tag, activation, associatedRequest, description, categories,  parentId);
             return Stream.of(new NodeResult(n));
         } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult e) {
             ProcedureException ex = new ProcedureException(e);

@@ -23,6 +23,7 @@ import com.castsoftware.demeter.config.Configuration;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
+import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import org.neo4j.graphdb.Node;
 
 import java.util.ArrayList;
@@ -69,7 +70,14 @@ public abstract class Neo4jObject {
      * @throws Neo4jBadRequestException An error was thrown during the execution of the query
      * @throws Neo4jNoResult The request did not return any results (and was supposed to)
      */
-    protected abstract Node findNode() throws Neo4jBadRequestException, Neo4jNoResult;
+    public Node findNode() throws Neo4jQueryException, Neo4jNoResult {
+        if(this.getNodeId() == null) {
+            throw new Neo4jNoResult("You need to create node first.",  "Find node by id", "NEOOxFIN2");
+        }
+
+        Node n = neo4jAL.getNodeById(this.getNodeId());
+        return n;
+    }
 
     /**
      * Create a node in the database based on attributes of the object
@@ -84,7 +92,10 @@ public abstract class Neo4jObject {
      * @throws Neo4jBadRequestException An error was thrown during the execution of the query
      * @throws Neo4jNoResult The request did not return any results (and was supposed to)
      */
-    public abstract void deleteNode() throws Neo4jBadRequestException, Neo4jNoResult;
+    public void deleteNode() throws Neo4jBadRequestException, Neo4jNoResult, Neo4jQueryException {
+        Node n = this.getNode();
+        n.delete();
+    }
 
     /**
      * Return the ID of the Neo4j node in the database
@@ -101,7 +112,7 @@ public abstract class Neo4jObject {
      * @throws Neo4jBadRequestException
      * @throws Neo4jNoResult
      */
-    public Node getNode() throws Neo4jBadRequestException, Neo4jNoResult {
+    public Node getNode() throws  Neo4jNoResult, Neo4jQueryException {
         if(this.node == null) {
             this.findNode();
         }

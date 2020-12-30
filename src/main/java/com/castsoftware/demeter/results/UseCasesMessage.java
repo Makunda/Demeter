@@ -21,6 +21,7 @@ package com.castsoftware.demeter.results;
 
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
+import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.models.demeter.UseCaseNode;
 
 public class UseCasesMessage {
@@ -36,7 +37,7 @@ public class UseCasesMessage {
         this.id = id;
     }
 
-    public UseCasesMessage(UseCaseNode n) throws Neo4jBadRequestException, Neo4jNoResult {
+    public UseCasesMessage(UseCaseNode n) throws Neo4jBadRequestException, Neo4jNoResult, Neo4jQueryException {
         super();
         this.name = n.getName();
         this.active = n.getActive();

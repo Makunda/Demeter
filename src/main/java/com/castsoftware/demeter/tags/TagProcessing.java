@@ -53,6 +53,15 @@ public class TagProcessing {
     }
 
     /**
+     * Replace the application context anchor by a dummy application name. (TEST PURPOSES)
+     * @param request Request to treat
+     * @return
+     */
+    public static String replaceDummyApplicationContext(String request) {
+        return request.replace(LABEL_ANCHOR, "DummyApplication");
+    }
+
+    /**
      * Replace the Tag setting anchor
      * @param request
      * @return

@@ -203,7 +203,7 @@ public class LevelGroupController {
         affectedLevels.forEach(x -> {
             try {
                 LevelsUtils.refreshLevel5(neo4jAL, applicationContext, x.getNode()); // refresh old levels
-            } catch (Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult e) {
+            } catch (Neo4jQueryException | Neo4jNoResult e) {
                 neo4jAL.logInfo(String.format("An error occurred trying to refresh level with name '%s'.", x.getName()));
             }
         });

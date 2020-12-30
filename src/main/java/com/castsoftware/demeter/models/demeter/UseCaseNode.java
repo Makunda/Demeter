@@ -105,24 +105,6 @@ public class UseCaseNode extends Neo4jObject {
         }
     }
 
-
-    @Override
-    protected Node findNode() throws Neo4jBadRequestException, Neo4jNoResult {
-        String initQuery = String.format("MATCH (n:%s) WHERE ID(n)=%d RETURN n as node LIMIT 1;", LABEL, this.getNodeId());
-        try {
-            Result res = neo4jAL.executeQuery(initQuery);
-            Node n = (Node) res.next().get("node");
-            this.setNode(n);
-
-            return n;
-        } catch (Neo4jQueryException e) {
-            throw new Neo4jBadRequestException("Company node initialization failed", initQuery , e, ERROR_PREFIX+"FIN1");
-        } catch (NoSuchElementException |
-                NullPointerException e) {
-            throw new Neo4jNoResult("You need to create the ConfigurationNode node first.",  initQuery, e, ERROR_PREFIX+"FIN2");
-        }
-    }
-
     @Override
     public Node createNode() throws Neo4jBadRequestException, Neo4jNoResult {
         String queryDomain = String.format("MERGE (p:%s { %s : '%s', %s : '%b' }) RETURN p as node;",
@@ -142,6 +124,12 @@ public class UseCaseNode extends Neo4jObject {
         }
     }
 
+    /**
+     * Get all the Use case nodes present in the database
+     * @param neo4jAL Neo4j Access Layer
+     * @return The list of Use Case nodes
+     * @throws Neo4jBadRequestException
+     */
     public static List<UseCaseNode> getAllNodes(Neo4jAL neo4jAL) throws Neo4jBadRequestException {
         try {
             List<UseCaseNode> resList = new ArrayList<>();
@@ -178,7 +166,7 @@ public class UseCaseNode extends Neo4jObject {
      * Return the name of the parent use-case. Return ROOT if no parent use case was detected. Return UNDEFINED in case of error.
      * @return The name of the parent use-case
      */
-    public String getParentUseCase() throws Neo4jBadRequestException, Neo4jNoResult {
+    public String getParentUseCase() throws Neo4jBadRequestException, Neo4jNoResult, Neo4jQueryException {
         RelationshipType rl = RelationshipType.withName(DEMETER_DEFINES_RELATION);
         Label nodeLabel = Label.label(LABEL);
 
@@ -194,17 +182,6 @@ public class UseCaseNode extends Neo4jObject {
             return (String) parent.getProperty(NAME_PROPERTY);
         } else {
             return "ROOT";
-        }
-    }
-
-    @Override
-    public void deleteNode() throws Neo4jBadRequestException {
-        String queryDomain = String.format("MATCH (p:%s) WHERE ID(p)=%d DETACH DELETE p;",
-                LABEL, this.getNodeId());
-        try {
-            neo4jAL.executeQuery(queryDomain);
-        } catch (Neo4jQueryException e) {
-            throw new Neo4jBadRequestException(LABEL + " node deletion failed", queryDomain , e, ERROR_PREFIX+"DEL1");
         }
     }
 

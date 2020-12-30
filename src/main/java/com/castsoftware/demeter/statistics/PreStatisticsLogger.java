@@ -22,6 +22,7 @@ package com.castsoftware.demeter.statistics;
 import com.castsoftware.demeter.config.Configuration;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
+import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.models.demeter.StatisticNode;
 import com.castsoftware.demeter.statistics.Highlights.Highlight;
 import com.castsoftware.demeter.statistics.Highlights.HighlightCategory;
@@ -86,7 +87,7 @@ public class PreStatisticsLogger implements AutoCloseable {
                 String res = stn.executeStat(applicationContext);
                 statRes.append(res);
             }
-            catch (Neo4jBadRequestException | Neo4jNoResult | Exception e) {
+            catch (Neo4jBadRequestException | Neo4jNoResult | Exception | Neo4jQueryException e) {
                 statRes.append("\nAn error occurred during the execution of this statistic.\n");
                 statRes.append(e.getMessage()).append("\n");
             }
