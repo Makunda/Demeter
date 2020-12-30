@@ -42,8 +42,12 @@ public class TagProcessing {
     // Label anchor is not present in this list. It is the only mandatory label that request a replacement to allow the request to be functional
     public static final List<String> ANCHOR_LIST = Arrays.asList(ANCHOR_TAG_SET, ANCHOR_RETURN);
 
+    public TagProcessing() {
+    }
+
     /**
      * Replace the Context Anchor by the name of the application
+     *
      * @param request
      * @param context Label of the application
      * @return
@@ -54,6 +58,7 @@ public class TagProcessing {
 
     /**
      * Replace the application context anchor by a dummy application name. (TEST PURPOSES)
+     *
      * @param request Request to treat
      * @return
      */
@@ -63,6 +68,7 @@ public class TagProcessing {
 
     /**
      * Replace the Tag setting anchor
+     *
      * @param request
      * @return
      */
@@ -70,8 +76,8 @@ public class TagProcessing {
         Pattern p = Pattern.compile(ANCHOR_TAG_SET);
         Matcher m = p.matcher(request);
 
-        if(m.find()) {
-            if(m.groupCount() < 1 )
+        if (m.find()) {
+            if (m.groupCount() < 1)
                 throw new Neo4JTemplateLanguageException("Invalid tag set usage.", request, "TAGPxPRTS01");
 
             // find variable name
@@ -89,6 +95,7 @@ public class TagProcessing {
 
     /**
      * Replace the return anchor
+     *
      * @param request
      * @return
      */
@@ -96,9 +103,9 @@ public class TagProcessing {
         Pattern p = Pattern.compile(ANCHOR_RETURN);
         Matcher m = p.matcher(request);
 
-        if(m.find()) {
+        if (m.find()) {
             // find variable name
-            if(m.groupCount() < 1 )
+            if (m.groupCount() < 1)
                 throw new Neo4JTemplateLanguageException("Invalid return tag usage.", request, "TAGPxPRRT01");
 
             String o = m.group(1);
@@ -115,6 +122,7 @@ public class TagProcessing {
 
     /**
      * Replace the RETURN anchor by a COUNT_RETURN anchor. Remove every other anchors encountered.
+     *
      * @param request
      * @return
      */
@@ -122,9 +130,9 @@ public class TagProcessing {
         Pattern p = Pattern.compile(ANCHOR_RETURN);
         Matcher m = p.matcher(request);
 
-        if(m.find()) {
+        if (m.find()) {
             // find variable name
-            if(m.groupCount() < 1 )
+            if (m.groupCount() < 1)
                 throw new Neo4JTemplateLanguageException("Invalid count tag usage.", request, "TAGPxFCOR01");
 
             String o = m.group(1);
@@ -141,6 +149,7 @@ public class TagProcessing {
 
     /**
      * Check the presence of a Count anchor request
+     *
      * @param request The request to test
      * @return True if the anchor was detected in the request
      */
@@ -152,6 +161,7 @@ public class TagProcessing {
 
     /**
      * Check the presence of a return anchor request
+     *
      * @param request The request to test
      * @return True if the anchor was detected in the request
      */
@@ -163,11 +173,12 @@ public class TagProcessing {
 
     /**
      * Remove anchors still present in the code
+     *
      * @param request The request to "Sanitize" from anchors
      * @return <code>String</code> Request cleaned
      */
     public static String removeRemainingAnchors(String request) {
-        for(String anchor : ANCHOR_LIST) {
+        for (String anchor : ANCHOR_LIST) {
             request = request.replaceAll(anchor, "");
         }
         return request;
@@ -175,14 +186,12 @@ public class TagProcessing {
 
     /**
      * Replace All Anchors in the code;
+     *
      * @param request
      * @return
      */
     public static String processAll(String request) throws Neo4JTemplateLanguageException {
         request = processReturn(request);
         return processTagSet(request);
-    }
-
-    public TagProcessing() {
     }
 }

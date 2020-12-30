@@ -21,7 +21,10 @@ package com.castsoftware.demeter.models.demeter;
 
 import com.castsoftware.demeter.config.Configuration;
 import com.castsoftware.demeter.database.Neo4jAL;
-import com.castsoftware.demeter.exceptions.neo4j.*;
+import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadNodeFormatException;
+import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
+import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
+import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.models.Neo4jObject;
 import org.neo4j.graphdb.*;
 
@@ -40,6 +43,11 @@ public class ConfigurationNode extends Neo4jObject {
     // Node properties
     private String name;
 
+    public ConfigurationNode(Neo4jAL nal, String name) {
+        super(nal);
+        this.name = name;
+    }
+
     public static String getLabel() {
         return LABEL;
     }
@@ -50,14 +58,15 @@ public class ConfigurationNode extends Neo4jObject {
 
     /**
      * Create a Configuration Node object from a neo4j node
+     *
      * @param neo4jAL Neo4j Access Layer
-     * @param node Node associated to the object
+     * @param node    Node associated to the object
      * @return <code>ConfigurationNode</code> the object associated to the node.
      * @throws Neo4jBadNodeFormatException If the conversion from the node failed due to a missing or malformed property.
      */
     public static ConfigurationNode fromNode(Neo4jAL neo4jAL, Node node) throws Neo4jBadNodeFormatException {
 
-        if(!node.hasLabel(Label.label(LABEL))) {
+        if (!node.hasLabel(Label.label(LABEL))) {
             throw new Neo4jBadNodeFormatException("The node does not contain the correct label. Expected to have : " + LABEL, ERROR_PREFIX + "FROMN1");
         }
 
@@ -74,26 +83,6 @@ public class ConfigurationNode extends Neo4jObject {
         }
     }
 
-
-    @Override
-    public Node createNode() throws Neo4jBadRequestException, Neo4jNoResult {
-        neo4jAL.getLogger().info("Starting create node ");
-        String queryDomain = String.format("CREATE (p:%s { %s : '%s' }) RETURN p as node;",
-                LABEL, NAME_PROPERTY, name );
-        try {
-            Result res = neo4jAL.executeQuery(queryDomain);
-            Node n = (Node) res.next().get("node");
-            this.setNode(n);
-            neo4jAL.getLogger().info("End create node req : " + queryDomain);
-            return n;
-        } catch ( Neo4jQueryException e) {
-            throw new Neo4jBadRequestException(LABEL + " node creation failed", queryDomain , e, ERROR_PREFIX+"CRN1");
-        } catch (NoSuchElementException |
-                NullPointerException e) {
-            throw new Neo4jNoResult(LABEL + "node creation failed",  queryDomain, e, ERROR_PREFIX+"CRN2");
-        }
-    }
-
     public static List<ConfigurationNode> getAllNodes(Neo4jAL neo4jAL) throws Neo4jNoResult {
         Label label = Label.label(LABEL);
         List<ConfigurationNode> returnList = new ArrayList<>();
@@ -101,8 +90,8 @@ public class ConfigurationNode extends Neo4jObject {
         for (ResourceIterator<Node> it = neo4jAL.getTransaction().findNodes(label); it.hasNext(); ) {
             try {
                 returnList.add(fromNode(neo4jAL, it.next()));
-            }  catch (NoSuchElementException | NullPointerException | Neo4jBadNodeFormatException e) {
-                throw new Neo4jNoResult(LABEL + "nodes retrieving by application name failed",  "findQuery", e, ERROR_PREFIX+"GANA1");
+            } catch (NoSuchElementException | NullPointerException | Neo4jBadNodeFormatException e) {
+                throw new Neo4jNoResult(LABEL + "nodes retrieving by application name failed", "findQuery", e, ERROR_PREFIX + "GANA1");
             }
 
         }
@@ -110,10 +99,23 @@ public class ConfigurationNode extends Neo4jObject {
         return returnList;
     }
 
-
-    public ConfigurationNode(Neo4jAL nal, String name) {
-        super(nal);
-        this.name = name;
+    @Override
+    public Node createNode() throws Neo4jBadRequestException, Neo4jNoResult {
+        neo4jAL.getLogger().info("Starting create node ");
+        String queryDomain = String.format("CREATE (p:%s { %s : '%s' }) RETURN p as node;",
+                LABEL, NAME_PROPERTY, name);
+        try {
+            Result res = neo4jAL.executeQuery(queryDomain);
+            Node n = (Node) res.next().get("node");
+            this.setNode(n);
+            neo4jAL.getLogger().info("End create node req : " + queryDomain);
+            return n;
+        } catch (Neo4jQueryException e) {
+            throw new Neo4jBadRequestException(LABEL + " node creation failed", queryDomain, e, ERROR_PREFIX + "CRN1");
+        } catch (NoSuchElementException |
+                NullPointerException e) {
+            throw new Neo4jNoResult(LABEL + "node creation failed", queryDomain, e, ERROR_PREFIX + "CRN2");
+        }
     }
 
 }

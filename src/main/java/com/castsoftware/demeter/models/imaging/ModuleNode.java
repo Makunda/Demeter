@@ -27,7 +27,6 @@ import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.models.BackupNode;
 import com.castsoftware.demeter.models.Neo4jObject;
-import com.castsoftware.demeter.models.demeter.TagNode;
 import org.neo4j.graphdb.*;
 
 import java.util.ArrayList;
@@ -57,58 +56,58 @@ public class ModuleNode extends Neo4jObject {
     private String name;
     private String type;
 
+    public ModuleNode(Neo4jAL neo4jAL, String aipID, String color, Long count, String name, String type) {
+        super(neo4jAL);
+        this.aipID = aipID;
+        this.color = color;
+        this.count = count;
+        this.name = name;
+        this.type = type;
+    }
+
     // Static getters
     public static String getLabelProperty() {
         return LABEL;
     }
+
     public static String getAipIdProperty() {
         return IMAGING_MODULE_AIP_ID;
     }
+
     public static String getColorProperty() {
         return IMAGING_MODULE_COLOR;
     }
+
     public static String getCountProperty() {
         return IMAGING_MODULE_COUNT;
     }
+
     public static String getNameProperty() {
         return IMAGING_MODULE_NAME;
     }
+
     public static String getTypeProperty() {
         return IMAGING_MODULE_TYPE;
     }
+
     public static String getLinksToObjectsProperty() {
         return IMAGING_LINKS_TO_OBJECTS;
     }
+
     public static String getLinksToModulesProperty() {
         return IMAGING_LINKS_TO_MODULES;
     }
 
-    // Getters
-    public String getAipID() {
-        return aipID;
-    }
-    public String getColor() {
-        return color;
-    }
-    public Long getCount() {
-        return count;
-    }
-    public String getName() {
-        return name;
-    }
-    public String getType() {
-        return type;
-    }
-
     /**
      * Create a Module Node object from a neo4j node
+     *
      * @param neo4jAL Neo4j Access Layer
-     * @param node Node associated to the object
+     * @param node    Node associated to the object
      * @return <code>Module</code> the object associated to the node.
      * @throws Neo4jBadNodeFormatException If the conversion from the node failed due to a missing or malformed property.
      */
     public static ModuleNode fromNode(Neo4jAL neo4jAL, Node node) throws Neo4jBadNodeFormatException {
-        if(!node.hasLabel(Label.label(getLabelProperty()))) {
+        if (!node.hasLabel(Label.label(getLabelProperty()))) {
             throw new Neo4jBadNodeFormatException(String.format("The node with Id '%d' does not contain the correct label. Expected to have : %s", node.getId(), LABEL), ERROR_PREFIX + "FROMN1");
         }
 
@@ -137,6 +136,49 @@ public class ModuleNode extends Neo4jObject {
         }
     }
 
+    /**
+     * Return all Level5Node node in the database
+     *
+     * @param neo4jAL Neo4j Access Layer
+     * @return The list of node found in the database
+     * @throws Neo4jBadRequestException If the request failed to execute
+     */
+    public static List<ModuleNode> getAllNodes(Neo4jAL neo4jAL) throws Neo4jNoResult {
+        Label label = Label.label(LABEL);
+        List<ModuleNode> returnList = new ArrayList<>();
+
+        for (ResourceIterator<Node> it = neo4jAL.getTransaction().findNodes(label); it.hasNext(); ) {
+            try {
+                returnList.add(fromNode(neo4jAL, it.next()));
+            } catch (NoSuchElementException | NullPointerException | Neo4jBadNodeFormatException e) {
+                throw new Neo4jNoResult(LABEL + "nodes retrieving by application name failed", "findQuery", e, ERROR_PREFIX + "GANA1");
+            }
+
+        }
+
+        return returnList;
+    }
+
+    // Getters
+    public String getAipID() {
+        return aipID;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public Long getCount() {
+        return count;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getType() {
+        return type;
+    }
 
     @Override
     public Node createNode() throws Neo4jNoResult {
@@ -156,12 +198,13 @@ public class ModuleNode extends Neo4jObject {
             return n;
         } catch (NoSuchElementException |
                 NullPointerException e) {
-            throw new Neo4jNoResult(LABEL + "node creation failed",  "", e, ERROR_PREFIX+"CRN2");
+            throw new Neo4jNoResult(LABEL + "node creation failed", "", e, ERROR_PREFIX + "CRN2");
         }
     }
 
     /**
      * Return the merge Request associated with this node properties
+     *
      * @return The merge request as a String
      * @throws Neo4jBadRequestException
      * @throws Neo4jNoResult
@@ -179,40 +222,18 @@ public class ModuleNode extends Neo4jObject {
         return buildMergeRequest(forgedLabel, properties);
     }
 
-
     /**
      * Create a backup node associated with this module node
+     *
      * @param applicationContext Context where the backup will be executed
      * @return The Backup node created
      * @throws Neo4jBadRequestException The Backup request contains forbidden argument that led to an error
-     * @throws Neo4jNoResult Was not able to backup
-     * @throws Neo4jQueryException The backup failed due to abad query
+     * @throws Neo4jNoResult            Was not able to backup
+     * @throws Neo4jQueryException      The backup failed due to abad query
      */
     public Node createBackup(String applicationContext, List<Node> affectedNodes) throws Neo4jBadRequestException, Neo4jNoResult, Neo4jQueryException {
         neo4jAL.logInfo(String.format("Creating a backup node for module with name '%s'. ", getName()));
         return BackupNode.createBackup(neo4jAL, applicationContext, getNode(), toMergeRequest(applicationContext), affectedNodes);
-    }
-
-    /**
-     * Return all Level5Node node in the database
-     * @param neo4jAL Neo4j Access Layer
-     * @return The list of node found in the database
-     * @throws Neo4jBadRequestException If the request failed to execute
-     */
-    public static List<ModuleNode> getAllNodes(Neo4jAL neo4jAL) throws Neo4jNoResult {
-        Label label = Label.label(LABEL);
-        List<ModuleNode> returnList = new ArrayList<>();
-
-        for (ResourceIterator<Node> it = neo4jAL.getTransaction().findNodes(label); it.hasNext(); ) {
-            try {
-                returnList.add(fromNode(neo4jAL, it.next()));
-            }  catch (NoSuchElementException | NullPointerException | Neo4jBadNodeFormatException e) {
-                throw new Neo4jNoResult(LABEL + "nodes retrieving by application name failed",  "findQuery", e, ERROR_PREFIX+"GANA1");
-            }
-
-        }
-
-        return returnList;
     }
 
     @Override
@@ -222,16 +243,7 @@ public class ModuleNode extends Neo4jObject {
         try {
             neo4jAL.executeQuery(queryDomain);
         } catch (Neo4jQueryException e) {
-            throw new Neo4jBadRequestException(LABEL + " node deletion failed", queryDomain , e, ERROR_PREFIX+"DEL1");
+            throw new Neo4jBadRequestException(LABEL + " node deletion failed", queryDomain, e, ERROR_PREFIX + "DEL1");
         }
-    }
-
-    public ModuleNode(Neo4jAL neo4jAL, String aipID, String color, Long count, String name, String type) {
-        super(neo4jAL);
-        this.aipID = aipID;
-        this.color = color;
-        this.count = count;
-        this.name = name;
-        this.type = type;
     }
 }

@@ -27,7 +27,9 @@ import com.castsoftware.demeter.tags.TagProcessing;
 import com.castsoftware.demeter.utils.DocumentItGenerator;
 import org.neo4j.graphdb.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
 
 public class DocumentNode extends Neo4jObject {
 
@@ -53,56 +55,55 @@ public class DocumentNode extends Neo4jObject {
     private String description;
     private String documentDescription;
 
+    public DocumentNode(Neo4jAL neo4jAL, String title, String request, Boolean active, String description, String documentDescription) {
+        super(neo4jAL);
+        this.title = title;
+        this.request = request;
+        this.active = active;
+        this.description = description;
+        this.documentDescription = documentDescription;
+    }
+
     // Static getters
     public static String getLabel() {
         return LABEL;
     }
+
     public static String getIndexProperty() {
         return INDEX_PROPERTY;
     }
+
     public static String getTitleProperty() {
         return TITLE_PROPERTY;
     }
+
     public static String getActiveProperty() {
         return ACTIVE_PROPERTY;
     }
+
     public static String getRequestProperty() {
-        return  REQUEST_PROPERTY;
-    }
-    public static String getDescriptionProperty() {
-        return  DESCRIPTION_PROPERTY;
-    }
-    public static String getDocumentDescriptionProperty() {
-        return  DOCUMENT_DESCRIPTION_PROPERTY;
+        return REQUEST_PROPERTY;
     }
 
-    // Getters
-    public String getTitle() {
-        return title;
+    public static String getDescriptionProperty() {
+        return DESCRIPTION_PROPERTY;
     }
-    public String getRequest() {
-        return request;
-    }
-    public Boolean getActive() {
-        return active;
-    }
-    public String getDescription() {
-        return description;
-    }
-    public String getDocumentDescription() {
-        return documentDescription;
+
+    public static String getDocumentDescriptionProperty() {
+        return DOCUMENT_DESCRIPTION_PROPERTY;
     }
 
     /**
      * Create a DocumentTag Node object from a neo4j node
+     *
      * @param neo4jAL Neo4j Access Layer
-     * @param node Node associated to the object
+     * @param node    Node associated to the object
      * @return <code>ConfigurationNode</code> the object associated to the node.
      * @throws Neo4jBadNodeFormatException If the conversion from the node failed due to a missing or malformed property.
      */
     public static DocumentNode fromNode(Neo4jAL neo4jAL, Node node) throws Neo4jBadNodeFormatException {
 
-        if(!node.hasLabel(Label.label(LABEL))) {
+        if (!node.hasLabel(Label.label(LABEL))) {
             throw new Neo4jBadNodeFormatException(String.format("The node with Id '%d' does not contain the correct label. Expected to have : %s", node.getId(), LABEL), ERROR_PREFIX + "FROMN1");
         }
 
@@ -125,6 +126,49 @@ public class DocumentNode extends Neo4jObject {
         }
     }
 
+    /**
+     * Return all Document node in the database
+     *
+     * @param neo4jAL Neo4j Access Layer
+     * @return The list of node found in the database
+     * @throws Neo4jBadRequestException
+     */
+    public static List<DocumentNode> getAllNodes(Neo4jAL neo4jAL) throws Neo4jNoResult {
+        Label label = Label.label(LABEL);
+        List<DocumentNode> returnList = new ArrayList<>();
+
+        for (ResourceIterator<Node> it = neo4jAL.getTransaction().findNodes(label); it.hasNext(); ) {
+            try {
+                returnList.add(fromNode(neo4jAL, it.next()));
+            } catch (NoSuchElementException | NullPointerException | Neo4jBadNodeFormatException e) {
+                throw new Neo4jNoResult(LABEL + "nodes retrieving by application name failed", "findQuery", e, ERROR_PREFIX + "GANA1");
+            }
+
+        }
+
+        return returnList;
+    }
+
+    // Getters
+    public String getTitle() {
+        return title;
+    }
+
+    public String getRequest() {
+        return request;
+    }
+
+    public Boolean getActive() {
+        return active;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public String getDocumentDescription() {
+        return documentDescription;
+    }
 
     @Override
     public Node createNode() throws Neo4jNoResult {
@@ -148,24 +192,25 @@ public class DocumentNode extends Neo4jObject {
             return n;
         } catch (NoSuchElementException |
                 NullPointerException e) {
-            throw new Neo4jNoResult(LABEL + "node creation failed",  "", e, ERROR_PREFIX+"CRN2");
+            throw new Neo4jNoResult(LABEL + "node creation failed", "", e, ERROR_PREFIX + "CRN2");
         }
     }
 
     /**
      * Get the parent useCase Node attached to this Document node
+     *
      * @return The parent UseCase node
      * @throws Neo4jBadRequestException
      * @throws Neo4jNoResult
      * @throws Neo4jBadNodeFormatException
      */
-    public UseCaseNode getParentUseCase() throws  Neo4jNoResult, Neo4jBadNodeFormatException, Neo4jQueryException {
+    public UseCaseNode getParentUseCase() throws Neo4jNoResult, Neo4jBadNodeFormatException, Neo4jQueryException {
         RelationshipType relName = RelationshipType.withName(USECASE_TO_TAG_REL);
 
         Node n = getNode();
         Relationship parentRel = n.getSingleRelationship(relName, Direction.INCOMING);
 
-        if(parentRel != null) {
+        if (parentRel != null) {
             Node useCase = parentRel.getStartNode();
             return UseCaseNode.fromNode(this.neo4jAL, useCase);
         } else {
@@ -174,49 +219,28 @@ public class DocumentNode extends Neo4jObject {
     }
 
     /**
-     * Return all Document node in the database
-     * @param neo4jAL Neo4j Access Layer
-     * @return The list of node found in the database
-     * @throws Neo4jBadRequestException
-     */
-    public static List<DocumentNode> getAllNodes(Neo4jAL neo4jAL) throws Neo4jNoResult {
-        Label label = Label.label(LABEL);
-        List<DocumentNode> returnList = new ArrayList<>();
-
-        for (ResourceIterator<Node> it = neo4jAL.getTransaction().findNodes(label); it.hasNext(); ) {
-            try {
-                returnList.add(fromNode(neo4jAL, it.next()));
-            }  catch (NoSuchElementException | NullPointerException | Neo4jBadNodeFormatException e) {
-                throw new Neo4jNoResult(LABEL + "nodes retrieving by application name failed",  "findQuery", e, ERROR_PREFIX+"GANA1");
-            }
-
-        }
-
-        return returnList;
-    }
-
-    /**
      * Execute the Document node and create the associated document on imaging
+     *
      * @param applicationLabel
      * @return <code>List<Node></code> the list of node concerned by the document creation
      * @throws Neo4jBadRequestException
      * @throws Neo4jNoResult
      */
     public List<Node> execute(String applicationLabel) throws Neo4jBadRequestException, Neo4jNoResult, Neo4jQueryException {
-        if(this.getNode() == null)
-            throw new Neo4jBadRequestException("Cannot execute this action. Associated node does not exist.", ERROR_PREFIX+"EXEC1");
+        if (this.getNode() == null)
+            throw new Neo4jBadRequestException("Cannot execute this action. Associated node does not exist.", ERROR_PREFIX + "EXEC1");
 
         String forgedReq = null;
 
         try {
-            forgedReq =  TagProcessing.processApplicationContext(this.request, applicationLabel);
+            forgedReq = TagProcessing.processApplicationContext(this.request, applicationLabel);
             forgedReq = TagProcessing.processReturn(forgedReq);
             forgedReq = TagProcessing.removeRemainingAnchors(forgedReq);
 
             Result res = neo4jAL.executeQuery(forgedReq);
 
             List<Node> toDocNode = new ArrayList<>();
-            while(res.hasNext()) {
+            while (res.hasNext()) {
                 try {
                     Node n = (Node) res.next().get(RETURN_ANCHOR);
                     toDocNode.add(n);
@@ -229,21 +253,22 @@ public class DocumentNode extends Neo4jObject {
             return toDocNode;
 
         } catch (Neo4jQueryException | NullPointerException | Neo4JTemplateLanguageException e) {
-            neo4jAL.logError("Cannot execute : " + forgedReq , e);
-            throw new Neo4jBadRequestException("The request failed to execute.", this.request, e, ERROR_PREFIX+"EXEC2");
+            neo4jAL.logError("Cannot execute : " + forgedReq, e);
+            throw new Neo4jBadRequestException("The request failed to execute.", this.request, e, ERROR_PREFIX + "EXEC2");
         }
     }
 
     /**
      * Launch the request against an application, without tagging the results
+     *
      * @param applicationLabel Label of the application
      * @return The Number of node concerned by the document
      * @throws Neo4jBadRequestException
      * @throws Neo4jNoResult
      */
     public Long forecastRequest(String applicationLabel) throws Neo4jBadRequestException, Neo4jNoResult, Neo4jQueryException {
-        if(this.getNode() == null)
-            throw new Neo4jBadRequestException("Cannot execute this action. Associated node does not exist.", ERROR_PREFIX+"EXEC1");
+        if (this.getNode() == null)
+            throw new Neo4jBadRequestException("Cannot execute this action. Associated node does not exist.", ERROR_PREFIX + "EXEC1");
 
         try {
             String forgedReq = TagProcessing.processApplicationContext(this.request, applicationLabel);
@@ -252,23 +277,14 @@ public class DocumentNode extends Neo4jObject {
             Result res = neo4jAL.executeQuery(forgedReq);
 
             Long numAffected = 0L;
-            if(res.hasNext()) {
+            if (res.hasNext()) {
                 numAffected = (Long) res.next().get(COUNT_RETURN_VAL);
             }
 
             return numAffected;
 
         } catch (Neo4jQueryException | NullPointerException | Neo4JTemplateLanguageException e) {
-            throw new Neo4jBadRequestException("The request failed to execute.", this.request, e, ERROR_PREFIX+"EXEC2");
+            throw new Neo4jBadRequestException("The request failed to execute.", this.request, e, ERROR_PREFIX + "EXEC2");
         }
-    }
-
-    public DocumentNode(Neo4jAL neo4jAL, String title, String request, Boolean active, String description, String documentDescription) {
-        super(neo4jAL);
-        this.title = title;
-        this.request = request;
-        this.active = active;
-        this.description = description;
-        this.documentDescription = documentDescription;
     }
 }

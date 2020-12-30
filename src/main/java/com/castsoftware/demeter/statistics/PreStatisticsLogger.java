@@ -47,6 +47,38 @@ public class PreStatisticsLogger implements AutoCloseable {
 
     private StringBuilder buffer = new StringBuilder();
 
+    /**
+     * Constructor
+     *
+     * @param applicationContext Name of the application concerned by these statistics
+     * @throws IOException If the PreStatisticsLogger failed to create the statistics file
+     */
+    public PreStatisticsLogger(String applicationContext) throws IOException {
+        String outputDirectory = Configuration.get("demeter.workspace.path") + Configuration.get("pre_statistics.file.path");
+        File statisticsDir = new File(outputDirectory);
+
+        if (!statisticsDir.exists()) {
+            statisticsDir.mkdirs();
+        }
+
+        this.applicationContext = applicationContext;
+
+        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+        String forgedPath = String.format("%s/Pre_Statistics_for_%s_on%s.%s", outputDirectory, applicationContext, sdf.format(timestamp), FILE_EXTENSION);
+        file = new FileWriter(forgedPath);
+
+        flushBuffer();
+    }
+
+    /**
+     * Get output directory where the pre-statistics files are saved
+     *
+     * @return The path of the directory
+     */
+    public static String getOutputDirectory() {
+        return Configuration.get("demeter.workspace.path") + Configuration.get("pre_statistics.file.path");
+    }
+
     public void writeIntro() {
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());
         String title = String.format("Report generated on %s for application %s . It contains pre-tagging statistics", cdf.format(timestamp), applicationContext);
@@ -71,13 +103,13 @@ public class PreStatisticsLogger implements AutoCloseable {
         String title = String.format("\nStatistics for application :  %s \n", applicationContext);
         buffer.append(title);
 
-        for(StatisticNode stn : statistics) {
+        for (StatisticNode stn : statistics) {
             StringBuilder statRes = new StringBuilder();
             statRes.append("-".repeat(124)).append("\n");
             try {
                 statRes.append("\n\tStatistics on : ").append(stn.getName()).append("\n");
                 String description = stn.getDescription();
-                if(!description.isEmpty()) {
+                if (!description.isEmpty()) {
                     statRes.append(" \tDescription : ")
                             .append(stn.getDescription().replaceAll("\\n", "\n\t"))
                             .append("\n\n");
@@ -86,8 +118,7 @@ public class PreStatisticsLogger implements AutoCloseable {
                 statRes.append("\tResults of the statistics : \n");
                 String res = stn.executeStat(applicationContext);
                 statRes.append(res);
-            }
-            catch (Neo4jBadRequestException | Neo4jNoResult | Exception | Neo4jQueryException e) {
+            } catch (Neo4jBadRequestException | Neo4jNoResult | Exception | Neo4jQueryException e) {
                 statRes.append("\nAn error occurred during the execution of this statistic.\n");
                 statRes.append(e.getMessage()).append("\n");
             }
@@ -106,7 +137,7 @@ public class PreStatisticsLogger implements AutoCloseable {
         for (Highlight h : highlights) {
 
             String description = h.getDescription();
-            if(description.isEmpty()) description = "Description not available.";
+            if (description.isEmpty()) description = "Description not available.";
 
             // Forge the line
             String line = String.format("\t- %-18s | %s", h.getType().getText(), h.getTitle());
@@ -121,7 +152,7 @@ public class PreStatisticsLogger implements AutoCloseable {
 
         }
 
-        for(Map.Entry<HighlightCategory, String> entry : sortedCases.entrySet()) {
+        for (Map.Entry<HighlightCategory, String> entry : sortedCases.entrySet()) {
             writeParagraph(entry.getKey().getText(), entry.getValue());
         }
 
@@ -139,6 +170,7 @@ public class PreStatisticsLogger implements AutoCloseable {
 
     /**
      * Write to file and flush buffer.
+     *
      * @throws IOException
      */
     public void save() throws IOException {
@@ -147,40 +179,9 @@ public class PreStatisticsLogger implements AutoCloseable {
         flushBuffer();
     }
 
-    /**
-     * Constructor
-     * @param applicationContext Name of the application concerned by these statistics
-     * @throws IOException If the PreStatisticsLogger failed to create the statistics file
-     */
-    public PreStatisticsLogger(String applicationContext) throws IOException {
-        String outputDirectory = Configuration.get("demeter.workspace.path") + Configuration.get("pre_statistics.file.path");
-        File statisticsDir = new File(outputDirectory);
-
-        if(!statisticsDir.exists()) {
-            statisticsDir.mkdirs();
-        }
-
-        this.applicationContext = applicationContext;
-
-        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-        String forgedPath = String.format("%s/Pre_Statistics_for_%s_on%s.%s", outputDirectory, applicationContext, sdf.format(timestamp), FILE_EXTENSION);
-        file = new FileWriter(forgedPath);
-
-        flushBuffer();
-    }
-
-    /**
-     * Get output directory where the pre-statistics files are saved
-     * @return The path of the directory
-     */
-    public static String getOutputDirectory() {
-        return  Configuration.get("demeter.workspace.path") + Configuration.get("pre_statistics.file.path");
-    }
-
-
     @Override
     public void close() throws Exception {
-        if(file != null)  {
+        if (file != null) {
             file.close();
         }
     }

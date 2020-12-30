@@ -27,11 +27,8 @@ import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.models.imaging.ModuleNode;
 import org.neo4j.graphdb.*;
-import org.w3c.dom.traversal.NodeFilter;
 
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
 
 public class ModuleGroupController {
 
@@ -117,10 +114,11 @@ public class ModuleGroupController {
 
     /**
      * Group modules in a specific application
-     * @param neo4jAL Neo4j access Layer
+     *
+     * @param neo4jAL            Neo4j access Layer
      * @param applicationContext Application concerned by the module grouping
-     * @param groupName Name of the group to be merge
-     * @param nodeList List of nodes
+     * @param groupName          Name of the group to be merge
+     * @param nodeList           List of nodes
      * @return
      * @throws Neo4jNoResult
      * @throws Neo4jQueryException
@@ -228,7 +226,8 @@ public class ModuleGroupController {
 
     /**
      * Group all Module present in an application
-     * @param neo4jAL Neo4j Access Layer
+     *
+     * @param neo4jAL            Neo4j Access Layer
      * @param applicationContext Application where the nodes are going to be merged
      * @return The list of new modules created
      * @throws Neo4jQueryException

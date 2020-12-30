@@ -19,13 +19,13 @@
 
 package com.castsoftware.demeter.procedures.configuration;
 
+import com.castsoftware.demeter.controllers.configuration.UseCaseController;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.ProcedureException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.demeter.controllers.configuration.UseCaseController;
 import com.castsoftware.demeter.models.demeter.UseCaseNode;
 import com.castsoftware.demeter.results.NodeResult;
 import com.castsoftware.demeter.results.OutputMessage;
@@ -38,7 +38,6 @@ import org.neo4j.procedure.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class UseCaseProcedure {
@@ -54,7 +53,7 @@ public class UseCaseProcedure {
 
     @Procedure(value = "demeter.useCases.add", mode = Mode.WRITE)
     @Description("demeter.useCases.add( Long idParent, String name, Boolean active) - Add a use case to a configuration node or another usecase node.")
-    public Stream<NodeResult> addUseCase(@Name(value="idParent") Long idParent, @Name(value="Name") String name, @Name(value="Active", defaultValue = "False") Boolean active ) throws ProcedureException {
+    public Stream<NodeResult> addUseCase(@Name(value = "idParent") Long idParent, @Name(value = "Name") String name, @Name(value = "Active", defaultValue = "False") Boolean active) throws ProcedureException {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
@@ -99,14 +98,15 @@ public class UseCaseProcedure {
 
     /**
      * Activate a use case node and all its children.
-     * @param idUseCase Id of the use case
+     *
+     * @param idUseCase  Id of the use case
      * @param activation Value that will be set to all matching nodes.
      * @return The list of all node concerned by the modification
      * @throws ProcedureException
      */
     @Procedure(value = "demeter.useCases.activate", mode = Mode.WRITE)
     @Description("demeter.useCases.activate(Long idUseCase, Boolean Activation) - Set the activation of the use case node and all other nodes under it.")
-    public Stream<UseCasesMessage> activateUseCase(@Name(value="Id") Long idUseCase, @Name(value="Activation") Boolean activation) throws ProcedureException {
+    public Stream<UseCasesMessage> activateUseCase(@Name(value = "Id") Long idUseCase, @Name(value = "Activation") Boolean activation) throws ProcedureException {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
@@ -128,11 +128,11 @@ public class UseCaseProcedure {
 
     @Procedure(value = "demeter.useCases.globalActivation", mode = Mode.WRITE)
     @Description("demeter.useCases.globalActivation(Boolean Activation) - Set the activation of every use case nodes.")
-    public Stream<OutputMessage> globalActivationUseCase(@Name(value="Activation") Boolean activation) throws ProcedureException {
+    public Stream<OutputMessage> globalActivationUseCase(@Name(value = "Activation") Boolean activation) throws ProcedureException {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            int nModifications= UseCaseController.activateAllUseCase(nal, activation);
+            int nModifications = UseCaseController.activateAllUseCase(nal, activation);
 
             String message = String.format("The activation parameter is now set to \"%b\" on %d nodes.", activation, nModifications);
 
@@ -147,11 +147,11 @@ public class UseCaseProcedure {
 
     @Procedure(value = "demeter.useCases.globalSelection", mode = Mode.WRITE)
     @Description("demeter.useCases.globalSelection(Boolean Activation) - Set the Selection of every use case nodes.")
-    public Stream<OutputMessage> globalSelectionUseCase(@Name(value="Activation") Boolean activation) throws ProcedureException {
+    public Stream<OutputMessage> globalSelectionUseCase(@Name(value = "Activation") Boolean activation) throws ProcedureException {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            int nModifications= UseCaseController.selectAllUseCase(nal, activation);
+            int nModifications = UseCaseController.selectAllUseCase(nal, activation);
 
             String message = String.format("The selection parameter is now set to \"%b\" on %d nodes.", activation, nModifications);
 

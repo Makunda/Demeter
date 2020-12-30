@@ -22,7 +22,6 @@ package com.castsoftware.demeter.statistics.Highlights;
 import com.castsoftware.demeter.config.Configuration;
 
 
-
 public class Highlight {
 
     private static final Integer LONG_TERM_BREAKPOINT = Integer.parseInt(Configuration.get("statistics.highlight.long_term_breakpoint"));
@@ -36,16 +35,22 @@ public class Highlight {
     private String description;
     private Integer findings;
 
+    public Highlight(String title, String useCaseTitle, String description, Integer findings, HighlightType type) {
+        this.title = title;
+        this.type = type;
+        this.useCaseTitle = useCaseTitle;
+        this.description = description;
+        this.findings = findings;
+
+        computeCategory();
+    }
+
     public String getTitle() {
         return title;
     }
 
     public void setTitle(String title) {
         this.title = title;
-    }
-
-    public void setType(HighlightType type) {
-        this.type = type;
     }
 
     public HighlightCategory getCategory() {
@@ -60,12 +65,16 @@ public class Highlight {
         return useCaseTitle;
     }
 
+    public void setUseCaseTitle(String useCaseTitle) {
+        this.useCaseTitle = useCaseTitle;
+    }
+
     public HighlightType getType() {
         return type;
     }
 
-    public void setUseCaseTitle(String useCaseTitle) {
-        this.useCaseTitle = useCaseTitle;
+    public void setType(HighlightType type) {
+        this.type = type;
     }
 
     public String getDescription() {
@@ -85,28 +94,18 @@ public class Highlight {
     }
 
     private void computeCategory() {
-        if(findings < QUICK_WIN_BREAKPOINT) {
+        if (findings < QUICK_WIN_BREAKPOINT) {
             category = HighlightCategory.NOT_RELEVANT;
             return;
         }
 
-        if(findings > LONG_TERM_BREAKPOINT) {
+        if (findings > LONG_TERM_BREAKPOINT) {
             category = HighlightCategory.LONG_TERM;
         } else if (findings > MID_TERM_BREAKPOINT) {
             category = HighlightCategory.MID_TERM;
         } else {
             category = HighlightCategory.QUICK_WINS;
         }
-    }
-
-    public Highlight(String title, String useCaseTitle, String description, Integer findings, HighlightType type) {
-        this.title = title;
-        this.type = type;
-        this.useCaseTitle = useCaseTitle;
-        this.description = description;
-        this.findings = findings;
-
-        computeCategory();
     }
 
 }

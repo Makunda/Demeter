@@ -50,11 +50,11 @@ public class DocumentProcedure {
     @Procedure(value = "demeter.document.add", mode = Mode.WRITE)
     @Description("demeter.document.add(String Tag, String AssociatedRequest, Boolean Activation, String Description, Long ParentId) - Add a tag node and link it to a use case node.")
     public Stream<NodeResult> addTagNode(@Name(value = "Title") String title,
-                                         @Name(value= "Request")  String request,
-                                         @Name(value= "Activation") Boolean activation,
-                                         @Name(value= "Description")  String description,
-                                         @Name(value= "DocumentDescription")  String documentDescription,
-                                         @Name(value= "ParentId")  Long parentId) throws ProcedureException {
+                                         @Name(value = "Request") String request,
+                                         @Name(value = "Activation") Boolean activation,
+                                         @Name(value = "Description") String description,
+                                         @Name(value = "DocumentDescription") String documentDescription,
+                                         @Name(value = "ParentId") Long parentId) throws ProcedureException {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
@@ -63,7 +63,7 @@ public class DocumentProcedure {
                     TagNode.getLabel(), title, activation, request, description, documentDescription);
             nal.logInfo(message);
 
-            Node n =  DocumentController.addDocumentNode(nal, title, request, activation, description, documentDescription, parentId);
+            Node n = DocumentController.addDocumentNode(nal, title, request, activation, description, documentDescription, parentId);
             return Stream.of(new NodeResult(n));
         } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult e) {
             ProcedureException ex = new ProcedureException(e);

@@ -57,7 +57,7 @@ public class ModuleProcedure {
 
             return nodes.stream().map(NodeResult::new);
 
-        } catch ( Exception | Neo4jConnectionError | Neo4jQueryException e) {
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
             throw ex;

@@ -25,13 +25,15 @@ import com.castsoftware.demeter.exceptions.neo4j.*;
 import com.castsoftware.demeter.models.demeter.TagNode;
 import com.castsoftware.demeter.models.demeter.UseCaseNode;
 import com.castsoftware.demeter.results.demeter.TagResult;
-import com.castsoftware.demeter.statistics.Highlights.Highlight;
-import com.castsoftware.demeter.statistics.Highlights.HighlightType;
 import com.castsoftware.demeter.tags.TagProcessing;
-import com.castsoftware.exporter.exceptions.neo4j.Neo4jBadRequest;
-import org.neo4j.graphdb.*;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Result;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class TagController {
@@ -42,7 +44,8 @@ public class TagController {
 
     /**
      * Return all the activated node matching an "activated" use case route ( a path of use case, with the "Activate" parameter, set on "on")
-     * @param neo4jAL Neo4j access layer
+     *
+     * @param neo4jAL           Neo4j access layer
      * @param configurationName Name of the configuration to use
      * @return The list of activated tags
      * @throws Neo4jQueryException
@@ -54,7 +57,7 @@ public class TagController {
         Set<Node> tags = UseCaseController.searchByLabelInActiveBranches(neo4jAL, configurationName, tagNodeLabel);
 
         //TagNode.fromNode(neo4jAL, otherNode)
-        return tags.stream().map( x -> {
+        return tags.stream().map(x -> {
             try {
                 return TagNode.fromNode(neo4jAL, x);
             } catch (Neo4jBadNodeFormatException ex) {
@@ -65,13 +68,13 @@ public class TagController {
     }
 
 
-
     /**
      * Add a Tag Node and link it to a Use Case node.
-     * @param neo4jAL Neo4j Access Layer
-     * @param tag Tag that will be applied on nodes matching the request
-     * @param active Status of activation. If this parameter is equal to "false" the request will be ignored.
-     * @param request Request matching the nodes to be tag
+     *
+     * @param neo4jAL  Neo4j Access Layer
+     * @param tag      Tag that will be applied on nodes matching the request
+     * @param active   Status of activation. If this parameter is equal to "false" the request will be ignored.
+     * @param request  Request matching the nodes to be tag
      * @param parentId Id of the parent use case
      * @return <code>Node</code> the node created
      * @throws Neo4jQueryException
@@ -84,14 +87,14 @@ public class TagController {
         Label useCaseLabel = Label.label(UseCaseNode.getLabel());
 
         // Check if the parent is either a Configuration Node or another use case
-        if(!parent.hasLabel(useCaseLabel)) {
-            throw new Neo4jBadRequestException(String.format("Can only attach a %s node to a %s node.", TagNode.getLabel() ,UseCaseNode.getLabel()),
+        if (!parent.hasLabel(useCaseLabel)) {
+            throw new Neo4jBadRequestException(String.format("Can only attach a %s node to a %s node.", TagNode.getLabel(), UseCaseNode.getLabel()),
                     ERROR_PREFIX + "ADDU1");
         }
 
         // Check the validity of the query
-        if(!validateQuery(neo4jAL, request)) {
-            throw new Neo4jBadRequestException(String.format("The request provided is in incorrect format. Request : '%s'", request), ERROR_PREFIX+"ADDU2");
+        if (!validateQuery(neo4jAL, request)) {
+            throw new Neo4jBadRequestException(String.format("The request provided is in incorrect format. Request : '%s'", request), ERROR_PREFIX + "ADDU2");
         }
 
 
@@ -107,9 +110,10 @@ public class TagController {
 
     /**
      * Return the forecast of the tag on a specific application as a list of TagResult
-     * @param neo4jAL Neo4j Access Layer
+     *
+     * @param neo4jAL           Neo4j Access Layer
      * @param configurationName Name of the configuration to use
-     * @param applicationName Name of the configuration
+     * @param applicationName   Name of the configuration
      * @return The list of TagResults
      * @throws Neo4jQueryException
      * @throws Neo4jBadRequestException
@@ -119,10 +123,10 @@ public class TagController {
         List<TagNode> tagNodeList = TagController.getSelectedTags(neo4jAL, configurationName);
         List<TagResult> tagResultList = new ArrayList<>();
 
-        for(TagNode tn : tagNodeList) {
+        for (TagNode tn : tagNodeList) {
             try {
                 // Ignored non active requests
-                if(!tn.getActive()) continue;
+                if (!tn.getActive()) continue;
 
                 Long numAffected = tn.forecastRequest(applicationName);
                 String useCaseName = tn.getParentUseCase().getName();
@@ -138,8 +142,9 @@ public class TagController {
 
     /**
      * Execute specified tag request
-     * @param neo4jAL Neo4j Access Layer
-     * @param id Id of the Tag Node
+     *
+     * @param neo4jAL            Neo4j Access Layer
+     * @param id                 Id of the Tag Node
      * @param applicationContext Application target
      * @return Return Tag result
      * @throws Neo4jQueryException
@@ -151,8 +156,8 @@ public class TagController {
         Label tagLabel = Label.label(TagNode.getLabel());
         Node tagNode = neo4jAL.getNodeById(id);
 
-        if(!tagNode.hasLabel(tagLabel))
-            throw new Neo4jBadRequestException("The provided Id does not correspond to a Tag Node", ERROR_PREFIX+"EXET1");
+        if (!tagNode.hasLabel(tagLabel))
+            throw new Neo4jBadRequestException("The provided Id does not correspond to a Tag Node", ERROR_PREFIX + "EXET1");
 
         TagNode tn = TagNode.fromNode(neo4jAL, tagNode);
 
@@ -163,6 +168,7 @@ public class TagController {
 
     /**
      * Check the validity of a query provided
+     *
      * @param neo4jAL Neo4j Access Layer
      * @param request The request to test
      * @return True is the test was a success, false otherwise
@@ -175,7 +181,7 @@ public class TagController {
             request = request.replaceAll(";", "");
 
             // Check the presence of anchors in the request
-            if(!TagProcessing.isCountAnchorPresent(request) || ! TagProcessing.isReturnAnchorPresent(request)) {
+            if (!TagProcessing.isCountAnchorPresent(request) || !TagProcessing.isReturnAnchorPresent(request)) {
                 return false;
             }
 

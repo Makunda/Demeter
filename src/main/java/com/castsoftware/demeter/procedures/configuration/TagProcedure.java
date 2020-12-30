@@ -50,11 +50,11 @@ public class TagProcedure {
     @Procedure(value = "demeter.tag.add", mode = Mode.WRITE)
     @Description("demeter.tag.add(String Tag, String AssociatedRequest, Boolean Activation, String Description, String categories, Long ParentId) - Add a tag node and link it to a use case node.")
     public Stream<NodeResult> addTagNode(@Name(value = "Tag") String tag,
-                                   @Name(value= "AssociatedRequest")  String associatedRequest,
-                                   @Name(value= "Activation") Boolean activation,
-                                   @Name(value= "Description")  String description,
-                                   @Name(value= "Categories")  String categories,
-                                   @Name(value= "ParentId")  Long parentId) throws ProcedureException {
+                                         @Name(value = "AssociatedRequest") String associatedRequest,
+                                         @Name(value = "Activation") Boolean activation,
+                                         @Name(value = "Description") String description,
+                                         @Name(value = "Categories") String categories,
+                                         @Name(value = "ParentId") Long parentId) throws ProcedureException {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
@@ -62,7 +62,7 @@ public class TagProcedure {
             String message = String.format("Adding a %s node with parameters { 'Tag' : '%s', 'Activation' : %s, 'Request' : '%s' }.", TagNode.getLabel(), tag, activation, associatedRequest);
             nal.logInfo(message);
 
-            Node n =  TagController.addTagNode(nal, tag, activation, associatedRequest, description, categories,  parentId);
+            Node n = TagController.addTagNode(nal, tag, activation, associatedRequest, description, categories, parentId);
             return Stream.of(new NodeResult(n));
         } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult e) {
             ProcedureException ex = new ProcedureException(e);
@@ -74,11 +74,11 @@ public class TagProcedure {
     @Procedure(value = "demeter.tag.getAsList", mode = Mode.WRITE)
     @Description("demeter.tag.getAsList( String ConfigurationName, String ApplicationName ) - Get the result of the Tag on a specific application as a List.")
     public Stream<TagResult> getTagResultsAsList(@Name(value = "ConfigurationName") String configurationName,
-                                          @Name(value= "ApplicationName")  String applicationName) throws ProcedureException {
+                                                 @Name(value = "ApplicationName") String applicationName) throws ProcedureException {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            List<TagResult> resultList =  TagController.forecastTag(nal, configurationName, applicationName);
+            List<TagResult> resultList = TagController.forecastTag(nal, configurationName, applicationName);
             return resultList.stream();
         } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult e) {
             ProcedureException ex = new ProcedureException(e);
@@ -90,10 +90,10 @@ public class TagProcedure {
     @Procedure(value = "demeter.tag.execute", mode = Mode.WRITE)
     @Description("demeter.tag.execute( Long id, String ApplicationName ) - Get the result of the Tag on a specific application as a List.")
     public Stream<TagResult> executeTag(@Name(value = "Id") Long tagId,
-                                        @Name(value= "ApplicationName")  String applicationName) throws ProcedureException {
+                                        @Name(value = "ApplicationName") String applicationName) throws ProcedureException {
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            TagResult result =  TagController.executeTag(nal, tagId, applicationName);
+            TagResult result = TagController.executeTag(nal, tagId, applicationName);
             return Stream.of(result);
         } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult | Neo4jBadNodeFormatException e) {
             ProcedureException ex = new ProcedureException(e);
@@ -104,10 +104,10 @@ public class TagProcedure {
 
     @Procedure(value = "demeter.tag.validateQuery", mode = Mode.WRITE)
     @Description("demeter.tag.validateQuery( String queryToValidate ) - Return the validity of the request.")
-    public Stream<BooleanResult> validateQuery(@Name(value= "Request")  String request) throws ProcedureException {
+    public Stream<BooleanResult> validateQuery(@Name(value = "Request") String request) throws ProcedureException {
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            boolean result =  TagController.validateQuery(nal, request);
+            boolean result = TagController.validateQuery(nal, request);
             return Stream.of(new BooleanResult(result));
         } catch (Exception | Neo4jConnectionError e) {
             ProcedureException ex = new ProcedureException(e);

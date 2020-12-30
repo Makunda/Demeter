@@ -29,6 +29,7 @@ public class MetaModelController {
 
     /**
      * Generate a template metamodel file.
+     *
      * @param outputDir Path where the file will be generated
      * @return
      * @throws IOException
@@ -40,7 +41,8 @@ public class MetaModelController {
 
     /**
      * Execute a specific Metamodel file
-     * @param neo4jAL Neo4j Access Layer
+     *
+     * @param neo4jAL       Neo4j Access Layer
      * @param metaModelName Name of the meta model to execute.
      */
     public static void executeMetamodel(Neo4jAL neo4jAL, String applicationContext, String metaModelName) throws IOException {

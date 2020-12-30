@@ -61,7 +61,7 @@ public class BackupProcedure {
             return recoveredLevel.stream().map(NodeResult::new);
 
 
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult | Neo4jBadNodeFormatException  e) {
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult | Neo4jBadNodeFormatException e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
             throw ex;
@@ -71,7 +71,7 @@ public class BackupProcedure {
     @Procedure(value = "demeter.undo.oneLevel", mode = Mode.WRITE)
     @Description("demeter.undo.oneLevel(String ApplicationContext, String levelName) - Add a tag node and link it to a use case node.")
     public Stream<NodeResult> undoOneLevelGroup(@Name(value = "ApplicationContext") String applicationContext,
-                                         @Name(value = "LevelName") String levelName) throws ProcedureException {
+                                                @Name(value = "LevelName") String levelName) throws ProcedureException {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
@@ -86,7 +86,7 @@ public class BackupProcedure {
             return recoveredLevel.stream().map(NodeResult::new);
 
 
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult | Neo4jBadNodeFormatException  e) {
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult | Neo4jBadNodeFormatException e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
             throw ex;

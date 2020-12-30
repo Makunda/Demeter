@@ -30,7 +30,7 @@ public class UseCasesMessage {
     public Boolean active;
     public Long id;
 
-    public UseCasesMessage(String name, Boolean active,  Long id) {
+    public UseCasesMessage(String name, Boolean active, Long id) {
         super();
         this.name = name;
         this.active = active;

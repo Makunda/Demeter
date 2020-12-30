@@ -50,6 +50,13 @@ public class UseCaseNode extends Neo4jObject {
     private Boolean active;
     private Boolean selected;
 
+    public UseCaseNode(Neo4jAL nal, String name, Boolean active, Boolean selected) {
+        super(nal);
+        this.active = active;
+        this.name = name;
+        this.selected = selected;
+    }
+
     public static String getLabel() {
         return LABEL;
     }
@@ -57,10 +64,85 @@ public class UseCaseNode extends Neo4jObject {
     public static String getActiveProperty() {
         return ACTIVE_PROPERTY;
     }
+
     public static String getNameProperty() {
         return NAME_PROPERTY;
     }
-    public static String getSelectedProperty() { return SELECTED_PROPERTY; }
+
+    public static String getSelectedProperty() {
+        return SELECTED_PROPERTY;
+    }
+
+    /**
+     * Create a UseCaseNode Node object from a neo4j node
+     *
+     * @param neo4jAL Neo4j Access Layer
+     * @param node    Node associated to the object
+     * @return <code>UseCaseNode</code> the object associated to the node.
+     * @throws Neo4jBadNodeFormatException If the conversion from the node failed due to a missing or malformed property.
+     */
+    public static UseCaseNode fromNode(Neo4jAL neo4jAL, Node node) throws Neo4jBadNodeFormatException {
+
+        if (!node.hasLabel(Label.label(LABEL))) {
+            throw new Neo4jBadNodeFormatException("The node does not contain the correct label. Expected to have : " + LABEL, ERROR_PREFIX + "FROMN1");
+        }
+
+        try {
+            String name = (String) node.getProperty(NAME_PROPERTY);
+
+            // Get and cast boolean is necessary
+            boolean active = castPropertyToBoolean(node.getProperty(UseCaseNode.getActiveProperty()));
+            boolean selected = castPropertyToBoolean(node.getProperty(UseCaseNode.getSelectedProperty()));
+
+            // Initialize the node
+            UseCaseNode ucn = new UseCaseNode(neo4jAL, name, active, selected);
+            ucn.setNode(node);
+
+            return ucn;
+        } catch (NotFoundException | NullPointerException | ClassCastException e) {
+            neo4jAL.getLogger().error("Error during node instantiation. ", e);
+            throw new Neo4jBadNodeFormatException(LABEL + " instantiation from node.", ERROR_PREFIX + "FROMN2");
+        }
+    }
+
+    /**
+     * Get all the Use case nodes present in the database
+     *
+     * @param neo4jAL Neo4j Access Layer
+     * @return The list of Use Case nodes
+     * @throws Neo4jBadRequestException
+     */
+    public static List<UseCaseNode> getAllNodes(Neo4jAL neo4jAL) throws Neo4jBadRequestException {
+        try {
+            List<UseCaseNode> resList = new ArrayList<>();
+            ResourceIterator<Node> resIt = neo4jAL.findNodes(Label.label(LABEL));
+
+            int badFormattedNodes = 0;
+
+            while (resIt.hasNext()) {
+                try {
+                    Node node = (Node) resIt.next();
+
+                    // Initialize the node
+                    UseCaseNode cn = UseCaseNode.fromNode(neo4jAL, node);
+
+                    resList.add(cn);
+                } catch (Neo4jBadNodeFormatException e) {
+                    badFormattedNodes++;
+                }
+            }
+
+            // Warn if nodes were omitted
+            if (badFormattedNodes != 0) {
+                String error = String.format("%d %s nodes were omitted due to a bad format.", badFormattedNodes, LABEL);
+                neo4jAL.getLogger().warn(error);
+            }
+
+            return resList;
+        } catch (Neo4jQueryException e) {
+            throw new Neo4jBadRequestException(LABEL + " nodes retrieving failed", "findQuery", e, ERROR_PREFIX + "GAN1");
+        }
+    }
 
     public String getName() {
         return this.name;
@@ -74,41 +156,10 @@ public class UseCaseNode extends Neo4jObject {
         return this.active;
     }
 
-    /**
-     * Create a UseCaseNode Node object from a neo4j node
-     * @param neo4jAL Neo4j Access Layer
-     * @param node Node associated to the object
-     * @return <code>UseCaseNode</code> the object associated to the node.
-     * @throws Neo4jBadNodeFormatException If the conversion from the node failed due to a missing or malformed property.
-     */
-    public static UseCaseNode fromNode(Neo4jAL neo4jAL, Node node) throws Neo4jBadNodeFormatException {
-
-        if(!node.hasLabel(Label.label(LABEL))) {
-            throw new Neo4jBadNodeFormatException("The node does not contain the correct label. Expected to have : " + LABEL, ERROR_PREFIX + "FROMN1");
-        }
-
-        try {
-            String name = (String) node.getProperty(NAME_PROPERTY);
-
-            // Get and cast boolean is necessary
-            boolean active = castPropertyToBoolean( node.getProperty(UseCaseNode.getActiveProperty()) );
-            boolean selected = castPropertyToBoolean( node.getProperty(UseCaseNode.getSelectedProperty()) );
-
-            // Initialize the node
-            UseCaseNode ucn = new UseCaseNode(neo4jAL, name, active, selected);
-            ucn.setNode(node);
-
-            return ucn;
-        } catch (NotFoundException | NullPointerException | ClassCastException e) {
-            neo4jAL.getLogger().error("Error during node instantiation. ", e);
-            throw new Neo4jBadNodeFormatException(LABEL + " instantiation from node.", ERROR_PREFIX + "FROMN2");
-        }
-    }
-
     @Override
     public Node createNode() throws Neo4jBadRequestException, Neo4jNoResult {
         String queryDomain = String.format("MERGE (p:%s { %s : '%s', %s : '%b' }) RETURN p as node;",
-                LABEL, NAME_PROPERTY, this.name, ACTIVE_PROPERTY, this.active );
+                LABEL, NAME_PROPERTY, this.name, ACTIVE_PROPERTY, this.active);
         try {
 
             Result res = neo4jAL.executeQuery(queryDomain);
@@ -117,53 +168,16 @@ public class UseCaseNode extends Neo4jObject {
 
             return n;
         } catch (Neo4jQueryException e) {
-            throw new Neo4jBadRequestException(LABEL + " node creation failed", queryDomain , e, ERROR_PREFIX+"CRN1");
+            throw new Neo4jBadRequestException(LABEL + " node creation failed", queryDomain, e, ERROR_PREFIX + "CRN1");
         } catch (NoSuchElementException |
                 NullPointerException e) {
-            throw new Neo4jNoResult(LABEL + "node creation failed",  queryDomain, e, ERROR_PREFIX+"CRN2");
-        }
-    }
-
-    /**
-     * Get all the Use case nodes present in the database
-     * @param neo4jAL Neo4j Access Layer
-     * @return The list of Use Case nodes
-     * @throws Neo4jBadRequestException
-     */
-    public static List<UseCaseNode> getAllNodes(Neo4jAL neo4jAL) throws Neo4jBadRequestException {
-        try {
-            List<UseCaseNode> resList = new ArrayList<>();
-            ResourceIterator<Node> resIt = neo4jAL.findNodes(Label.label(LABEL));
-
-            int badFormattedNodes = 0;
-
-            while ( resIt.hasNext() ) {
-                try {
-                    Node node = (Node) resIt.next();
-
-                    // Initialize the node
-                    UseCaseNode cn = UseCaseNode.fromNode(neo4jAL, node);
-
-                    resList.add(cn);
-                }  catch (Neo4jBadNodeFormatException e) {
-                    badFormattedNodes ++;
-                }
-            }
-
-            // Warn if nodes were omitted
-            if(badFormattedNodes != 0) {
-                String error = String.format("%d %s nodes were omitted due to a bad format.", badFormattedNodes, LABEL);
-                neo4jAL.getLogger().warn(error);
-            }
-
-            return resList;
-        } catch (Neo4jQueryException e) {
-            throw new Neo4jBadRequestException(LABEL + " nodes retrieving failed", "findQuery" , e, ERROR_PREFIX+"GAN1");
+            throw new Neo4jNoResult(LABEL + "node creation failed", queryDomain, e, ERROR_PREFIX + "CRN2");
         }
     }
 
     /**
      * Return the name of the parent use-case. Return ROOT if no parent use case was detected. Return UNDEFINED in case of error.
+     *
      * @return The name of the parent use-case
      */
     public String getParentUseCase() throws Neo4jBadRequestException, Neo4jNoResult, Neo4jQueryException {
@@ -174,22 +188,15 @@ public class UseCaseNode extends Neo4jObject {
 
         Iterator<Relationship> relIt = n.getRelationships(Direction.INCOMING, rl).iterator();
 
-        if(relIt.hasNext()) {
+        if (relIt.hasNext()) {
             Node parent = relIt.next().getStartNode();
-            if(!parent.hasLabel(nodeLabel)) return "ROOT";
-            if(!parent.hasProperty(NAME_PROPERTY)) return "UNDEFINED";
+            if (!parent.hasLabel(nodeLabel)) return "ROOT";
+            if (!parent.hasProperty(NAME_PROPERTY)) return "UNDEFINED";
 
             return (String) parent.getProperty(NAME_PROPERTY);
         } else {
             return "ROOT";
         }
-    }
-
-    public UseCaseNode(Neo4jAL nal, String name, Boolean active, Boolean selected) {
-        super(nal);
-        this.active = active;
-        this.name = name;
-        this.selected = selected;
     }
 
 }

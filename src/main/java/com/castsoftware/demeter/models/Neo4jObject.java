@@ -32,19 +32,19 @@ import java.util.Map;
 
 public abstract class Neo4jObject {
 
-    private Node node = null;
     protected Neo4jAL neo4jAL;
+    private Node node = null;
 
 
-    @Deprecated
-    public String neo4jSanitize(String s) {
-        return s.replaceAll("\\\\", "\\\\\\\\");
+    public Neo4jObject(Neo4jAL neo4jAL) {
+        this.neo4jAL = neo4jAL;
     }
 
     /**
      * Parse the specified node property and extract the boolean value.
      * During manipulations of the property, some process can accidentally convert the value of the boolean to a text format.
      * When this happens, a classical boolean cast fails to execute and throw ClassCastException.
+     *
      * @param value Object containing the boolean
      * @return The value of the boolean. If no boolean is detected, return false.
      */
@@ -55,8 +55,8 @@ public abstract class Neo4jObject {
             b = (Boolean) value;
         } catch (ClassCastException e) {
             String boolAsString = (String) value;
-            if(boolAsString.matches("true|false")) {
-                b =  Boolean.parseBoolean(boolAsString);
+            if (boolAsString.matches("true|false")) {
+                b = Boolean.parseBoolean(boolAsString);
             }
         }
 
@@ -64,64 +64,9 @@ public abstract class Neo4jObject {
     }
 
     /**
-     * Find an existing node in the DB matching the same properties. The node found will be assigned to the object.
-     * (Warning : will return the first node encountered if two nodes have the exact same properties)
-     * @return The node found in the database
-     * @throws Neo4jBadRequestException An error was thrown during the execution of the query
-     * @throws Neo4jNoResult The request did not return any results (and was supposed to)
-     */
-    public Node findNode() throws Neo4jQueryException, Neo4jNoResult {
-        if(this.getNodeId() == null) {
-            throw new Neo4jNoResult("You need to create node first.",  "Find node by id", "NEOOxFIN2");
-        }
-
-        Node n = neo4jAL.getNodeById(this.getNodeId());
-        return n;
-    }
-
-    /**
-     * Create a node in the database based on attributes of the object
-     * @return The node created
-     * @throws Neo4jBadRequestException An error was thrown during the execution of the query
-     * @throws Neo4jNoResult The request did not return any results (and was supposed to)
-     */
-    public abstract Node createNode() throws Neo4jBadRequestException, Neo4jNoResult;
-
-    /**
-     * Delete the node in the database linked to the object
-     * @throws Neo4jBadRequestException An error was thrown during the execution of the query
-     * @throws Neo4jNoResult The request did not return any results (and was supposed to)
-     */
-    public void deleteNode() throws Neo4jBadRequestException, Neo4jNoResult, Neo4jQueryException {
-        Node n = this.getNode();
-        n.delete();
-    }
-
-    /**
-     * Return the ID of the Neo4j node in the database
-     * @return <code>Long</code> ID of the node
-     */
-    public Long getNodeId() {
-        if(this.node == null) return null;
-        return node.getId();
-    }
-
-    /**
-     * Return the node linked to the Object
-     * @return <code>Node</code>  associated to the
-     * @throws Neo4jBadRequestException
-     * @throws Neo4jNoResult
-     */
-    public Node getNode() throws  Neo4jNoResult, Neo4jQueryException {
-        if(this.node == null) {
-            this.findNode();
-        }
-        return this.node;
-    }
-
-    /**
      * Build a merge request, based on the node label and its properties
-     * @param label Label of the node to create
+     *
+     * @param label      Label of the node to create
      * @param properties Properties to include in the merge request
      * @return the request to execute as a String
      */
@@ -129,7 +74,7 @@ public abstract class Neo4jObject {
         String returnValName = Configuration.get("demeter.backup.node.node_gen_request.return_val");
 
         List<String> valuesAsString = new ArrayList<>();
-        for(Map.Entry<String, Object> entry : properties.entrySet()) {
+        for (Map.Entry<String, Object> entry : properties.entrySet()) {
             StringBuilder sb = new StringBuilder();
 
             String propName = entry.getKey();
@@ -137,10 +82,10 @@ public abstract class Neo4jObject {
 
             sb.append(propName).append(": ");
 
-            if(value instanceof Boolean) { // Handle boolean
+            if (value instanceof Boolean) { // Handle boolean
                 String toInsert = (Boolean) value ? "True" : "False";
                 sb.append(toInsert);
-            } else if(value instanceof String) { // Handle String
+            } else if (value instanceof String) { // Handle String
                 sb.append("\\'").append(value).append("\\'");
             } else {
                 sb.append(value);
@@ -159,14 +104,76 @@ public abstract class Neo4jObject {
         return returnSb.toString();
     }
 
+    @Deprecated
+    public String neo4jSanitize(String s) {
+        return s.replaceAll("\\\\", "\\\\\\\\");
+    }
+
+    /**
+     * Find an existing node in the DB matching the same properties. The node found will be assigned to the object.
+     * (Warning : will return the first node encountered if two nodes have the exact same properties)
+     *
+     * @return The node found in the database
+     * @throws Neo4jBadRequestException An error was thrown during the execution of the query
+     * @throws Neo4jNoResult            The request did not return any results (and was supposed to)
+     */
+    public Node findNode() throws Neo4jQueryException, Neo4jNoResult {
+        if (this.getNodeId() == null) {
+            throw new Neo4jNoResult("You need to create node first.", "Find node by id", "NEOOxFIN2");
+        }
+
+        Node n = neo4jAL.getNodeById(this.getNodeId());
+        return n;
+    }
+
+    /**
+     * Create a node in the database based on attributes of the object
+     *
+     * @return The node created
+     * @throws Neo4jBadRequestException An error was thrown during the execution of the query
+     * @throws Neo4jNoResult            The request did not return any results (and was supposed to)
+     */
+    public abstract Node createNode() throws Neo4jBadRequestException, Neo4jNoResult;
+
+    /**
+     * Delete the node in the database linked to the object
+     *
+     * @throws Neo4jBadRequestException An error was thrown during the execution of the query
+     * @throws Neo4jNoResult            The request did not return any results (and was supposed to)
+     */
+    public void deleteNode() throws Neo4jBadRequestException, Neo4jNoResult, Neo4jQueryException {
+        Node n = this.getNode();
+        n.delete();
+    }
+
+    /**
+     * Return the ID of the Neo4j node in the database
+     *
+     * @return <code>Long</code> ID of the node
+     */
+    public Long getNodeId() {
+        if (this.node == null) return null;
+        return node.getId();
+    }
+
+    /**
+     * Return the node linked to the Object
+     *
+     * @return <code>Node</code>  associated to the
+     * @throws Neo4jBadRequestException
+     * @throws Neo4jNoResult
+     */
+    public Node getNode() throws Neo4jNoResult, Neo4jQueryException {
+        if (this.node == null) {
+            this.findNode();
+        }
+        return this.node;
+    }
+
     /**
      * Force an object to use a node already present in the database.
      */
     public void setNode(Node n) {
         this.node = n;
-    }
-
-    public Neo4jObject(Neo4jAL neo4jAL) {
-        this.neo4jAL = neo4jAL;
     }
 }

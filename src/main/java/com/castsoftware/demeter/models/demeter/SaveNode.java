@@ -26,7 +26,6 @@ import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.models.Neo4jObject;
-import com.castsoftware.demeter.models.imaging.Level5Node;
 import org.neo4j.graphdb.*;
 
 import java.util.ArrayList;
@@ -47,15 +46,30 @@ public class SaveNode extends Neo4jObject {
     private String application;
     private String creation;
 
+    /***
+     * Constructor
+     * @param neo4jAL Neo4j access layer
+     * @param name Name of the save
+     * @param application Application concerned by the save
+     * @param creation Creation date
+     */
+    public SaveNode(Neo4jAL neo4jAL, String name, String application, String creation) {
+        super(neo4jAL);
+        this.name = name;
+        this.application = application;
+        this.creation = creation;
+    }
+
     /**
      * Create a Save node object from Neo4j Node
+     *
      * @param neo4jAL Neo4j Access Layer
-     * @param node Node to convert
+     * @param node    Node to convert
      * @return The save node created from Neo4j node.
      * @throws Neo4jBadNodeFormatException The node provided is not in a correct format
      */
     public static SaveNode fromNode(Neo4jAL neo4jAL, Node node) throws Neo4jBadNodeFormatException {
-        if(!node.hasLabel(Label.label(LABEL))) {
+        if (!node.hasLabel(Label.label(LABEL))) {
             throw new Neo4jBadNodeFormatException(String.format("The node with Id '%d' does not contain the correct label. Expected to have : %s", node.getId(), LABEL), ERROR_PREFIX + "FROMN1");
         }
 
@@ -76,6 +90,41 @@ public class SaveNode extends Neo4jObject {
 
     }
 
+    /**
+     * Get all the Save node present in the database.
+     *
+     * @param neo4jAL
+     * @return
+     * @throws Neo4jNoResult
+     */
+    public static List<SaveNode> getAllSaveNodes(Neo4jAL neo4jAL) throws Neo4jNoResult {
+        Label label = Label.label(LABEL);
+        List<SaveNode> returnList = new ArrayList<>();
+
+        Node n = null;
+        for (ResourceIterator<Node> it = neo4jAL.getTransaction().findNodes(label); it.hasNext(); ) {
+            try {
+                returnList.add(fromNode(neo4jAL, it.next()));
+            } catch (NoSuchElementException | NullPointerException | Neo4jBadNodeFormatException e) {
+                throw new Neo4jNoResult(LABEL + "nodes retrieving by application name failed", "findQuery", e, ERROR_PREFIX + "GANA1");
+            }
+
+        }
+
+        return returnList;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getApplication() {
+        return application;
+    }
+
+    public String getCreation() {
+        return creation;
+    }
 
     @Override
     public Node createNode() {
@@ -92,6 +141,7 @@ public class SaveNode extends Neo4jObject {
 
     /**
      * Delete the node and all the operations nodes attached to this Save node
+     *
      * @throws Neo4jBadRequestException
      * @throws Neo4jNoResult
      * @throws Neo4jQueryException
@@ -102,7 +152,7 @@ public class SaveNode extends Neo4jObject {
 
         // Delete attached operations
         Node opN = null;
-        for(Relationship rel: n.getRelationships(Direction.INCOMING, RelationshipType.withName(RELATION_TO_OPERATIONS))) {
+        for (Relationship rel : n.getRelationships(Direction.INCOMING, RelationshipType.withName(RELATION_TO_OPERATIONS))) {
             opN = rel.getStartNode();
             rel.delete(); // Delete relationship
             opN.delete(); // Delete operation node
@@ -113,6 +163,7 @@ public class SaveNode extends Neo4jObject {
 
     /**
      * Execute the save
+     *
      * @return The number of nodes affected by the save
      */
     public int execute() throws Neo4jQueryException, Neo4jNoResult, Neo4jBadNodeFormatException {
@@ -122,49 +173,12 @@ public class SaveNode extends Neo4jObject {
         // Get operations nodes
         Node node = null;
         OperationNode opN;
-        for(Relationship rel: n.getRelationships(Direction.INCOMING, RelationshipType.withName(RELATION_TO_OPERATIONS))) {
+        for (Relationship rel : n.getRelationships(Direction.INCOMING, RelationshipType.withName(RELATION_TO_OPERATIONS))) {
             node = rel.getStartNode();
             opN = OperationNode.fromNode(neo4jAL, node);
             affectedNode += opN.execute(this.application);
         }
 
         return affectedNode;
-    }
-
-    /**
-     * Get all the Save node present in the database.
-     * @param neo4jAL
-     * @return
-     * @throws Neo4jNoResult
-     */
-    public static List<SaveNode> getAllSaveNodes(Neo4jAL neo4jAL) throws Neo4jNoResult {
-        Label label = Label.label(LABEL);
-        List<SaveNode> returnList = new ArrayList<>();
-
-        Node n = null;
-        for (ResourceIterator<Node> it = neo4jAL.getTransaction().findNodes(label); it.hasNext(); ) {
-            try {
-                returnList.add(fromNode(neo4jAL, it.next()));
-            }  catch (NoSuchElementException | NullPointerException | Neo4jBadNodeFormatException e) {
-                throw new Neo4jNoResult(LABEL + "nodes retrieving by application name failed",  "findQuery", e, ERROR_PREFIX+"GANA1");
-            }
-
-        }
-
-        return returnList;
-    }
-
-    /***
-     * Constructor
-     * @param neo4jAL Neo4j access layer
-     * @param name Name of the save
-     * @param application Application concerned by the save
-     * @param creation Creation date
-     */
-    public SaveNode(Neo4jAL neo4jAL, String name, String application, String creation) {
-        super(neo4jAL);
-        this.name = name;
-        this.application = application;
-        this.creation = creation;
     }
 }

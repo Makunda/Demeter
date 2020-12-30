@@ -26,15 +26,12 @@ import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.models.imaging.Level5Node;
-import com.castsoftware.demeter.models.imaging.ModuleNode;
 import com.castsoftware.demeter.utils.LevelsUtils;
 import org.neo4j.graphdb.*;
 
-import javax.sql.rowset.CachedRowSet;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class LevelGroupController {
 
@@ -55,13 +52,11 @@ public class LevelGroupController {
     private static final String ERROR_PREFIX = "GROCx";
 
 
-
-
-
     /**
      * Get the level 5 present in the node list. Level are returned as a map, with the key corresponding to the level node and the value their frequency.
      * The return map is sorted by ascending order.
-     * @param neo4jAL Neo4j Access Layer
+     *
+     * @param neo4jAL  Neo4j Access Layer
      * @param nodeList List of the node used to extract level5
      * @return The map containing level5 nodes and their usage frequency as a Stream
      * @throws Neo4jNoResult If no Level 5 were detected
@@ -73,7 +68,7 @@ public class LevelGroupController {
         // Get Actual Level 5 and connections
         Map<Node, Integer> level5map = new HashMap<>();
 
-        for( Node rObject : nodeList ) {
+        for (Node rObject : nodeList) {
 
             Iterator<Relationship> oldRel = rObject.getRelationships(Direction.INCOMING, relLevel).iterator();
             if (oldRel.hasNext()) {
@@ -84,8 +79,8 @@ public class LevelGroupController {
             }
         }
 
-        if(level5map.size() == 0) {
-            throw new Neo4jNoResult("Cannot find a valid Level 5 for the tag", "No relation detected between tagged node and Level5" , ERROR_PREFIX+"GROS1");
+        if (level5map.size() == 0) {
+            throw new Neo4jNoResult("Cannot find a valid Level 5 for the tag", "No relation detected between tagged node and Level5", ERROR_PREFIX + "GROS1");
         }
 
         return level5map.entrySet().stream().sorted(Collections.reverseOrder(Map.Entry.comparingByValue())).iterator();
@@ -107,7 +102,7 @@ public class LevelGroupController {
             Map.Entry<Node, Integer> level5entry = it.next();
 
             // Get first node. Corresponding to the most frequent one
-            if(oldLevel5Node == null) {
+            if (oldLevel5Node == null) {
                 oldLevel5Node = level5entry.getKey();
             }
 
@@ -146,12 +141,12 @@ public class LevelGroupController {
         String forgedName = groupName.replace(GROUP_TAG_IDENTIFIER, "");
 
         // Merge new Level 5 and labelled them with application's name
-        String forgedLabel = applicationContext + ":" +  Level5Node.getLabel();
-        String forgedFindLevel = String.format("MATCH (o:%1$s) WHERE o.%2$s='%3$s' RETURN o as node;", forgedLabel, Level5Node.getNameProperty() , forgedName);
+        String forgedLabel = applicationContext + ":" + Level5Node.getLabel();
+        String forgedFindLevel = String.format("MATCH (o:%1$s) WHERE o.%2$s='%3$s' RETURN o as node;", forgedLabel, Level5Node.getNameProperty(), forgedName);
 
         Node newLevelNode = null;
         Result result = neo4jAL.executeQuery(forgedFindLevel);
-        if(result.hasNext()) {
+        if (result.hasNext()) {
             // Module with same name was found, and results will be merge into it
             newLevelNode = (Node) result.next().get("node");
         } else {
@@ -163,7 +158,7 @@ public class LevelGroupController {
             Long count = ((Integer) nodeList.size()).longValue();
             String shade = (String) oldLevel5Node.getProperty(Level5Node.getShadeProperty());
 
-            Level5Node newLevel = new Level5Node(neo4jAL, forgedName, false, true, fullName, color,  5L, count, shade);
+            Level5Node newLevel = new Level5Node(neo4jAL, forgedName, false, true, fullName, color, 5L, count, shade);
             newLevelNode = newLevel.createNode();
             newLevelNode.addLabel(applicationLabel);
 
@@ -181,7 +176,7 @@ public class LevelGroupController {
         //Delete old relationships, to not interfere with the new level
         for (Node n : nodeList) {
             // Find and Delete Old Relationships
-            for( Relationship relN : n.getRelationships(Direction.INCOMING, aggregatesRel)) {
+            for (Relationship relN : n.getRelationships(Direction.INCOMING, aggregatesRel)) {
                 relN.delete();
             }
 
@@ -191,7 +186,7 @@ public class LevelGroupController {
             n.setProperty(IMAGING_OBJECT_LEVEL, forgedName);
         }
 
-        finishTimer= Instant.now();
+        finishTimer = Instant.now();
         neo4jAL.logInfo(String.format("%d Objects were linked to the new Level in %d Milliseconds.", nodeList.size(), Duration.between(startTimer, finishTimer).toMillis()));
 
 
@@ -260,11 +255,11 @@ public class LevelGroupController {
             if (nodeList.isEmpty()) continue;
 
             try {
-                neo4jAL.logInfo("Now processing group with name : " +groupName);
+                neo4jAL.logInfo("Now processing group with name : " + groupName);
                 Node n = groupSingleTag(neo4jAL, applicationContext, groupName, nodeList);
                 resNodes.add(n);
             } catch (Exception | Neo4jNoResult | Neo4jBadNodeFormatException | Neo4jBadRequestException err) {
-                 neo4jAL.logError("An error occurred trying to create Level 5 for nodes with tags : " + groupName, err);
+                neo4jAL.logError("An error occurred trying to create Level 5 for nodes with tags : " + groupName, err);
             }
         }
 
@@ -276,9 +271,9 @@ public class LevelGroupController {
                 applicationContext, IMAGING_OBJECT_TAGS, GROUP_TAG_IDENTIFIER);
         Result tagRemoveRes = neo4jAL.executeQuery(removeTagsQuery);
 
-        if(tagRemoveRes.hasNext()) {
+        if (tagRemoveRes.hasNext()) {
             Long nDel = (Long) tagRemoveRes.next().get("removedTags");
-            neo4jAL.logInfo( "# " + nDel + " demeter 'group tags' were removed from the database.");
+            neo4jAL.logInfo("# " + nDel + " demeter 'group tags' were removed from the database.");
         }
 
         neo4jAL.logInfo("Cleaning Done !");

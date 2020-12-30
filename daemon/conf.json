@@ -1,9 +1,9 @@
 {
-    "neo4j": {
-    	"url": "bolt://localhost:7687",
-    	"username": "neo4j",
-    	"password": "imaging",
-    	"encrypted": false
-    },
-    "refreshRate": 2000
+  "neo4j": {
+    "url": "bolt://localhost:7687",
+    "username": "neo4j",
+    "password": "imaging",
+    "encrypted": false
+  },
+  "refreshRate": 2000
 }

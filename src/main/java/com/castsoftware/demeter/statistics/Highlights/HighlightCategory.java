@@ -27,12 +27,12 @@ public enum HighlightCategory {
 
     String text;
 
-    public String getText() {
-        return this.text;
-    }
-
     HighlightCategory(String text) {
         this.text = text;
+    }
+
+    public String getText() {
+        return this.text;
     }
 
 }

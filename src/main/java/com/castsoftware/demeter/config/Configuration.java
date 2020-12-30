@@ -64,9 +64,10 @@ public class Configuration {
 
     /**
      * Get the corresponding value for the specified key as a String
+     *
      * @param key
-     * @see this.getAsObject to get the value as an object
      * @return <code>String</code> value for the key as a String
+     * @see this.getAsObject to get the value as an object
      */
     public static String get(String key) {
         return properties.get(key).toString();
@@ -74,6 +75,7 @@ public class Configuration {
 
     /**
      * Get the corresponding value for the specified key as an object
+     *
      * @param key
      * @return <Object>String</code> value for the key as a string
      */
@@ -84,10 +86,11 @@ public class Configuration {
 
     /**
      * Set the corresponding value for the specified key
+     *
      * @param key
      * @param value
      */
-    public static void set(String key, String value){
+    public static void set(String key, String value) {
         properties.setProperty(key, value);
     }
 

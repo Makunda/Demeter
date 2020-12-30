@@ -19,21 +19,16 @@
 
 package com.castsoftware.demeter.procedures.metaModel;
 
-import com.castsoftware.demeter.controllers.BackupController;
 import com.castsoftware.demeter.controllers.configuration.MetaModelController;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.ProcedureException;
-import com.castsoftware.demeter.exceptions.neo4j.*;
-import com.castsoftware.demeter.results.NodeResult;
+import com.castsoftware.demeter.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.demeter.results.OutputMessage;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.*;
 
-import java.time.Instant;
-import java.util.List;
 import java.util.stream.Stream;
 
 public class MetaModelProcedure {
@@ -54,7 +49,7 @@ public class MetaModelProcedure {
         try {
             String msg = MetaModelController.generateTemplate(ouputdir);
             return Stream.of(new OutputMessage(msg));
-        } catch (Exception  e) {
+        } catch (Exception e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
             throw ex;

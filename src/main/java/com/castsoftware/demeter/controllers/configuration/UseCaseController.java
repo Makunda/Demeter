@@ -21,9 +21,12 @@ package com.castsoftware.demeter.controllers.configuration;
 
 import com.castsoftware.demeter.config.Configuration;
 import com.castsoftware.demeter.database.Neo4jAL;
-import com.castsoftware.demeter.exceptions.neo4j.*;
-import com.castsoftware.demeter.models.demeter.ConfigurationNode;
+import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadNodeFormatException;
+import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
+import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
+import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.models.Neo4jObject;
+import com.castsoftware.demeter.models.demeter.ConfigurationNode;
 import com.castsoftware.demeter.models.demeter.UseCaseNode;
 import org.neo4j.graphdb.*;
 
@@ -39,14 +42,15 @@ public class UseCaseController {
 
     /**
      * Add a use case node to a configuration or another use case node
-     * @param neo4jAL Neo4J Access Layer
-     * @param name Name associated to the use case
-     * @param active Activation status of the usecase
+     *
+     * @param neo4jAL  Neo4J Access Layer
+     * @param name     Name associated to the use case
+     * @param active   Activation status of the usecase
      * @param parentId Id of the parent node
      * @return the node associated to the use case created
-     * @throws Neo4jQueryException An error happened during the execution of the query
+     * @throws Neo4jQueryException      An error happened during the execution of the query
      * @throws Neo4jBadRequestException The request didn't returned the expected results
-     * @throws Neo4jNoResult The request didn't return any result
+     * @throws Neo4jNoResult            The request didn't return any result
      */
     public static Node addUseCase(Neo4jAL neo4jAL, String name, Boolean active, Long parentId) throws Neo4jQueryException, Neo4jBadRequestException, Neo4jNoResult {
         Node parent = neo4jAL.getNodeById(parentId);
@@ -55,8 +59,8 @@ public class UseCaseController {
         Label configLabel = Label.label(ConfigurationNode.getLabel());
 
         // Check if the parent is either a Configuration Node or another use case
-        if(!parent.hasLabel(useCaseLabel) && !parent.hasLabel(configLabel)) {
-            throw new Neo4jBadRequestException(String.format("Can only attach a %s node to a %s node or a %s node.", UseCaseNode.getLabel(),UseCaseNode.getLabel(), ConfigurationNode.getLabel()),
+        if (!parent.hasLabel(useCaseLabel) && !parent.hasLabel(configLabel)) {
+            throw new Neo4jBadRequestException(String.format("Can only attach a %s node to a %s node or a %s node.", UseCaseNode.getLabel(), UseCaseNode.getLabel(), ConfigurationNode.getLabel()),
                     ERROR_PREFIX + "ADDU1");
         }
 
@@ -72,6 +76,7 @@ public class UseCaseController {
 
     /**
      * Return all use case nodes present in the database
+     *
      * @param neo4jAL Neo4J A
      * @return list of the use cases
      * @throws Neo4jQueryException
@@ -83,6 +88,7 @@ public class UseCaseController {
 
     /**
      * Return all active use case nodes present in the database
+     *
      * @param neo4jAL Neo4J A
      * @return list of active use cases in the database
      * @throws Neo4jQueryException
@@ -97,8 +103,9 @@ public class UseCaseController {
 
     /**
      * Set the activation value of all use cases in the configuration
+     *
      * @param neo4jAL Neo4j Access layer
-     * @param status New value of hte activation parameter
+     * @param status  New value of hte activation parameter
      * @return <code>int</code> The number of node modified
      * @throws Neo4jQueryException
      */
@@ -106,12 +113,12 @@ public class UseCaseController {
         int changes = 0;
 
         Label useCaseLabel = Label.label(UseCaseNode.getLabel());
-        ResourceIterator <Node> useCases = neo4jAL.findNodes(useCaseLabel);
+        ResourceIterator<Node> useCases = neo4jAL.findNodes(useCaseLabel);
 
-        while( useCases.hasNext() ) {
+        while (useCases.hasNext()) {
             Node n = useCases.next();
             n.setProperty(UseCaseNode.getActiveProperty(), status);
-            changes ++;
+            changes++;
         }
 
         return changes;
@@ -119,8 +126,9 @@ public class UseCaseController {
 
     /**
      * Set the Selected value of all use cases in the configuration
+     *
      * @param neo4jAL Neo4j Access layer
-     * @param status New value of hte activation parameter
+     * @param status  New value of hte activation parameter
      * @return <code>int</code> The number of node modified
      * @throws Neo4jQueryException
      */
@@ -128,12 +136,12 @@ public class UseCaseController {
         int changes = 0;
 
         Label useCaseLabel = Label.label(UseCaseNode.getLabel());
-        ResourceIterator <Node> useCases = neo4jAL.findNodes(useCaseLabel);
+        ResourceIterator<Node> useCases = neo4jAL.findNodes(useCaseLabel);
 
-        while( useCases.hasNext() ) {
+        while (useCases.hasNext()) {
             Node n = useCases.next();
             n.setProperty(UseCaseNode.getSelectedProperty(), status);
-            changes ++;
+            changes++;
         }
 
         return changes;
@@ -141,8 +149,9 @@ public class UseCaseController {
 
     /**
      * Change the status of the selected property in an use case node, and of every use case node under it.
+     *
      * @param neo4jAL Neo4j access layer
-     * @param id Id of the use case to modify
+     * @param id      Id of the use case to modify
      * @return list of the use case modified during the action
      * @throws Neo4jQueryException
      */
@@ -153,7 +162,7 @@ public class UseCaseController {
         Node n = neo4jAL.getNodeById(id);
 
         // Check if the node provided if a Use Case node, otherwise throw an error
-        if(!n.hasLabel(useCaseLabel))
+        if (!n.hasLabel(useCaseLabel))
             throw new Neo4jBadRequestException("Node does not contain the require label : " + UseCaseNode.getLabel(), ERROR_PREFIX + "ACUSC1");
 
 
@@ -163,15 +172,15 @@ public class UseCaseController {
         toVisit.push(n);
 
         // Loop while node are discovered
-        while(!toVisit.isEmpty()) {
+        while (!toVisit.isEmpty()) {
             try {
                 Node toTreat = toVisit.pop();
                 toTreat.setProperty(UseCaseNode.getActiveProperty(), status);
 
-                for(Relationship rel : toTreat.getRelationships(Direction.OUTGOING, RelationshipType.withName(USE_CASE_RELATIONSHIP))) {
+                for (Relationship rel : toTreat.getRelationships(Direction.OUTGOING, RelationshipType.withName(USE_CASE_RELATIONSHIP))) {
                     Node otherNode = rel.getEndNode();
 
-                    if(useCaseList.contains(otherNode) || !otherNode.hasLabel(useCaseLabel))
+                    if (useCaseList.contains(otherNode) || !otherNode.hasLabel(useCaseLabel))
                         continue;
 
                     toVisit.add(otherNode);
@@ -189,9 +198,10 @@ public class UseCaseController {
 
     /**
      * Search for nodes with a specific label inside the confirmation. The nodes with a matching label and present in an active branch will be returned.
-     * @param neo4jAL Neo4j Access Layer
+     *
+     * @param neo4jAL           Neo4j Access Layer
      * @param configurationName Name of the configuration to parse
-     * @param toFind Label of node
+     * @param toFind            Label of node
      * @return The list of node that matched both conditions
      * @throws Neo4jBadRequestException
      * @throws Neo4jQueryException
@@ -204,7 +214,7 @@ public class UseCaseController {
         String req = String.format("MATCH(o:%s) WHERE o.%s=\"%s\" RETURN o as res", ConfigurationNode.getLabel(), ConfigurationNode.getNameProperty(), configurationName);
         Result result = neo4jAL.executeQuery(req);
 
-        if(!result.hasNext()) {
+        if (!result.hasNext()) {
             throw new Neo4jNoResult(String.format("The request to find Configuration node with name \"%s\" didn't produced any result.", configurationName), req, ERROR_PREFIX + "GATG1");
         }
 
@@ -223,16 +233,16 @@ public class UseCaseController {
         // Start with the configuration node
         toVisit.add(confNode);
 
-        while(!toVisit.isEmpty()) {
+        while (!toVisit.isEmpty()) {
             Node n = toVisit.pop();
 
             // Check the activation value if useCase Node
-            if(n.hasLabel( Label.label(UseCaseNode.getLabel())) ) {
+            if (n.hasLabel(Label.label(UseCaseNode.getLabel()))) {
                 // Check the value for active property
-                boolean active = Neo4jObject.castPropertyToBoolean( n.getProperty(UseCaseNode.getActiveProperty()) );
-                boolean selected = Neo4jObject.castPropertyToBoolean(n.getProperty( UseCaseNode.getSelectedProperty()) );
+                boolean active = Neo4jObject.castPropertyToBoolean(n.getProperty(UseCaseNode.getActiveProperty()));
+                boolean selected = Neo4jObject.castPropertyToBoolean(n.getProperty(UseCaseNode.getSelectedProperty()));
 
-                if(!active || !selected) {
+                if (!active || !selected) {
                     visited.add(n);
                     continue;
                 }
@@ -242,11 +252,11 @@ public class UseCaseController {
             for (Relationship rel : n.getRelationships(Direction.OUTGOING)) {
                 Node otherNode = rel.getEndNode();
 
-                if(otherNode.hasLabel(UseCaseLabel) || !visited.contains(otherNode)) {
+                if (otherNode.hasLabel(UseCaseLabel) || !visited.contains(otherNode)) {
                     toVisit.add(otherNode);
                 }
 
-                if(otherNode.hasLabel(toFind)) {
+                if (otherNode.hasLabel(toFind)) {
                     matchingNodes.add(rel.getEndNode());
                 }
             }

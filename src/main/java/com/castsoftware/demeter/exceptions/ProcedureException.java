@@ -37,14 +37,12 @@ public class ProcedureException extends Throwable {
     private final String message;
     private final Throwable cause;
 
-    public void logException(Log log) {
-        log.error(this.message, this.cause);
-    }
     /**
      * ProcedureException constructor
+     *
      * @param message Exception message that will be log.
-     * @param cause Throwable object
-     * @param code Code of the exception (Displayed in the user interface)
+     * @param cause   Throwable object
+     * @param code    Code of the exception (Displayed in the user interface)
      */
     public ProcedureException(String message, Throwable cause, String code) {
         super(String.format(DEFAULT_USER_ERROR_MESSAGE, code));
@@ -74,16 +72,20 @@ public class ProcedureException extends Throwable {
 
     public ProcedureException(Throwable cause) {
         super(String.format(DEFAULT_USER_ERROR_MESSAGE, "-1"));
-        if(cause instanceof TaggingException) {
+        if (cause instanceof TaggingException) {
             TaggingException c = (TaggingException) cause;
             this.message = c.getMessage();
             this.cause = c.getCause();
             this.code = c.getCode();
         } else {
-            this.message = "UNHANDLED EXCEPTION : "+cause.getMessage();
+            this.message = "UNHANDLED EXCEPTION : " + cause.getMessage();
             this.cause = cause;
             this.code = "-1";
         }
+    }
+
+    public void logException(Log log) {
+        log.error(this.message, this.cause);
     }
 
     @Override

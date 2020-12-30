@@ -42,8 +42,23 @@ public class Neo4jAL {
     private Boolean activeTransaction = false;
 
     /**
+     * Constructor for the Neo4j Layer
+     *
+     * @param transaction
+     * @param log
+     * @throws Neo4jConnectionError If the database failed to respond in more than 15 seconds
+     */
+    public Neo4jAL(GraphDatabaseService db, Transaction transaction, Log log) throws Neo4jConnectionError {
+        this.db = db;
+        this.log = log;
+        this.transaction = transaction;
+        this.activeTransaction = true;
+    }
+
+    /**
      * Create an index on the desired property
-     * @param label Label concerned by the index
+     *
+     * @param label    Label concerned by the index
      * @param property Property used for the index
      * @throws Neo4jBadRequestException is thrown if the request contains an error, or if the execution failed.
      */
@@ -58,6 +73,7 @@ public class Neo4jAL {
 
     /**
      * Find nodes using their Label
+     *
      * @param label Label to search
      * @return <code>ResourceIterator</code> Iterator on the nodes found
      * @throws Neo4jQueryException Threw if the request produced an error
@@ -88,12 +104,13 @@ public class Neo4jAL {
 
     /**
      * Execute a single query with associated parameters
-     * @param query Cypher query to execute
+     *
+     * @param query  Cypher query to execute
      * @param params Parameters of the query
      * @return Result of the cypher query
      * @throws Neo4jQueryException Exception during the processing of the query
      */
-    public Result executeQuery(String query, Map<String,Object> params) throws Neo4jQueryException {
+    public Result executeQuery(String query, Map<String, Object> params) throws Neo4jQueryException {
         try {
             return this.transaction.execute(query, params);
         } catch (QueryExecutionException e) {
@@ -101,8 +118,8 @@ public class Neo4jAL {
         }
     }
 
-    public Result executeAtomicQuery(String query, Map<String,Object> params) throws Neo4jQueryException {
-        try (Transaction tx = db.beginTx()){
+    public Result executeAtomicQuery(String query, Map<String, Object> params) throws Neo4jQueryException {
+        try (Transaction tx = db.beginTx()) {
             return tx.execute(query, params);
         } catch (QueryExecutionException e) {
             throw new Neo4jQueryException("Error while executing query with parameters.", query, e, ERROR_PREFIX + "EXQS1");
@@ -110,13 +127,12 @@ public class Neo4jAL {
     }
 
     public Result executeAtomicQuery(String query) throws Neo4jQueryException {
-        try (Transaction tx = db.beginTx()){
+        try (Transaction tx = db.beginTx()) {
             return tx.execute(query);
         } catch (QueryExecutionException e) {
             throw new Neo4jQueryException("Error while executing query with parameters.", query, e, ERROR_PREFIX + "EXQS1");
         }
     }
-
 
     /**
      * Execute a list of query. Commit only if all query were executed without errors. Rollback otherwise.
@@ -135,12 +151,13 @@ public class Neo4jAL {
             }
             return results;
         } catch (Exception e) {
-            throw new Neo4jQueryException("Cannot execute multiple queries", e , ERROR_PREFIX + "EXQS1");
+            throw new Neo4jQueryException("Cannot execute multiple queries", e, ERROR_PREFIX + "EXQS1");
         }
     }
 
     /**
      * Retriece a node using its ID
+     *
      * @param id ID of the node
      * @return <code>Node</code> if the node if found, null otherwise
      * @throws Neo4jConnectionError
@@ -153,12 +170,13 @@ public class Neo4jAL {
         } catch (NotFoundException e) {
             return null;
         } catch (Exception e) {
-            throw new Neo4jQueryException("Cannot execute multiple queries", e , ERROR_PREFIX + "GNBI2");
+            throw new Neo4jQueryException("Cannot execute multiple queries", e, ERROR_PREFIX + "GNBI2");
         }
     }
 
     /**
      * Delete all the nodes matching the provided label.
+     *
      * @param label Label to delete
      * @return <code>Integer</code> number of node deleted.
      * @throws Neo4jQueryException
@@ -171,7 +189,7 @@ public class Neo4jAL {
                 Node n = it.next();
 
                 // Detach all relationships
-                for(Relationship r : n.getRelationships()) {
+                for (Relationship r : n.getRelationships()) {
                     r.delete();
                 }
                 // Delete the node
@@ -187,12 +205,13 @@ public class Neo4jAL {
 
     /**
      * Get all labels
+     *
      * @return return all the labels present in the database as a list.
      */
     public List<Label> getAllLabels() {
         List<Label> labels = new ArrayList<>();
 
-        for(Label l : this.transaction.getAllLabels()) {
+        for (Label l : this.transaction.getAllLabels()) {
             labels.add(l);
         }
 
@@ -207,35 +226,26 @@ public class Neo4jAL {
         return this.db;
     }
 
-
     /**
      * Commit the transaction. If the transaction is closed before being committed, it will be rolledback.
      * DO NOT USE WHEN DEALING WITH SESSION TRANSACTION
+     *
      * @deprecated
      */
     public void commitTransaction() {
         this.transaction.commit();
     }
+
     public void rollbackTransaction() {
         this.transaction.rollback();
     }
-    public Transaction getTransaction() { return this.transaction; }
+
+    public Transaction getTransaction() {
+        return this.transaction;
+    }
 
     public Boolean isOpen() {
         return this.activeTransaction;
-    }
-
-    /**
-     * Constructor for the Neo4j Layer
-     * @param transaction
-     * @param log
-     * @throws Neo4jConnectionError If the database failed to respond in more than 15 seconds
-     */
-    public Neo4jAL( GraphDatabaseService db , Transaction transaction, Log log ) throws Neo4jConnectionError {
-        this.db = db;
-        this.log = log;
-        this.transaction = transaction;
-        this.activeTransaction = true;
     }
 
     public void logInfo(String message) {
@@ -245,6 +255,7 @@ public class Neo4jAL {
     public void logError(String message) {
         log.error(DEMETER_LOG_PREFIX + message);
     }
+
     public void logError(String message, Throwable e) {
         log.error(DEMETER_LOG_PREFIX + message, e);
     }

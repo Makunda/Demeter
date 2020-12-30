@@ -25,7 +25,6 @@ import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
-
 import com.castsoftware.demeter.models.demeter.DocumentNode;
 import com.castsoftware.demeter.models.demeter.StatisticNode;
 import com.castsoftware.demeter.models.demeter.TagNode;
@@ -34,9 +33,13 @@ import com.castsoftware.demeter.results.demeter.StatisticResult;
 import com.castsoftware.demeter.statistics.Highlights.Highlight;
 import com.castsoftware.demeter.statistics.Highlights.HighlightType;
 import com.castsoftware.demeter.statistics.PreStatisticsLogger;
-import org.neo4j.graphdb.*;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class StatisticsController {
@@ -47,7 +50,8 @@ public class StatisticsController {
 
     /**
      * Get the active statistics nodes
-     * @param nal Neo4j Access Layer
+     *
+     * @param nal               Neo4j Access Layer
      * @param configurationName Name of the configuration
      * @return The list of active statistics for the specified configuration
      * @throws Neo4jNoResult
@@ -61,7 +65,7 @@ public class StatisticsController {
         Set<Node> statistics = UseCaseController.searchByLabelInActiveBranches(nal, configurationName, statisticsLabel);
 
         //TagNode.fromNode(neo4jAL, otherNode)
-        return statistics.stream().map( x -> {
+        return statistics.stream().map(x -> {
             try {
                 return StatisticNode.fromNode(nal, x);
             } catch (Neo4jBadNodeFormatException ex) {
@@ -74,7 +78,8 @@ public class StatisticsController {
 
     /**
      * Get the result of statistics
-     * @param nal Neo4j Access Layer
+     *
+     * @param nal                Neo4j Access Layer
      * @param applicationContext Application label to use
      * @param configurationName
      * @return List of statistics results
@@ -87,7 +92,7 @@ public class StatisticsController {
         List<StatisticResult> resultList = new ArrayList<>();
         List<StatisticNode> nodes = getSelectedStatistics(nal, configurationName);
 
-        for(StatisticNode sn : nodes) {
+        for (StatisticNode sn : nodes) {
             String result = sn.executeStat(applicationContext);
             StatisticResult sr = new StatisticResult(sn.getName(), sn.getDescription(), result);
             resultList.add(sr);
@@ -99,8 +104,9 @@ public class StatisticsController {
     /**
      * Write the pre-execution statistics to a File.
      * The pre-execution statistics act like recommendations of potential interesting useCases that you want to address.
-     * @param nal Neo4j Access Layer
-     * @param configurationName Name of the configuration
+     *
+     * @param nal                Neo4j Access Layer
+     * @param configurationName  Name of the configuration
      * @param applicationContext Context of the application
      * @return Number of statistics processed ( Formatted String )
      * @throws Neo4jBadRequestException
@@ -115,15 +121,15 @@ public class StatisticsController {
         List<TagNode> tagNodeList = TagController.getSelectedTags(nal, configurationName);
 
         int nExecution = 0;
-        for(TagNode tn : tagNodeList) {
+        for (TagNode tn : tagNodeList) {
             try {
                 // Ignored non active requests
-                if(!tn.getActive()) continue;
+                if (!tn.getActive()) continue;
 
                 Long numAffected = tn.forecastRequest(applicationContext);
                 String useCaseName = tn.getParentUseCase().getName();
 
-                if(numAffected > 0) {
+                if (numAffected > 0) {
                     Highlight h = new Highlight(tn.getTag(), useCaseName, tn.getDescription(), numAffected.intValue(), HighlightType.TAG);
                     highlightList.add(h);
                 }
@@ -139,18 +145,18 @@ public class StatisticsController {
         for (DocumentNode doc : documentNodeList) {
             try {
                 // Ignored non active requests
-                if(!doc.getActive()) continue;
+                if (!doc.getActive()) continue;
 
                 Long numAffected = doc.forecastRequest(applicationContext);
 
                 UseCaseNode parent = doc.getParentUseCase();
                 String useCaseName = "Unknown";
 
-                if(parent != null) {
-                    useCaseName= parent.getName();
+                if (parent != null) {
+                    useCaseName = parent.getName();
                 }
 
-                if(numAffected > 0) {
+                if (numAffected > 0) {
                     Highlight h = new Highlight(doc.getTitle(), useCaseName, doc.getDescription(), numAffected.intValue(), HighlightType.DOCUMENT);
                     highlightList.add(h);
                 }
@@ -163,7 +169,7 @@ public class StatisticsController {
 
         List<StatisticNode> statList = getSelectedStatistics(nal, configurationName);
 
-        try (PreStatisticsLogger pl = new PreStatisticsLogger(applicationContext)){
+        try (PreStatisticsLogger pl = new PreStatisticsLogger(applicationContext)) {
 
             pl.flushBuffer();
             pl.writeStatistics(statList);
@@ -171,7 +177,7 @@ public class StatisticsController {
             pl.save();
         }
 
-        returnList.add(String.format("%d tags and %d statistics were processed.",nExecution, statList.size()));
+        returnList.add(String.format("%d tags and %d statistics were processed.", nExecution, statList.size()));
         returnList.add(String.format("The report was saved at '%s'.", PreStatisticsLogger.getOutputDirectory()));
 
         return returnList;
@@ -183,12 +189,12 @@ public class StatisticsController {
         Label useCaseLabel = Label.label(UseCaseNode.getLabel());
 
         // Check if the parent is either a Configuration Node or another use case
-        if(!parent.hasLabel(useCaseLabel)) {
+        if (!parent.hasLabel(useCaseLabel)) {
             throw new Neo4jBadRequestException(String.format("Can only attach a %s node to a %s.", StatisticNode.getLabel(), UseCaseNode.getLabel()),
                     ERROR_PREFIX + "ADDU1");
         }
 
-        StatisticNode statNode = new StatisticNode(nal, name, request,  active, description);
+        StatisticNode statNode = new StatisticNode(nal, name, request, active, description);
         Node n = statNode.createNode();
 
         // Create the relation to the use case

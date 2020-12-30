@@ -46,19 +46,26 @@ public class OperationNode extends Neo4jObject {
     private String groupName;
     private List<String> toGroup;
 
+    public OperationNode(Neo4jAL neo4jAL, String groupName, List<String> toGroup) {
+        super(neo4jAL);
+        this.groupName = groupName;
+        this.toGroup = toGroup;
+    }
+
     public static String getRelationToSaveNode() {
         return RELATION_TO_SAVE_NODE;
     }
 
     /**
      * Create Operation node from Neo4j node
+     *
      * @param neo4jAL Neo4j Access Layer
-     * @param node Node to convert
+     * @param node    Node to convert
      * @return the OperationNode created
      * @throws Neo4jBadNodeFormatException
      */
-    public static OperationNode fromNode(Neo4jAL neo4jAL, Node node ) throws Neo4jBadNodeFormatException {
-        if(!node.hasLabel(Label.label(LABEL))) {
+    public static OperationNode fromNode(Neo4jAL neo4jAL, Node node) throws Neo4jBadNodeFormatException {
+        if (!node.hasLabel(Label.label(LABEL))) {
             throw new Neo4jBadNodeFormatException(String.format("The node with Id '%d' does not contain the correct label. Expected to have : %s", node.getId(), LABEL), ERROR_PREFIX + "FROMN1");
         }
 
@@ -77,7 +84,7 @@ public class OperationNode extends Neo4jObject {
     }
 
     @Override
-    public Node createNode()  {
+    public Node createNode() {
         Label label = Label.label(LABEL);
 
         // Serialize the list
@@ -93,26 +100,27 @@ public class OperationNode extends Neo4jObject {
 
     /**
      * Re-execute the operations and apply group names
+     *
      * @return Number of node grouped by this operation
      */
     public int execute(String applicationContext) throws Neo4jQueryException {
         int treatedNode = 0;
 
-        String requestTemplate = "MATCH(n:"+applicationContext+":Object) WHERE n.FullName='%s' RETURN n as obj";
+        String requestTemplate = "MATCH(n:" + applicationContext + ":Object) WHERE n.FullName='%s' RETURN n as obj";
 
         String toExecute;
         Result res;
         Node n;
         List<String> tags;
-        for(String fullName : toGroup) {
+        for (String fullName : toGroup) {
             toExecute = String.format(requestTemplate, fullName);
             res = neo4jAL.executeQuery(toExecute);
 
             // Since fullname property isn't unique, iterate over objects
-            while(res.hasNext()) {
+            while (res.hasNext()) {
                 n = (Node) res.next();
                 // Add group Name to tag
-                if(n.hasProperty(OBJECT_TAG_PROPERTY)) {
+                if (n.hasProperty(OBJECT_TAG_PROPERTY)) {
                     tags = (List<String>) n.getProperty(OBJECT_TAG_PROPERTY);
                     n.setProperty(OBJECT_TAG_PROPERTY, tags.add(groupName));
                 } else {
@@ -123,11 +131,5 @@ public class OperationNode extends Neo4jObject {
         }
 
         return treatedNode;
-    }
-
-    public OperationNode(Neo4jAL neo4jAL, String groupName, List<String> toGroup) {
-        super(neo4jAL);
-        this.groupName = groupName;
-        this.toGroup = toGroup;
     }
 }

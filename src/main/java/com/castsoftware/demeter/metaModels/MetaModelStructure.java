@@ -33,6 +33,15 @@ public class MetaModelStructure {
     public String[] toMergeObjectType;
     public Map<String, Long[]> customOperations;
 
+    public MetaModelStructure() {
+        this.metaModelName = "YourModelName";
+        this.language = "Java";
+        this.splitExternalObjects = false;
+        this.splitNotInTransactionsObjects = false;
+        this.toMergeObjectType = new String[]{};
+        this.customOperations = new HashMap<>();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -51,14 +60,5 @@ public class MetaModelStructure {
         int result = Objects.hash(metaModelName, language, splitNotInTransactionsObjects, splitExternalObjects, customOperations);
         result = 31 * result + Arrays.hashCode(toMergeObjectType);
         return result;
-    }
-
-    public MetaModelStructure() {
-        this.metaModelName = "YourModelName";
-        this.language = "Java";
-        this.splitExternalObjects = false;
-        this.splitNotInTransactionsObjects = false;
-        this.toMergeObjectType = new String[]{};
-        this.customOperations = new HashMap<>();
     }
 }

@@ -40,8 +40,8 @@ public abstract class TaggingException extends Throwable {
     public TaggingException(String message, Throwable cause, String code) {
         super(message, cause);
 
-        Matcher m  = errorCodeReg.matcher(code);
-        if(! m.matches() ) {
+        Matcher m = errorCodeReg.matcher(code);
+        if (!m.matches()) {
             message.concat(String.format(" ### Malformed exception code : %s. Please see the recommendations in the documentation.", code));
         }
         this.code = code;
@@ -50,8 +50,8 @@ public abstract class TaggingException extends Throwable {
     public TaggingException(String message, String code) {
         super(message);
 
-        Matcher m  = errorCodeReg.matcher(code);
-        if(! m.matches() ) {
+        Matcher m = errorCodeReg.matcher(code);
+        if (!m.matches()) {
             message.concat(String.format(" ### Malformed exception code : %s. Please see the recommendations in the documentation.", code));
         }
         this.code = code;

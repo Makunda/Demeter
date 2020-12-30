@@ -59,7 +59,7 @@ public class GroupProcedures {
 
             return nodes.stream().map(NodeResult::new);
 
-        } catch ( Exception | Neo4jConnectionError | Neo4jQueryException e) {
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
             throw ex;
@@ -82,7 +82,7 @@ public class GroupProcedures {
 
             return Stream.of(new OutputMessage("All the abstract levels were successfully refreshed"));
 
-        } catch ( Exception | Neo4jConnectionError | Neo4jQueryException e) {
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
             throw ex;

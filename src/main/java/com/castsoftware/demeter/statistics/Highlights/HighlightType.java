@@ -24,10 +24,12 @@ public enum HighlightType {
     DOCUMENT("Document Generator");
 
     String text;
-    public String getText() {
-        return this.text;
-    }
+
     HighlightType(String text) {
         this.text = text;
+    }
+
+    public String getText() {
+        return this.text;
     }
 }

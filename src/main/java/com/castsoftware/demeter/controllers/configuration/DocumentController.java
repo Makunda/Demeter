@@ -43,13 +43,14 @@ public class DocumentController {
     /**
      * Add a DocumentNode and attach it to the specified useCase node.
      * On its execution, the node will create a Document It and link it to every node matching it.
-     * @param nal Neo4j Access Layer
-     * @param title Title of the document
-     * @param request Request returning nodes matching the desired Use-Case
-     * @param active Activation of the document
-     * @param description Description of the Request, used to quickly understand the action of the request
+     *
+     * @param nal                 Neo4j Access Layer
+     * @param title               Title of the document
+     * @param request             Request returning nodes matching the desired Use-Case
+     * @param active              Activation of the document
+     * @param description         Description of the Request, used to quickly understand the action of the request
      * @param documentDescription Description associated with the document
-     * @param useCaseId Id of the parent Use Case
+     * @param useCaseId           Id of the parent Use Case
      * @return The document created
      * @throws Neo4jBadRequestException
      * @throws Neo4jNoResult
@@ -61,13 +62,13 @@ public class DocumentController {
         Label useCaseLabel = Label.label(UseCaseNode.getLabel());
 
         // Check if the parent is either a Configuration Node or another use case
-        if(!parent.hasLabel(useCaseLabel)) {
+        if (!parent.hasLabel(useCaseLabel)) {
             throw new Neo4jBadRequestException(String.format("Can only attach a %s node to a %s.", DocumentNode.getLabel(), UseCaseNode.getLabel()),
                     ERROR_PREFIX + "ADDU1");
         }
 
-        DocumentNode docNode = new DocumentNode(nal, title, request, active, description, documentDescription );
-           Node n = docNode.createNode();
+        DocumentNode docNode = new DocumentNode(nal, title, request, active, description, documentDescription);
+        Node n = docNode.createNode();
 
         // Create the relation to the use case
         parent.createRelationshipTo(n, RelationshipType.withName(USECASE_TO_DOC_REL));
@@ -77,7 +78,8 @@ public class DocumentController {
 
     /**
      * Return all documents in an active branch, and flagged as active
-     * @param neo4jAL Neo4j Access Layer
+     *
+     * @param neo4jAL           Neo4j Access Layer
      * @param configurationName Name of the configuration to execute
      * @return The list of "ready to execute" nodes
      * @throws Neo4jBadRequestException
@@ -89,7 +91,7 @@ public class DocumentController {
         Label documentLabel = Label.label(DocumentNode.getLabel());
         Set<Node> documents = UseCaseController.searchByLabelInActiveBranches(neo4jAL, configurationName, documentLabel);
 
-        return documents.stream().map( x -> {
+        return documents.stream().map(x -> {
             try {
                 return DocumentNode.fromNode(neo4jAL, x);
             } catch (Neo4jBadNodeFormatException ex) {
@@ -98,8 +100,6 @@ public class DocumentController {
             }
         }).filter(x -> x != null && x.getActive()).collect(Collectors.toList());
     }
-
-
 
 
 }

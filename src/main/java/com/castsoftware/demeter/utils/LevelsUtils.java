@@ -28,9 +28,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class LevelsUtils {
 
     // Imaging Conf
@@ -49,6 +46,7 @@ public class LevelsUtils {
 
     /**
      * Get the label associated with the level number provided
+     *
      * @param levelNumber
      * @return the label of the corresponding label
      */
@@ -71,16 +69,17 @@ public class LevelsUtils {
 
     /**
      * Refresh all levels connections, from Level 4 to Level 1
-     * @param neo4jAL Neo4j Access Layer
+     *
+     * @param neo4jAL            Neo4j Access Layer
      * @param applicationContext The application concerned by the operation
      */
     public static void refreshAllAbstractLevel(Neo4jAL neo4jAL, String applicationContext) throws Neo4jQueryException {
         RelationshipType aggregatesRel = RelationshipType.withName(IMAGING_AGGREGATES);
 
         // Refresh from level 4 to  level 1
-        for(int i = 4; i > 1; i--) {
+        for (int i = 4; i > 1; i--) {
             String labelN = getLevelLabelByNumber(i);
-            String labelN0 = getLevelLabelByNumber(i-1);
+            String labelN0 = getLevelLabelByNumber(i - 1);
 
             // Get nodes for this specific level
             String getNodeReq = String.format("MATCH (l:%1$s:%2$s) RETURN l as level", labelN, applicationContext);
@@ -105,16 +104,17 @@ public class LevelsUtils {
                 Result resTo = neo4jAL.executeQuery(forgedToLevels);
                 while (resTo.hasNext()) {
                     Node resToNode = (Node) resTo.next().get("level");
-                    if( resToNode.getId() == ln.getId()) continue;// Ignore self relationships
+                    if (resToNode.getId() == ln.getId()) continue;// Ignore self relationships
 
-                    ln.createRelationshipTo(resToNode, aggregatesRel);;
+                    ln.createRelationshipTo(resToNode, aggregatesRel);
+                    ;
                 }
 
                 // Get others levels linked to this level - Incoming level
                 Result resFrom = neo4jAL.executeQuery(forgedFromLevel);
                 while (resFrom.hasNext()) {
                     Node resFromNode = (Node) resFrom.next().get("level");
-                    if( resFromNode.getId() == ln.getId()) continue;// Ignore self relationships
+                    if (resFromNode.getId() == ln.getId()) continue;// Ignore self relationships
 
                     resFromNode.createRelationshipTo(ln, aggregatesRel);
                 }
@@ -125,6 +125,7 @@ public class LevelsUtils {
 
     /**
      * Refresh the links inter modules
+     *
      * @param neo4jAL
      * @param applicationContext
      * @param nodeLevel
@@ -135,29 +136,30 @@ public class LevelsUtils {
         RelationshipType referenceRel = RelationshipType.withName(IMAGING_LEVEL_REFERENCES);
 
         //Remove actual level relationships
-        for(Relationship rel : nodeLevel.getRelationships(referenceRel)) {
+        for (Relationship rel : nodeLevel.getRelationships(referenceRel)) {
             rel.delete();
         }
 
         String forgedToOtherLevel5 = String.format("MATCH (inil:%1$s:%2$s)-[:%3$s]->(inio:%4$s:%2$s)-->(o:%4$s:%2$s)<-[:%3$s]-(l:%1$s) WHERE ID(inil)=%5$s AND inil.%6$s=inio.%7$s  AND l.%6$s=o.%7$s RETURN DISTINCT l as level;",
-                Level5Node.getLabel(), applicationContext, IMAGING_AGGREGATES, IMAGING_OBJECT_LABEL, nodeLevel.getId(), Level5Node.getNameProperty(), IMAGING_OBJECT_LEVEL );
+                Level5Node.getLabel(), applicationContext, IMAGING_AGGREGATES, IMAGING_OBJECT_LABEL, nodeLevel.getId(), Level5Node.getNameProperty(), IMAGING_OBJECT_LEVEL);
         // List incoming level 5
         String forgedFromOtherLevel5 = String.format("MATCH (inil:%1$s:%2$s)-[:%3$s]->(inio:%4$s:%2$s)<--(o:%4$s:%2$s)<-[:%3$s]-(l:%1$s) WHERE ID(inil)=%5$s AND inil.%6$s=inio.%7$s  AND l.%6$s=o.%7$s RETURN DISTINCT l as level;",
-                Level5Node.getLabel(), applicationContext, IMAGING_AGGREGATES, IMAGING_OBJECT_LABEL, nodeLevel.getId(), Level5Node.getNameProperty(), IMAGING_OBJECT_LEVEL );
+                Level5Node.getLabel(), applicationContext, IMAGING_AGGREGATES, IMAGING_OBJECT_LABEL, nodeLevel.getId(), Level5Node.getNameProperty(), IMAGING_OBJECT_LEVEL);
 
 
         Result resTo = neo4jAL.executeQuery(forgedToOtherLevel5);
         while (resTo.hasNext()) {
             Node resToNode = (Node) resTo.next().get("level");
-            if( resToNode.getId() == nodeLevel.getId()) continue;// Ignore self relationships
+            if (resToNode.getId() == nodeLevel.getId()) continue;// Ignore self relationships
 
-            nodeLevel.createRelationshipTo(resToNode, referenceRel);;
+            nodeLevel.createRelationshipTo(resToNode, referenceRel);
+            ;
         }
 
         Result resFrom = neo4jAL.executeQuery(forgedFromOtherLevel5);
         while (resFrom.hasNext()) {
             Node resFromNode = (Node) resFrom.next().get("level");
-            if( resFromNode.getId() == nodeLevel.getId()) continue;// Ignore self relationships
+            if (resFromNode.getId() == nodeLevel.getId()) continue;// Ignore self relationships
 
             resFromNode.createRelationshipTo(nodeLevel, referenceRel);
         }
@@ -167,9 +169,10 @@ public class LevelsUtils {
 
     /**
      * Refresh the count parameter for a level ( Counting objects linked to it )
-     * @param neo4jAL Neo4j access layer
+     *
+     * @param neo4jAL            Neo4j access layer
      * @param applicationContext Application concerned by the change
-     * @param levelNode Level node necessitating a
+     * @param levelNode          Level node necessitating a
      * @return The Node updated
      * @throws Neo4jQueryException
      */
@@ -181,14 +184,14 @@ public class LevelsUtils {
         Result resNumConnected = neo4jAL.executeQuery(forgedNumConnected);
 
         Long numLeft = 0L;
-        if(resNumConnected.hasNext()) {
+        if (resNumConnected.hasNext()) {
             numLeft = (Long) resNumConnected.next().get("countNode");
         }
 
         // Delete the oldLevel node if it's empty
         if (numLeft == 0) {
             // Detach
-            for(Relationship rel : levelNode.getRelationships()) {
+            for (Relationship rel : levelNode.getRelationships()) {
                 rel.delete();
             }
             // Delete
@@ -207,15 +210,16 @@ public class LevelsUtils {
 
     /**
      * Refresh both links and count in a level 5 node
-     * @param neo4jAL Neo4JAccess Layer
+     *
+     * @param neo4jAL            Neo4JAccess Layer
      * @param applicationContext Name of the application you're working on
-     * @param node Level 5 node to treat
+     * @param node               Level 5 node to treat
      * @return The Node
      * @throws Neo4jQueryException
      */
     public static Node refreshLevel5(Neo4jAL neo4jAL, String applicationContext, Node node) throws Neo4jQueryException {
         Node n = refreshLevelCount5(neo4jAL, applicationContext, node);
-        if(n == null) return null; // Stop the refresh if the node was deleted
+        if (n == null) return null; // Stop the refresh if the node was deleted
         return refreshLevelLinks5(neo4jAL, applicationContext, node);
     }
 
