@@ -25,11 +25,14 @@ import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.models.Neo4jObject;
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Result;
 
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.List;
 
 public class OperationNode extends Neo4jObject {
@@ -70,8 +73,12 @@ public class OperationNode extends Neo4jObject {
         }
 
         try {
+            Type listType = new TypeToken<List<String>>() {}.getType();
+
             String groupName = (String) node.getProperty(GROUP_NAME_PROPERTY);
-            List<String> toGroup = (List<String>) node.getProperty(TO_GROUP_PROPERTY);
+
+            String jsonString = (String) node.getProperty(TO_GROUP_PROPERTY);
+            List<String> toGroup = new Gson().fromJson(jsonString, listType);
 
             // Initialize the node
             OperationNode opn = new OperationNode(neo4jAL, groupName, toGroup);
@@ -106,26 +113,18 @@ public class OperationNode extends Neo4jObject {
     public int execute(String applicationContext) throws Neo4jQueryException {
         int treatedNode = 0;
 
-        String requestTemplate = "MATCH(n:" + applicationContext + ":Object) WHERE n.FullName='%s' RETURN n as obj";
+        String requestTemplate = "MATCH(n:" + applicationContext +
+                ":Object) WHERE n.FullName='%s' SET n.Tags = CASE WHEN n.Tags IS NULL THEN ['"
+                + groupName+ "'] ELSE @.Tags + '" + groupName+ "' END RETURN n as obj";
 
         String toExecute;
         Result res;
-        Node n;
-        List<String> tags;
         for (String fullName : toGroup) {
             toExecute = String.format(requestTemplate, fullName);
             res = neo4jAL.executeQuery(toExecute);
 
-            // Since fullname property isn't unique, iterate over objects
+            // Since fullName property isn't unique, iterate over objects
             while (res.hasNext()) {
-                n = (Node) res.next();
-                // Add group Name to tag
-                if (n.hasProperty(OBJECT_TAG_PROPERTY)) {
-                    tags = (List<String>) n.getProperty(OBJECT_TAG_PROPERTY);
-                    n.setProperty(OBJECT_TAG_PROPERTY, tags.add(groupName));
-                } else {
-                    n.setProperty(OBJECT_TAG_PROPERTY, List.of(this.groupName));
-                }
                 treatedNode++;
             }
         }

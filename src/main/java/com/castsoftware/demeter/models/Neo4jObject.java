@@ -25,6 +25,7 @@ import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -143,7 +144,13 @@ public abstract class Neo4jObject {
      */
     public void deleteNode() throws Neo4jBadRequestException, Neo4jNoResult, Neo4jQueryException {
         Node n = this.getNode();
-        n.delete();
+
+        // Detach
+        for (Relationship rel : n.getRelationships()) {
+            rel.delete();
+        }
+
+        n.delete(); // Delete
     }
 
     /**

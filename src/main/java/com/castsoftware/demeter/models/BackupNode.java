@@ -38,6 +38,9 @@ public class BackupNode extends Neo4jObject {
     private static final String NODE_GEN_REQUEST_PROPERTY = Configuration.get("demeter.backup.node.node_gen_request");
     private static final String NODE_LABEL_PROPERTY = Configuration.get("demeter.backup.node.node_label");
 
+    private static final String OBJECT_LEVEL_PROPERTY = Configuration.get("imaging.node.object.level");
+    private static final String LEVEL_NAME_PROPERTY = Configuration.get("imaging.node.level5.name");
+
     private static final String GEN_REQUEST_RETURN_VALUE = Configuration.get("demeter.backup.node.node_gen_request.return_val");
 
     private static final String BACKUP_COPY_RELATION = Configuration.get("demeter.backup.relationship.copy");
@@ -296,16 +299,23 @@ public class BackupNode extends Neo4jObject {
             }
 
             String mergeRel;
+            Node otherNode;
             if (backupNode.getId() == relation.getStartNodeId()) { // Merge outgoing
-                Node endNode = relation.getEndNode();
-                mergeRel = String.format("MATCH (n),(m) WHERE ID(n)=%d AND ID(m)=%d MERGE (n)-[r:%s]->(m) RETURN r as rel;", referenceNode.getId(), endNode.getId(), toCreateRelName);
+                otherNode = relation.getEndNode();
+                mergeRel = String.format("MATCH (n),(m) WHERE ID(n)=%d AND ID(m)=%d MERGE (n)-[r:%s]->(m) RETURN r as rel;", referenceNode.getId(), otherNode.getId(), toCreateRelName);
             } else {  // Merge incoming
-                Node endNode = relation.getStartNode();
-                mergeRel = String.format("MATCH (n),(m) WHERE ID(n)=%d AND ID(m)=%d MERGE (n)-[r:%s]->(m) RETURN r as rel;", endNode.getId(), referenceNode.getId(), toCreateRelName);
+                otherNode = relation.getStartNode();
+                mergeRel = String.format("MATCH (n),(m) WHERE ID(n)=%d AND ID(m)=%d MERGE (n)-[r:%s]->(m) RETURN r as rel;", otherNode.getId(), referenceNode.getId(), toCreateRelName);
             }
 
             // Execute the relationship
             neo4jAL.executeQuery(mergeRel);
+
+            // Reassign the old Level name to Object's Level property
+            if(otherNode.hasProperty(OBJECT_LEVEL_PROPERTY)) {
+                otherNode.setProperty( OBJECT_LEVEL_PROPERTY, (String) referenceNode.getProperty(LEVEL_NAME_PROPERTY));
+            }
+
             relation.delete();
         }
 

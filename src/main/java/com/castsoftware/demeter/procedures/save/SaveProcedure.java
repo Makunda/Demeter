@@ -26,6 +26,7 @@ import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.demeter.results.BooleanResult;
 import com.castsoftware.demeter.results.NodeResult;
 import com.castsoftware.demeter.results.OutputMessage;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -82,7 +83,11 @@ public class SaveProcedure {
         }
     }
 
-
+    /**
+     * Get all Demeter save present in the database
+     * @return
+     * @throws ProcedureException
+     */
     @Procedure(value = "demeter.save.getAll", mode = Mode.WRITE)
     @Description("demeter.save.getAll() - Get all Demeter save present in the database.")
     public Stream<NodeResult> getAllSaveNodes() throws ProcedureException {
@@ -100,24 +105,21 @@ public class SaveProcedure {
     }
 
 
+    /**
+     * Remove a Demeter 'save' state from the database.
+     * @param saveName Name of the save to remove
+     * @return True if the operation is a success, False if the node was not found.
+     * @throws ProcedureException
+     */
     @Procedure(value = "demeter.save.removeSave", mode = Mode.WRITE)
     @Description("demeter.save.removeSave(String SaveName) - Delete a specific save by its name in the database.")
-    public Stream<OutputMessage> removeSave(@Name(value = "ApplicationName") String applicationName,
-                                            @Name(value = "SaveName") String saveName) throws ProcedureException {
+    public Stream<BooleanResult> removeSave(@Name(value = "SaveName") String saveName) throws ProcedureException {
 
         try {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
             boolean found = StateController.removeSave(nal, saveName);
-            String msg = String.format("Save with name '%s' ", saveName);
-
-            if (found) {
-                msg += "was found and deleted.";
-            } else {
-                msg += "wasn't found in database";
-            }
-
-            return Stream.of(new OutputMessage(msg));
+            return Stream.of(new BooleanResult(found));
         } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jNoResult | Neo4jBadRequestException e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
@@ -133,7 +135,7 @@ public class SaveProcedure {
             Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
             int count = StateController.removeAllSaves(nal);
-            String msg = String.format("%d saves were removed from the database.", count);
+            String msg = String.format("%d save(s) were removed from the database.", count);
             return Stream.of(new OutputMessage(msg));
         } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jNoResult | Neo4jBadRequestException e) {
             ProcedureException ex = new ProcedureException(e);

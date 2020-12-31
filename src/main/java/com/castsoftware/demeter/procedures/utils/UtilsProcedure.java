@@ -17,7 +17,7 @@
  *
  */
 
-package com.castsoftware.demeter.procedures;
+package com.castsoftware.demeter.procedures.utils;
 
 import com.castsoftware.demeter.config.Configuration;
 import com.castsoftware.demeter.controllers.UtilsController;

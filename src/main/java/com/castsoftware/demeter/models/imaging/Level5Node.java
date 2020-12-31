@@ -195,11 +195,17 @@ public class Level5Node extends Neo4jObject {
      */
     public static List<Level5Node> getAllNodesByApplication(Neo4jAL neo4jAL, String applicationName) throws Neo4jNoResult {
         Label label = Label.label(LABEL);
-        List<Level5Node> returnList = new ArrayList<>();
+        Label applicationLabel = Label.label(applicationName);
 
+        List<Level5Node> returnList = new ArrayList<>();
+        Node n;
         for (ResourceIterator<Node> it = neo4jAL.getTransaction().findNodes(label); it.hasNext(); ) {
             try {
-                returnList.add(fromNode(neo4jAL, it.next()));
+                // Check if the level node has the label of the application
+                n = it.next();
+                if(n.hasLabel(applicationLabel)) {
+                    returnList.add(fromNode(neo4jAL, n));
+                }
             } catch (NoSuchElementException | NullPointerException | Neo4jBadNodeFormatException e) {
                 throw new Neo4jNoResult(LABEL + "nodes retrieving by application name failed", "findQuery", e, ERROR_PREFIX + "GANA1");
             }
