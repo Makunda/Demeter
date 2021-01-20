@@ -28,20 +28,25 @@ _For more information, please refer to the ["Use the Demeter extension" page](ht
 None
 
 ## Roadmap
-### Next release 
-- Module Grouping 
-- Enriched Demeter Configuration
 
 ### Future releases
-- Graphical Demeter
-- Better statistic generator 
-
+- Better Module grouping
+- Undo the module grouping
+- Save the state of the application 
+- More tags and actions
 
 ## Release Notes
+### Version 2.3.0
+- Module Grouping 
+- Enriched Demeter Configuration
+- Better API allowing a connection to the Atlas Web platform
+- Undo the Level grouping
+
 ### Version 2.2.0 
 - Level 5 Grouping 
 - Microservices extraction
-- Daemonized Demeter
+- Daemonized Demeter  
+
 ### Version 2.0.0 
 - New knowledge base
 - DocumentIt support
