@@ -38,7 +38,6 @@ None
 ## Release Notes
 ### Version 2.3.0
 - Module Grouping 
-- Enriched Demeter Configuration
 - Better API allowing a connection to the Atlas Web platform
 - Undo the Level grouping
 
