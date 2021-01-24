@@ -22,19 +22,18 @@ package com.castsoftware.demeter.exceptions.neo4j;
 import com.castsoftware.demeter.exceptions.TaggingException;
 
 /**
- * The <code>Neo4jRuntimeException</code> is thrown when the Neo4j API fails.
- * Neo4jRuntimeException
+ * The <code>Neo4jRuntimeException</code> is thrown when the Neo4j API fails. Neo4jRuntimeException
  */
 public class Neo4jRuntimeException extends TaggingException {
-    private static final long serialVersionUID = -257426373544618244L;
-    private static final String MESSAGE_PREFIX = "Error returned by Neo4j API : ";
-    private static final String CODE_PREFIX = "NEO_RT_";
+  private static final long serialVersionUID = -257426373544618244L;
+  private static final String MESSAGE_PREFIX = "Error returned by Neo4j API : ";
+  private static final String CODE_PREFIX = "NEO_RT_";
 
-    public Neo4jRuntimeException(String message, Throwable cause, String code) {
-        super(MESSAGE_PREFIX.concat(message), cause, CODE_PREFIX.concat(code));
-    }
+  public Neo4jRuntimeException(String message, Throwable cause, String code) {
+    super(MESSAGE_PREFIX.concat(message), cause, CODE_PREFIX.concat(code));
+  }
 
-    public Neo4jRuntimeException(String message, String code) {
-        super(MESSAGE_PREFIX.concat(message), CODE_PREFIX.concat(code));
-    }
+  public Neo4jRuntimeException(String message, String code) {
+    super(MESSAGE_PREFIX.concat(message), CODE_PREFIX.concat(code));
+  }
 }

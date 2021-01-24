@@ -19,5 +19,4 @@
 
 package com.castsoftware.demeter.models.imaging;
 
-public class SubsetNode {
-}
+public class SubsetNode {}

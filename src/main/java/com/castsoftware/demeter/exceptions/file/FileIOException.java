@@ -22,20 +22,23 @@ package com.castsoftware.demeter.exceptions.file;
 import com.castsoftware.demeter.exceptions.TaggingException;
 
 /**
- * The <code>FileNotFound</code> is thrown when the procedure can't access a file because it doesn't exist, or the path resolution failed.
- * FileNotFound
+ * The <code>FileNotFound</code> is thrown when the procedure can't access a file because it doesn't
+ * exist, or the path resolution failed. FileNotFound
  */
 public class FileIOException extends TaggingException {
 
-    private static final long serialVersionUID = -622271594516405222L;
-    private static final String MESSAGE_PREFIX = "Error, IO exception during file operation : ";
-    private static final String CODE_PREFIX = "FIL_IO_";
+  private static final long serialVersionUID = -622271594516405222L;
+  private static final String MESSAGE_PREFIX = "Error, IO exception during file operation : ";
+  private static final String CODE_PREFIX = "FIL_IO_";
 
-    public FileIOException(String message, String path, Throwable cause, String code) {
-        super(MESSAGE_PREFIX.concat(message).concat(". Path : ").concat(path), cause, CODE_PREFIX.concat(code));
-    }
+  public FileIOException(String message, String path, Throwable cause, String code) {
+    super(
+        MESSAGE_PREFIX.concat(message).concat(". Path : ").concat(path),
+        cause,
+        CODE_PREFIX.concat(code));
+  }
 
-    public FileIOException(String path, Throwable cause, String code) {
-        super(MESSAGE_PREFIX.concat(path), cause, CODE_PREFIX.concat(code));
-    }
+  public FileIOException(String path, Throwable cause, String code) {
+    super(MESSAGE_PREFIX.concat(path), cause, CODE_PREFIX.concat(code));
+  }
 }

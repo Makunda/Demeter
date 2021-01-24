@@ -20,16 +20,16 @@
 package com.castsoftware.demeter.statistics.Highlights;
 
 public enum HighlightType {
-    TAG("Tag Generator"),
-    DOCUMENT("Document Generator");
+  TAG("Tag Generator"),
+  DOCUMENT("Document Generator");
 
-    String text;
+  String text;
 
-    HighlightType(String text) {
-        this.text = text;
-    }
+  HighlightType(String text) {
+    this.text = text;
+  }
 
-    public String getText() {
-        return this.text;
-    }
+  public String getText() {
+    return this.text;
+  }
 }

@@ -23,9 +23,9 @@ import org.neo4j.graphdb.Node;
 
 public class NodeResult {
 
-    public Node node;
+  public Node node;
 
-    public NodeResult(Node node) {
-        this.node = node;
-    }
+  public NodeResult(Node node) {
+    this.node = node;
+  }
 }

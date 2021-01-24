@@ -19,7 +19,6 @@
 
 package com.castsoftware.demeter.procedures.utils;
 
-import com.castsoftware.demeter.controllers.UtilsController;
 import com.castsoftware.demeter.controllers.configuration.RenameController;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.ProcedureException;
@@ -27,7 +26,6 @@ import com.castsoftware.demeter.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.results.BooleanResult;
-import com.castsoftware.exporter.results.OutputMessage;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
@@ -37,35 +35,32 @@ import java.util.stream.Stream;
 
 public class RenameProcedure {
 
+  // renameLevel
+  @Context public GraphDatabaseService db;
 
-    //renameLevel
-    @Context
-    public GraphDatabaseService db;
+  @Context public Transaction transaction;
 
-    @Context
-    public Transaction transaction;
+  @Context public Log log;
 
-    @Context
-    public Log log;
+  @Procedure(value = "demeter.rename.level", mode = Mode.WRITE)
+  @Description("demeter.rename.level() - Rename a level in an application.")
+  public Stream<BooleanResult> renameLevel(
+      @Name(value = "ApplicationName") String applicationName,
+      @Name(value = "OldName") String oldName,
+      @Name(value = "NewName") String newName)
+      throws ProcedureException {
 
-    @Procedure(value = "demeter.rename.level", mode = Mode.WRITE)
-    @Description("demeter.rename.level() - Rename a level in an application.")
-    public Stream<BooleanResult> renameLevel(@Name(value = "ApplicationName") String applicationName,
-                                             @Name(value = "OldName") String oldName,
-                                             @Name(value = "NewName") String newName) throws ProcedureException {
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      nal.logInfo("Starting Tagging export..");
+      boolean changed = RenameController.renameLevel(nal, applicationName, oldName, newName);
 
-            nal.logInfo("Starting Tagging export..");
-            boolean changed = RenameController.renameLevel(nal, applicationName, oldName, newName);
-
-            return Stream.of(new BooleanResult(changed));
-        } catch (Exception | Neo4jConnectionError | Neo4jNoResult | Neo4jQueryException e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
-
+      return Stream.of(new BooleanResult(changed));
+    } catch (Exception | Neo4jConnectionError | Neo4jNoResult | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
+  }
 }

@@ -33,51 +33,53 @@ import java.util.stream.Stream;
 
 public class MetaModelProcedure {
 
-    @Context
-    public GraphDatabaseService db;
+  @Context public GraphDatabaseService db;
 
-    @Context
-    public Transaction transaction;
+  @Context public Transaction transaction;
 
-    @Context
-    public Log log;
+  @Context public Log log;
 
-    @Procedure(value = "demeter.metamodel.generate", mode = Mode.WRITE)
-    @Description("demeter.metamodel.generate(String OutputDirectory) - Generate a blank metamodel template at the specified path.")
-    public Stream<OutputMessage> generateTemplate(@Name(value = "OutputDirectory") String ouputdir) throws ProcedureException {
+  @Procedure(value = "demeter.metamodel.generate", mode = Mode.WRITE)
+  @Description(
+      "demeter.metamodel.generate(String OutputDirectory) - Generate a blank metamodel template at the specified path.")
+  public Stream<OutputMessage> generateTemplate(@Name(value = "OutputDirectory") String ouputdir)
+      throws ProcedureException {
 
-        try {
-            String msg = MetaModelController.generateTemplate(ouputdir);
-            return Stream.of(new OutputMessage(msg));
-        } catch (Exception e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
+    try {
+      String msg = MetaModelController.generateTemplate(ouputdir);
+      return Stream.of(new OutputMessage(msg));
+    } catch (Exception e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
+  }
 
-    @Procedure(value = "demeter.metamodel.execute", mode = Mode.WRITE)
-    @Description("demeter.metamodel.execute(String ApplicationContext, String MetaModelName) - Generate a blank metamodel template at the specified path.")
-    public Stream<OutputMessage> executeMetamodel(@Name(value = "ApplicationContext") String applicationContext,
-                                                  @Name(value = "MetaModelName") String metaModelName) throws ProcedureException {
+  @Procedure(value = "demeter.metamodel.execute", mode = Mode.WRITE)
+  @Description(
+      "demeter.metamodel.execute(String ApplicationContext, String MetaModelName) - Generate a blank metamodel template at the specified path.")
+  public Stream<OutputMessage> executeMetamodel(
+      @Name(value = "ApplicationContext") String applicationContext,
+      @Name(value = "MetaModelName") String metaModelName)
+      throws ProcedureException {
 
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
-            long start = System.currentTimeMillis();
+      long start = System.currentTimeMillis();
 
-            MetaModelController.executeMetamodel(nal, applicationContext, metaModelName);
+      MetaModelController.executeMetamodel(nal, applicationContext, metaModelName);
 
-            long end = System.currentTimeMillis();
-            long elapsedTime = end - start;
+      long end = System.currentTimeMillis();
+      long elapsedTime = end - start;
 
-            return Stream.of(new OutputMessage(String.format("The metamodel was executed in %d milliseconds.", elapsedTime)));
-        } catch (Exception | Neo4jConnectionError e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
+      return Stream.of(
+          new OutputMessage(
+              String.format("The metamodel was executed in %d milliseconds.", elapsedTime)));
+    } catch (Exception | Neo4jConnectionError e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
-
-
+  }
 }

@@ -19,14 +19,14 @@
 
 package com.castsoftware.demeter.results.demeter;
 
-public class StatisticResult {
-  public String title;
-  public String description;
-  public String result;
+public class GroupingResult {
+    public String application;
+    public String tag;
+    public Long numTags;
 
-  public StatisticResult(String title, String description, String result) {
-    this.title = title;
-    this.description = description;
-    this.result = result;
-  }
+    public GroupingResult(String application, String tag, Long numTags) {
+        this.application = application;
+        this.tag = tag;
+        this.numTags = numTags;
+    }
 }

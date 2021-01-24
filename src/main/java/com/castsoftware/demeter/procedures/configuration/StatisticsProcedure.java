@@ -41,83 +41,108 @@ import java.util.stream.Stream;
 
 public class StatisticsProcedure {
 
-    @org.neo4j.procedure.Context
-    public GraphDatabaseService db;
+  @org.neo4j.procedure.Context public GraphDatabaseService db;
 
-    @org.neo4j.procedure.Context
-    public Transaction transaction;
+  @org.neo4j.procedure.Context public Transaction transaction;
 
-    @Context
-    public Log log;
+  @Context public Log log;
 
-    /**
-     * Extract the best candidates for an Imaging value demo
-     *
-     * @param applicationLabel
-     * @return
-     * @throws ProcedureException
-     */
-    @Procedure(value = "demeter.statistics.highlights", mode = Mode.WRITE)
-    @Description("demeter.statistics.highlights( String ConfigurationName, String Application ) - Generate a pre-tagging statistics report.")
-    public Stream<OutputMessage> findHighlights(@Name(value = "Configuration") String configurationName, @Name(value = "Application") String applicationLabel) throws ProcedureException {
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            long start = System.currentTimeMillis();
+  /**
+   * Extract the best candidates for an Imaging value demo
+   *
+   * @param applicationLabel
+   * @return
+   * @throws ProcedureException
+   */
+  @Procedure(value = "demeter.statistics.highlights", mode = Mode.WRITE)
+  @Description(
+      "demeter.statistics.highlights( String ConfigurationName, String Application ) - Generate a pre-tagging statistics report.")
+  public Stream<OutputMessage> findHighlights(
+      @Name(value = "Configuration") String configurationName,
+      @Name(value = "Application") String applicationLabel)
+      throws ProcedureException {
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      long start = System.currentTimeMillis();
 
-            List<String> resList = StatisticsController.writePreExecutionStatistics(nal, configurationName, applicationLabel);
+      List<String> resList =
+          StatisticsController.writePreExecutionStatistics(
+              nal, configurationName, applicationLabel);
 
-            long end = System.currentTimeMillis();
-            long elapsedTime = end - start;
+      long end = System.currentTimeMillis();
+      long elapsedTime = end - start;
 
-            String message = String.format("Report generated in %d ms.", elapsedTime);
-            resList.add(message);
+      String message = String.format("Report generated in %d ms.", elapsedTime);
+      resList.add(message);
 
-            return resList.stream().map(OutputMessage::new);
-        } catch (Neo4jBadRequestException | Neo4jConnectionError | Exception | Neo4jQueryException | Neo4jNoResult e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            log.error("An error occurred during the execution of the request.", e);
-            throw ex;
-        }
+      return resList.stream().map(OutputMessage::new);
+    } catch (Neo4jBadRequestException
+        | Neo4jConnectionError
+        | Exception
+        | Neo4jQueryException
+        | Neo4jNoResult e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      log.error("An error occurred during the execution of the request.", e);
+      throw ex;
     }
+  }
 
-    @Procedure(value = "demeter.statistics.getAsList", mode = Mode.WRITE)
-    @Description("demeter.statistics.getAsList( String ConfigurationName, String Application ) - Get the result of Statistics as a list.")
-    public Stream<StatisticResult> getStatisticsAsList(@Name(value = "Configuration") String configurationName, @Name(value = "Application") String applicationLabel) throws ProcedureException {
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            List<StatisticResult> statisticResults = StatisticsController.getStatisticsResult(nal, configurationName, applicationLabel);
+  @Procedure(value = "demeter.statistics.getAsList", mode = Mode.WRITE)
+  @Description(
+      "demeter.statistics.getAsList( String ConfigurationName, String Application ) - Get the result of Statistics as a list.")
+  public Stream<StatisticResult> getStatisticsAsList(
+      @Name(value = "Configuration") String configurationName,
+      @Name(value = "Application") String applicationLabel)
+      throws ProcedureException {
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      List<StatisticResult> statisticResults =
+          StatisticsController.getStatisticsResult(nal, configurationName, applicationLabel);
 
-            return statisticResults.stream();
-        } catch (Neo4jBadRequestException | Neo4jConnectionError | Exception | Neo4jQueryException | Neo4jNoResult e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            log.error("An error occurred during the execution of the request.", e);
-            throw ex;
-        }
+      return statisticResults.stream();
+    } catch (Neo4jBadRequestException
+        | Neo4jConnectionError
+        | Exception
+        | Neo4jQueryException
+        | Neo4jNoResult e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      log.error("An error occurred during the execution of the request.", e);
+      throw ex;
     }
+  }
 
+  @Procedure(value = "demeter.statistics.add", mode = Mode.WRITE)
+  @Description(
+      "demeter.statistics.add(String Name, String request, Boolean Activation, String Description, Long ConfigurationId) - Add a Statistic node and link it to a use configuration node.")
+  public Stream<NodeResult> addTagNode(
+      @Name(value = "Name") String name,
+      @Name(value = "Request") String request,
+      @Name(value = "Active") Boolean active,
+      @Name(value = "Description") String description,
+      @Name(value = "ParentId") Long parentId)
+      throws ProcedureException {
 
-    @Procedure(value = "demeter.statistics.add", mode = Mode.WRITE)
-    @Description("demeter.statistics.add(String Name, String request, Boolean Activation, String Description, Long ConfigurationId) - Add a Statistic node and link it to a use configuration node.")
-    public Stream<NodeResult> addTagNode(@Name(value = "Name") String name,
-                                         @Name(value = "Request") String request,
-                                         @Name(value = "Active") Boolean active,
-                                         @Name(value = "Description") String description,
-                                         @Name(value = "ParentId") Long parentId) throws ProcedureException {
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      String message =
+          String.format(
+              "Adding a %s node with parameters { 'Name' : '%s', 'Request' : '%s', 'Activation' : '%b', 'Description' : '%s' }.",
+              StatisticNode.getLabel(), name, request, active, description);
+      nal.logInfo(message);
 
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            String message = String.format("Adding a %s node with parameters { 'Name' : '%s', 'Request' : '%s', 'Activation' : '%b', 'Description' : '%s' }.", StatisticNode.getLabel(), name, request, active, description);
-            nal.logInfo(message);
-
-            Node n = StatisticsController.addStatisticNode(nal, name, request, active, description, parentId);
-            return Stream.of(new NodeResult(n));
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
+      Node n =
+          StatisticsController.addStatisticNode(nal, name, request, active, description, parentId);
+      return Stream.of(new NodeResult(n));
+    } catch (Exception
+        | Neo4jConnectionError
+        | Neo4jQueryException
+        | Neo4jBadRequestException
+        | Neo4jNoResult e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
-
+  }
 }

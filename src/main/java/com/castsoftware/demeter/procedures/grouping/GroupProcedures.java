@@ -38,56 +38,52 @@ import java.util.stream.Stream;
 
 public class GroupProcedures {
 
+  @Context public GraphDatabaseService db;
 
-    @Context
-    public GraphDatabaseService db;
+  @Context public Transaction transaction;
 
-    @Context
-    public Transaction transaction;
+  @Context public Log log;
 
-    @Context
-    public Log log;
+  @Procedure(value = "demeter.group.levels", mode = Mode.WRITE)
+  @Description(
+      "demeter.group.levels(String applicationName) - Group the levels following Demeter tags applied")
+  public Stream<NodeResult> groupLevels(@Name(value = "ApplicationName") String applicationName)
+      throws ProcedureException {
 
-    @Procedure(value = "demeter.group.levels", mode = Mode.WRITE)
-    @Description("demeter.group.levels(String applicationName) - Group the levels following Demeter tags applied")
-    public Stream<NodeResult> groupLevels(@Name(value = "ApplicationName") String applicationName) throws ProcedureException {
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      List<Node> nodes = LevelGroupController.groupAllLevels(nal, applicationName);
 
-            List<Node> nodes = LevelGroupController.groupAllLevels(nal, applicationName);
+      return nodes.stream().map(NodeResult::new);
 
-            return nodes.stream().map(NodeResult::new);
-
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
-
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
+  }
 
+  @Procedure(value = "demeter.group.refresh.abstracts", mode = Mode.WRITE)
+  @Description(
+      "demeter.group.refresh.abstracts(String applicationName) - Refresh the abstract level of your application")
+  public Stream<OutputMessage> refreshAbstractLevels(
+      @Name(value = "ApplicationName") String applicationName) throws ProcedureException {
 
-    @Procedure(value = "demeter.group.refresh.abstracts", mode = Mode.WRITE)
-    @Description("demeter.group.refresh.abstracts(String applicationName) - Refresh the abstract level of your application")
-    public Stream<OutputMessage> refreshAbstractLevels(@Name(value = "ApplicationName") String applicationName) throws ProcedureException {
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      nal.logInfo("Starting abstract level refresh...");
 
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            nal.logInfo("Starting abstract level refresh...");
+      LevelsUtils.refreshAllAbstractLevel(nal, applicationName);
 
-            LevelsUtils.refreshAllAbstractLevel(nal, applicationName);
+      nal.logInfo("Done !");
 
-            nal.logInfo("Done !");
+      return Stream.of(new OutputMessage("All the abstract levels were successfully refreshed"));
 
-            return Stream.of(new OutputMessage("All the abstract levels were successfully refreshed"));
-
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
-
-
+  }
 }

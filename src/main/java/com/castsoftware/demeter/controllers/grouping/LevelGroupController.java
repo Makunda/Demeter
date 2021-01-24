@@ -20,6 +20,7 @@
 package com.castsoftware.demeter.controllers.grouping;
 
 import com.castsoftware.demeter.config.Configuration;
+import com.castsoftware.demeter.config.UserConfiguration;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
@@ -35,251 +36,303 @@ import java.util.*;
 
 public class LevelGroupController {
 
-    // Imaging Conf
-    private static final String IMAGING_OBJECT_LABEL = Configuration.get("imaging.node.object.label");
-    private static final String IMAGING_OBJECT_TAGS = Configuration.get("imaging.link.object_property.tags");
-    private static final String IMAGING_OBJECT_LEVEL = Configuration.get("imaging.node.object.level");
-    private static final String IMAGING_AGGREGATES = Configuration.get("imaging.node.level_nodes.links");
-    private static final String IMAGING_LEVEL_REFERENCES = Configuration.get("imaging.node.level_nodes.references");
-    private static final String IMAGING_LEVEL4_LABEL = Configuration.get("imaging.node.level4.label");
+  // Imaging Conf
+  private static final String IMAGING_OBJECT_LABEL = Configuration.get("imaging.node.object.label");
+  private static final String IMAGING_OBJECT_TAGS =
+      Configuration.get("imaging.link.object_property.tags");
+  private static final String IMAGING_OBJECT_LEVEL = Configuration.get("imaging.node.object.level");
+  private static final String IMAGING_AGGREGATES =
+      Configuration.get("imaging.node.level_nodes.links");
+  private static final String IMAGING_LEVEL_REFERENCES =
+      Configuration.get("imaging.node.level_nodes.references");
+  private static final String IMAGING_LEVEL4_LABEL = Configuration.get("imaging.node.level4.label");
 
-    // Demeter Conf
-    private static final String GROUP_TAG_IDENTIFIER = Configuration.get("demeter.prefix.community_group");
-    private static final String AUTO_GROUP_TAG_IDENTIFIER = Configuration.get("demeter.prefix.auto_community_group");
-    private static final String GENERATED_LEVEL_IDENTIFIER = Configuration.get("demeter.prefix.generated_level_prefix");
+  // Demeter Conf
+  private static final String GROUP_TAG_IDENTIFIER =
+          UserConfiguration.get("demeter.prefix.community_group");
+  private static final String AUTO_GROUP_TAG_IDENTIFIER =
+      Configuration.get("demeter.prefix.auto_community_group");
+  private static final String GENERATED_LEVEL_IDENTIFIER =
+      Configuration.get("demeter.prefix.generated_level_prefix");
 
-    // Class Conf
-    private static final String ERROR_PREFIX = "GROCx";
+  // Class Conf
+  private static final String ERROR_PREFIX = "GROCx";
 
+  /**
+   * Get the level 5 present in the node list. Level are returned as a map, with the key
+   * corresponding to the level node and the value their frequency. The return map is sorted by
+   * ascending order.
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @param nodeList List of the node used to extract level5
+   * @return The map containing level5 nodes and their usage frequency as a Stream
+   * @throws Neo4jNoResult If no Level 5 were detected
+   */
+  private static Iterator<Map.Entry<Node, Integer>> getLevel5(Neo4jAL neo4jAL, List<Node> nodeList)
+      throws Neo4jNoResult {
 
-    /**
-     * Get the level 5 present in the node list. Level are returned as a map, with the key corresponding to the level node and the value their frequency.
-     * The return map is sorted by ascending order.
-     *
-     * @param neo4jAL  Neo4j Access Layer
-     * @param nodeList List of the node used to extract level5
-     * @return The map containing level5 nodes and their usage frequency as a Stream
-     * @throws Neo4jNoResult If no Level 5 were detected
-     */
-    private static Iterator<Map.Entry<Node, Integer>> getLevel5(Neo4jAL neo4jAL, List<Node> nodeList) throws Neo4jNoResult {
+    RelationshipType relLevel = RelationshipType.withName(IMAGING_AGGREGATES);
 
-        RelationshipType relLevel = RelationshipType.withName(IMAGING_AGGREGATES);
+    // Get Actual Level 5 and connections
+    Map<Node, Integer> level5map = new HashMap<>();
 
-        // Get Actual Level 5 and connections
-        Map<Node, Integer> level5map = new HashMap<>();
+    for (Node rObject : nodeList) {
 
-        for (Node rObject : nodeList) {
+      Iterator<Relationship> oldRel =
+          rObject.getRelationships(Direction.INCOMING, relLevel).iterator();
+      if (oldRel.hasNext()) {
+        Node level5 = oldRel.next().getStartNode();
 
-            Iterator<Relationship> oldRel = rObject.getRelationships(Direction.INCOMING, relLevel).iterator();
-            if (oldRel.hasNext()) {
-                Node level5 = oldRel.next().getStartNode();
-
-                level5map.putIfAbsent(level5, 0);
-                level5map.compute(level5, (x, v) -> v + 1);
-            }
-        }
-
-        if (level5map.size() == 0) {
-            throw new Neo4jNoResult("Cannot find a valid Level 5 for the tag", "No relation detected between tagged node and Level5", ERROR_PREFIX + "GROS1");
-        }
-
-        return level5map.entrySet().stream().sorted(Collections.reverseOrder(Map.Entry.comparingByValue())).iterator();
+        level5map.putIfAbsent(level5, 0);
+        level5map.compute(level5, (x, v) -> v + 1);
+      }
     }
 
-    public static Node groupSingleTag(Neo4jAL neo4jAL, String applicationContext, String groupName, List<Node> nodeList) throws Neo4jNoResult, Neo4jQueryException, Neo4jBadNodeFormatException, Neo4jBadRequestException {
-        RelationshipType aggregatesRel = RelationshipType.withName(IMAGING_AGGREGATES);
+    if (level5map.size() == 0) {
+      throw new Neo4jNoResult(
+          "Cannot find a valid Level 5 for the tag",
+          "No relation detected between tagged node and Level5",
+          ERROR_PREFIX + "GROS1");
+    }
 
-        // Timer used to follows the time taken by each steps
-        Instant startTimer;
-        Instant finishTimer;
+    return level5map.entrySet().stream()
+        .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
+        .iterator();
+  }
 
-        List<Level5Node> affectedLevels = new ArrayList<>();
-        startTimer = Instant.now();
+  public static Node groupSingleTag(
+      Neo4jAL neo4jAL, String applicationContext, String groupName, List<Node> nodeList)
+      throws Neo4jNoResult, Neo4jQueryException, Neo4jBadNodeFormatException,
+          Neo4jBadRequestException {
+    RelationshipType aggregatesRel = RelationshipType.withName(IMAGING_AGGREGATES);
 
-        Node oldLevel5Node = null;
-        // Retrieve most encountered Level 5
-        for (Iterator<Map.Entry<Node, Integer>> it = getLevel5(neo4jAL, nodeList); it.hasNext(); ) {
-            Map.Entry<Node, Integer> level5entry = it.next();
+    // Timer used to follows the time taken by each steps
+    Instant startTimer;
+    Instant finishTimer;
 
-            // Get first node. Corresponding to the most frequent one
-            if (oldLevel5Node == null) {
-                oldLevel5Node = level5entry.getKey();
-            }
+    List<Level5Node> affectedLevels = new ArrayList<>();
+    startTimer = Instant.now();
 
-            // Save the level and their nodes
-            Level5Node level = Level5Node.fromNode(neo4jAL, level5entry.getKey());
-            level.createLevel5Backup(applicationContext, nodeList);
+    Node oldLevel5Node = null;
+    // Retrieve most encountered Level 5
+    for (Iterator<Map.Entry<Node, Integer>> it = getLevel5(neo4jAL, nodeList); it.hasNext(); ) {
+      Map.Entry<Node, Integer> level5entry = it.next();
 
-            affectedLevels.add(level);
-        }
+      // Get first node. Corresponding to the most frequent one
+      if (oldLevel5Node == null) {
+        oldLevel5Node = level5entry.getKey();
+      }
 
-        finishTimer = Instant.now();
-        neo4jAL.logInfo(String.format("Level 5 found, with Id : %d has been identified in %d Milliseconds.", oldLevel5Node.getId(), Duration.between(startTimer, finishTimer).toMillis()));
+      // Save the level and their nodes
+      Level5Node level = Level5Node.fromNode(neo4jAL, level5entry.getKey());
+      level.createLevel5Backup(applicationContext, nodeList);
 
-        neo4jAL.logInfo("Creating new level 5 node ... ");
-        Instant startLevel5Creation = Instant.now();
+      affectedLevels.add(level);
+    }
 
-        // Get associated Level 4 full name and create the level 5 nodes
-        // You cannot get it directly by looking at the relationships because sometimes there are several Level4 linked to the same node.
-        String oldFullName = (String) oldLevel5Node.getProperty(Level5Node.getFullNameProperty());
-        String[] splitArr = oldFullName.split("##");
-        String level4FullName = String.join("##", Arrays.copyOf(splitArr, splitArr.length - 1));
+    finishTimer = Instant.now();
+    neo4jAL.logInfo(
+        String.format(
+            "Level 5 found, with Id : %d has been identified in %d Milliseconds.",
+            oldLevel5Node.getId(), Duration.between(startTimer, finishTimer).toMillis()));
 
-        String forgedLevel4 = String.format("MATCH (o:%1$s:%2$s) WHERE o.%3$s CONTAINS '%4$s' RETURN o as node;",
-                IMAGING_LEVEL4_LABEL, applicationContext, Level5Node.getFullNameProperty(), level4FullName);
+    neo4jAL.logInfo("Creating new level 5 node ... ");
+    Instant startLevel5Creation = Instant.now();
 
-        Result resLevel4 = neo4jAL.executeQuery(forgedLevel4);
+    // Get associated Level 4 full name and create the level 5 nodes
+    // You cannot get it directly by looking at the relationships because sometimes there are
+    // several Level4 linked to the same node.
+    String oldFullName = (String) oldLevel5Node.getProperty(Level5Node.getFullNameProperty());
+    String[] splitArr = oldFullName.split("##");
+    String level4FullName = String.join("##", Arrays.copyOf(splitArr, splitArr.length - 1));
 
-        if (!resLevel4.hasNext()) {
-            Neo4jNoResult err = new Neo4jNoResult("Cannot find Level 4 node. Aborting grouping operation for tag :" + groupName, forgedLevel4, ERROR_PREFIX + "GROT1");
-            neo4jAL.logError("Cannot find level4.", err);
-            throw err;
-        }
-        Node level4Node = (Node) resLevel4.next().get("node");
+    String forgedLevel4 =
+        String.format(
+            "MATCH (o:%1$s:%2$s) WHERE o.%3$s CONTAINS '%4$s' RETURN o as node;",
+            IMAGING_LEVEL4_LABEL,
+            applicationContext,
+            Level5Node.getFullNameProperty(),
+            level4FullName);
 
-        // Forge the name of the level by removing the tag identifier
-        String forgedName = groupName.replace(GROUP_TAG_IDENTIFIER, "");
+    Result resLevel4 = neo4jAL.executeQuery(forgedLevel4);
 
-        // Merge new Level 5 and labelled them with application's name
-        String forgedLabel = applicationContext + ":" + Level5Node.getLabel();
-        String forgedFindLevel = String.format("MATCH (o:%1$s) WHERE o.%2$s='%3$s' RETURN o as node;", forgedLabel, Level5Node.getNameProperty(), forgedName);
+    if (!resLevel4.hasNext()) {
+      Neo4jNoResult err =
+          new Neo4jNoResult(
+              "Cannot find Level 4 node. Aborting grouping operation for tag :" + groupName,
+              forgedLevel4,
+              ERROR_PREFIX + "GROT1");
+      neo4jAL.logError("Cannot find level4.", err);
+      throw err;
+    }
+    Node level4Node = (Node) resLevel4.next().get("node");
 
-        Node newLevelNode = null;
-        Result result = neo4jAL.executeQuery(forgedFindLevel);
-        if (result.hasNext()) {
-            // Module with same name was found, and results will be merge into it
-            newLevelNode = (Node) result.next().get("node");
-        } else {
-            // Create a new module
-            Label applicationLabel = Label.label(applicationContext);
-            // Forge properties
-            String fullName = level4FullName + "##" + GENERATED_LEVEL_IDENTIFIER + forgedName;
-            String color = (String) oldLevel5Node.getProperty(Level5Node.getColorProperty());
-            Long count = ((Integer) nodeList.size()).longValue();
-            String shade = (String) oldLevel5Node.getProperty(Level5Node.getShadeProperty());
+    // Forge the name of the level by removing the tag identifier
+    String forgedName = groupName.replace(GROUP_TAG_IDENTIFIER, "");
 
-            Level5Node newLevel = new Level5Node(neo4jAL, forgedName, false, true, fullName, color, 5L, count, shade);
-            newLevelNode = newLevel.createNode();
-            newLevelNode.addLabel(applicationLabel);
+    // Merge new Level 5 and labelled them with application's name
+    String forgedLabel = applicationContext + ":" + Level5Node.getLabel();
+    String forgedFindLevel =
+        String.format(
+            "MATCH (o:%1$s) WHERE o.%2$s='%3$s' RETURN o as node;",
+            forgedLabel, Level5Node.getNameProperty(), forgedName);
 
-        }
+    Node newLevelNode = null;
+    Result result = neo4jAL.executeQuery(forgedFindLevel);
+    if (result.hasNext()) {
+      // Module with same name was found, and results will be merge into it
+      newLevelNode = (Node) result.next().get("node");
+    } else {
+      // Create a new module
+      Label applicationLabel = Label.label(applicationContext);
+      // Forge properties
+      String fullName = level4FullName + "##" + GENERATED_LEVEL_IDENTIFIER + forgedName;
+      String color = (String) oldLevel5Node.getProperty(Level5Node.getColorProperty());
+      Long count = ((Integer) nodeList.size()).longValue();
+      String shade = (String) oldLevel5Node.getProperty(Level5Node.getShadeProperty());
 
+      Level5Node newLevel =
+          new Level5Node(neo4jAL, forgedName, false, true, fullName, color, 5L, count, shade);
+      newLevelNode = newLevel.createNode();
+      newLevelNode.addLabel(applicationLabel);
+    }
 
-        // Link new level to Level 4
-        level4Node.createRelationshipTo(newLevelNode, aggregatesRel);
-        Instant finishLevel5Creation = Instant.now();
-        neo4jAL.logInfo(String.format("Level 5 was created in %d Milliseconds.", Duration.between(startLevel5Creation, finishLevel5Creation).toMillis()));
+    // Link new level to Level 4
+    level4Node.createRelationshipTo(newLevelNode, aggregatesRel);
+    Instant finishLevel5Creation = Instant.now();
+    neo4jAL.logInfo(
+        String.format(
+            "Level 5 was created in %d Milliseconds.",
+            Duration.between(startLevel5Creation, finishLevel5Creation).toMillis()));
 
-        neo4jAL.logInfo("Linking the objects selected to the new Level 5 node created... ");
-        startTimer = Instant.now();
+    neo4jAL.logInfo("Linking the objects selected to the new Level 5 node created... ");
+    startTimer = Instant.now();
 
-        //Delete old relationships, to not interfere with the new level
-        for (Node n : nodeList) {
-            // Find and Delete Old Relationships
-            for (Relationship relN : n.getRelationships(Direction.INCOMING, aggregatesRel)) {
-                relN.delete();
-            }
+    // Delete old relationships, to not interfere with the new level
+    for (Node n : nodeList) {
+      // Find and Delete Old Relationships
+      for (Relationship relN : n.getRelationships(Direction.INCOMING, aggregatesRel)) {
+        relN.delete();
+      }
 
-            // Relink to new level
-            newLevelNode.createRelationshipTo(n, aggregatesRel);
-            // Change the level name to the new one of each node
-            n.setProperty(IMAGING_OBJECT_LEVEL, forgedName);
-        }
+      // Relink to new level
+      newLevelNode.createRelationshipTo(n, aggregatesRel);
+      // Change the level name to the new one of each node
+      n.setProperty(IMAGING_OBJECT_LEVEL, forgedName);
+    }
 
-        finishTimer = Instant.now();
-        neo4jAL.logInfo(String.format("%d Objects were linked to the new Level in %d Milliseconds.", nodeList.size(), Duration.between(startTimer, finishTimer).toMillis()));
+    finishTimer = Instant.now();
+    neo4jAL.logInfo(
+        String.format(
+            "%d Objects were linked to the new Level in %d Milliseconds.",
+            nodeList.size(), Duration.between(startTimer, finishTimer).toMillis()));
 
+    // Refresh Level connections
+    startTimer = Instant.now();
+    neo4jAL.logInfo("Refreshing the new level relationships and recount elements.");
 
-        // Refresh Level connections
-        startTimer = Instant.now();
-        neo4jAL.logInfo("Refreshing the new level relationships and recount elements.");
-
-        LevelsUtils.refreshLevel5(neo4jAL, applicationContext, newLevelNode); // refresh new level
-        affectedLevels.forEach(x -> {
-            try {
-                LevelsUtils.refreshLevel5(neo4jAL, applicationContext, x.getNode()); // refresh old levels
-            } catch (Neo4jQueryException | Neo4jNoResult e) {
-                neo4jAL.logInfo(String.format("An error occurred trying to refresh level with name '%s'.", x.getName()));
-            }
+    LevelsUtils.refreshLevel5(neo4jAL, applicationContext, newLevelNode); // refresh new level
+    affectedLevels.forEach(
+        x -> {
+          try {
+            LevelsUtils.refreshLevel5(
+                neo4jAL, applicationContext, x.getNode()); // refresh old levels
+          } catch (Neo4jQueryException | Neo4jNoResult e) {
+            neo4jAL.logInfo(
+                String.format(
+                    "An error occurred trying to refresh level with name '%s'.", x.getName()));
+          }
         });
 
+    finishTimer = Instant.now();
+    neo4jAL.logInfo(
+        String.format(
+            "Refreshed levels in %d Milliseconds.",
+            Duration.between(startTimer, finishTimer).toMillis()));
 
-        finishTimer = Instant.now();
-        neo4jAL.logInfo(String.format("Refreshed levels in %d Milliseconds.", Duration.between(startTimer, finishTimer).toMillis()));
+    neo4jAL.logInfo("Now refreshing abstract levels..");
+    LevelsUtils.refreshAllAbstractLevel(neo4jAL, applicationContext);
 
-        neo4jAL.logInfo("Now refreshing abstract levels..");
-        LevelsUtils.refreshAllAbstractLevel(neo4jAL, applicationContext);
+    return newLevelNode;
+  }
 
-        return newLevelNode;
+  public static List<Node> groupAllLevels(Neo4jAL neo4jAL, String applicationContext)
+      throws Neo4jQueryException {
+    Map<String, List<Node>> groupMap = new HashMap<>();
+
+    neo4jAL.logInfo("Starting Demeter level 5 grouping...");
+
+    // Get the list of nodes prefixed by dm_tag
+    String forgedTagRequest =
+        String.format(
+            "MATCH (o:%1$s:%2$s) WHERE any( x in o.%3$s WHERE x CONTAINS '%4$s')  "
+                + "WITH o, [x in o.%3$s WHERE x CONTAINS '%4$s'][0] as g "
+                + "RETURN o as node, g as group;",
+            IMAGING_OBJECT_LABEL, applicationContext, IMAGING_OBJECT_TAGS, GROUP_TAG_IDENTIFIER);
+
+    Result res = neo4jAL.executeQuery(forgedTagRequest);
+
+    Instant start = Instant.now();
+
+    // Build the map for each group as <Tag, Node list>
+    while (res.hasNext()) {
+      Map<String, Object> resMap = res.next();
+      String group = (String) resMap.get("group");
+      Node node = (Node) resMap.get("node");
+
+      // Add to  the specific group
+      if (!groupMap.containsKey(group)) {
+        groupMap.put(group, new ArrayList<>());
+      }
+
+      groupMap.get(group).add(node);
     }
 
-    public static List<Node> groupAllLevels(Neo4jAL neo4jAL, String applicationContext) throws Neo4jQueryException {
-        Map<String, List<Node>> groupMap = new HashMap<>();
+    Instant finish = Instant.now();
+    long timeElapsed = Duration.between(start, finish).toMillis();
+    neo4jAL.logInfo(
+        String.format(
+            "%d groups were identified in %d Milliseconds.", groupMap.size(), timeElapsed));
 
-        neo4jAL.logInfo("Starting Demeter level 5 grouping...");
+    List<Node> resNodes = new ArrayList<>();
 
-        // Get the list of nodes prefixed by dm_tag
-        String forgedTagRequest = String.format("MATCH (o:%1$s:%2$s) WHERE any( x in o.%3$s WHERE x CONTAINS '%4$s')  " +
-                "WITH o, [x in o.%3$s WHERE x CONTAINS '%4$s'][0] as g " +
-                "RETURN o as node, g as group;", IMAGING_OBJECT_LABEL, applicationContext, IMAGING_OBJECT_TAGS, GROUP_TAG_IDENTIFIER);
+    // Build a level 5 and attach the node list
+    for (Map.Entry<String, List<Node>> entry : groupMap.entrySet()) {
+      String groupName = entry.getKey();
+      List<Node> nodeList = entry.getValue();
 
-        Result res = neo4jAL.executeQuery(forgedTagRequest);
+      if (nodeList.isEmpty()) continue;
 
-        Instant start = Instant.now();
-
-        // Build the map for each group as <Tag, Node list>
-        while (res.hasNext()) {
-            Map<String, Object> resMap = res.next();
-            String group = (String) resMap.get("group");
-            Node node = (Node) resMap.get("node");
-
-            // Add to  the specific group
-            if (!groupMap.containsKey(group)) {
-                groupMap.put(group, new ArrayList<>());
-            }
-
-            groupMap.get(group).add(node);
-        }
-
-        Instant finish = Instant.now();
-        long timeElapsed = Duration.between(start, finish).toMillis();
-        neo4jAL.logInfo(String.format("%d groups were identified in %d Milliseconds.", groupMap.size(), timeElapsed));
-
-        List<Node> resNodes = new ArrayList<>();
-
-        // Build a level 5 and attach the node list
-        for (Map.Entry<String, List<Node>> entry : groupMap.entrySet()) {
-            String groupName = entry.getKey();
-            List<Node> nodeList = entry.getValue();
-
-            if (nodeList.isEmpty()) continue;
-
-            try {
-                neo4jAL.logInfo("Now processing group with name : " + groupName);
-                Node n = groupSingleTag(neo4jAL, applicationContext, groupName, nodeList);
-                resNodes.add(n);
-            } catch (Exception | Neo4jNoResult | Neo4jBadNodeFormatException | Neo4jBadRequestException err) {
-                neo4jAL.logError("An error occurred trying to create Level 5 for nodes with tags : " + groupName, err);
-            }
-        }
-
-        neo4jAL.logInfo("Demeter level 5 grouping finished.");
-        neo4jAL.logInfo("Cleaning tags...");
-
-        // Once the operation is done, remove Demeter tag prefix tags
-        String removeTagsQuery = String.format("MATCH (o:%1$s) WHERE EXISTS(o.%2$s)  SET o.%2$s = [ x IN o.%2$s WHERE NOT x CONTAINS '%3$s' ] RETURN COUNT(o) as removedTags;",
-                applicationContext, IMAGING_OBJECT_TAGS, GROUP_TAG_IDENTIFIER);
-        Result tagRemoveRes = neo4jAL.executeQuery(removeTagsQuery);
-
-        if (tagRemoveRes.hasNext()) {
-            Long nDel = (Long) tagRemoveRes.next().get("removedTags");
-            neo4jAL.logInfo("# " + nDel + " demeter 'group tags' were removed from the database.");
-        }
-
-        neo4jAL.logInfo("Cleaning Done !");
-
-        return resNodes;
+      try {
+        neo4jAL.logInfo("Now processing group with name : " + groupName);
+        Node n = groupSingleTag(neo4jAL, applicationContext, groupName, nodeList);
+        resNodes.add(n);
+      } catch (Exception
+          | Neo4jNoResult
+          | Neo4jBadNodeFormatException
+          | Neo4jBadRequestException err) {
+        neo4jAL.logError(
+            "An error occurred trying to create Level 5 for nodes with tags : " + groupName, err);
+      }
     }
 
+    neo4jAL.logInfo("Demeter level 5 grouping finished.");
+    neo4jAL.logInfo("Cleaning tags...");
 
+    // Once the operation is done, remove Demeter tag prefix tags
+    String removeTagsQuery =
+        String.format(
+            "MATCH (o:%1$s) WHERE EXISTS(o.%2$s)  SET o.%2$s = [ x IN o.%2$s WHERE NOT x CONTAINS '%3$s' ] RETURN COUNT(o) as removedTags;",
+            applicationContext, IMAGING_OBJECT_TAGS, GROUP_TAG_IDENTIFIER);
+    Result tagRemoveRes = neo4jAL.executeQuery(removeTagsQuery);
+
+    if (tagRemoveRes.hasNext()) {
+      Long nDel = (Long) tagRemoveRes.next().get("removedTags");
+      neo4jAL.logInfo("# " + nDel + " demeter 'group tags' were removed from the database.");
+    }
+
+    neo4jAL.logInfo("Cleaning Done !");
+
+    return resNodes;
+  }
 }

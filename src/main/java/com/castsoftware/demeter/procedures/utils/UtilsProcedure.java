@@ -24,6 +24,7 @@ import com.castsoftware.demeter.controllers.UtilsController;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.ProcedureException;
 import com.castsoftware.demeter.exceptions.file.FileNotFoundException;
+import com.castsoftware.demeter.exceptions.file.MissingFileException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.exporter.results.OutputMessage;
@@ -32,155 +33,181 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.*;
 
+import java.util.List;
 import java.util.stream.Stream;
 
 public class UtilsProcedure {
 
-    @Context
-    public GraphDatabaseService db;
+  @Context public GraphDatabaseService db;
 
-    @Context
-    public Transaction transaction;
+  @Context public Transaction transaction;
 
-    @Context
-    public Log log;
+  @Context public Log log;
 
-    @Procedure(value = "demeter.export", mode = Mode.WRITE)
-    @Description("demeter.export() - Clean the configuration tree")
-    public Stream<OutputMessage> exportConfiguration(@Name(value = "Path") String path, @Name(value = "Filename") String filename) throws ProcedureException {
+  @Procedure(value = "demeter.export", mode = Mode.WRITE)
+  @Description("demeter.export() - Clean the configuration tree")
+  public Stream<OutputMessage> exportConfiguration(
+      @Name(value = "Path") String path, @Name(value = "Filename") String filename)
+      throws ProcedureException {
 
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
-            nal.logInfo("Starting Tagging export..");
+      nal.logInfo("Starting Tagging export..");
 
-            return UtilsController.exportConfiguration(nal, path, filename);
-        } catch (Exception | Neo4jConnectionError | com.castsoftware.exporter.exceptions.ProcedureException e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
+      return UtilsController.exportConfiguration(nal, path, filename);
+    } catch (Exception
+        | Neo4jConnectionError
+        | com.castsoftware.exporter.exceptions.ProcedureException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
 
+  @Procedure(value = "demeter.import", mode = Mode.WRITE)
+  @Description("demeter.import() - Clean the configuration tree")
+  public Stream<OutputMessage> importConfiguration(@Name(value = "Path") String path)
+      throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+
+      nal.logInfo("Starting Tagging import..");
+
+      return UtilsController.importConfiguration(nal, path);
+    } catch (Exception
+        | Neo4jConnectionError
+        | com.castsoftware.exporter.exceptions.ProcedureException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+  @Procedure(value = "demeter.clean", mode = Mode.WRITE)
+  @Description("demeter.clean() - Clean the configuration tree")
+  public void cleanConfiguration() throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      nal.logInfo("Starting Tagging clean..");
+
+      UtilsController.deleteTaggingNodes(nal);
+
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+  @Procedure(value = "demeter.removeTags", mode = Mode.WRITE)
+  @Description("demeter.removeTags() - Clean the application from demeter tags.")
+  public Stream<OutputMessage> removeTags() throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      nal.logInfo("Starting Tag cleaning..");
+
+      int numAffected = UtilsController.removeTags(nal);
+
+      return Stream.of(new OutputMessage(numAffected + " nodes were cleaned from Demeter Tags."));
+
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+  @Procedure(value = "demeter.set.workspace", mode = Mode.WRITE)
+  @Description("demeter.set.workspace - Change the default output directory.")
+  public Stream<OutputMessage> setWorkspace(@Name(value = "OutputDirectory") String outputDir)
+      throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      nal.logInfo("Changing the workspace to :" + outputDir);
+
+      List<String> outputMessages = UtilsController.setWorkspace(outputDir);
+      return outputMessages.stream().map(OutputMessage::new);
+
+    } catch (Exception | Neo4jConnectionError | FileNotFoundException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+  @Procedure(value = "demeter.get.workspace", mode = Mode.WRITE)
+  @Description("demeter.get.workspace - Get the actual value of the Workspace.")
+  public Stream<OutputMessage> getWorkspace()
+          throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      String actualWorkspace = UtilsController.getWorkspace();
+
+      return Stream.of(new OutputMessage(actualWorkspace));
+
+    } catch (Exception | Neo4jConnectionError | FileNotFoundException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+  @Procedure(value = "demeter.check", mode = Mode.WRITE)
+  @Description("demeter.check() - Check if the provided requests are valid")
+  public Stream<OutputMessage> healthCheck(
+      @Name(value = "ApplicationContext") String applicationContext) throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+
+      nal.logInfo("Starting health check..");
+      String info = UtilsController.checkTags(nal, applicationContext);
+      nal.logInfo(info);
+
+      return Stream.of(new OutputMessage(info));
+
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+  @Procedure(value = "demeter.get.version", mode = Mode.WRITE)
+  @Description("demeter.get.version() - Get the version of the Extension")
+  public Stream<OutputMessage> getVersion() throws ProcedureException {
+
+    try {
+      String version = Configuration.get("demeter.version");
+      return Stream.of(new OutputMessage(version));
+    } catch (Exception e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+  @Procedure(value = "demeter.install", mode = Mode.WRITE)
+  @Description("demeter.install(String demeterDirectory) - Install the Artemis extension.")
+  public Stream<OutputMessage> install(@Name(value = "DemeterDirectory") String demeterDirectory) throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      List<String> outputMessages = UtilsController.install(nal, demeterDirectory);
+
+      return outputMessages.stream().map(OutputMessage::new);
+    } catch (Exception | Neo4jConnectionError | FileNotFoundException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
 
-    @Procedure(value = "demeter.import", mode = Mode.WRITE)
-    @Description("demeter.import() - Clean the configuration tree")
-    public Stream<OutputMessage> importConfiguration(@Name(value = "Path") String path) throws ProcedureException {
+  }
 
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
-
-            nal.logInfo("Starting Tagging import..");
-
-            return UtilsController.importConfiguration(nal, path);
-        } catch (Exception | Neo4jConnectionError | com.castsoftware.exporter.exceptions.ProcedureException e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
-
-    }
-
-    @Procedure(value = "demeter.clean", mode = Mode.WRITE)
-    @Description("demeter.clean() - Clean the configuration tree")
-    public void cleanConfiguration() throws ProcedureException {
-
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            nal.logInfo("Starting Tagging clean..");
-
-            UtilsController.deleteTaggingNodes(nal);
-
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
-    }
-
-    @Procedure(value = "demeter.removeTags", mode = Mode.WRITE)
-    @Description("demeter.removeTags() - Clean the application from demeter tags.")
-    public Stream<OutputMessage> removeTags() throws ProcedureException {
-
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            nal.logInfo("Starting Tag cleaning..");
-
-            int numAffected = UtilsController.removeTags(nal);
-
-            return Stream.of(new OutputMessage(numAffected + " nodes were cleaned from Demeter Tags."));
-
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
-    }
-
-    @Procedure(value = "demeter.set.outputDirectory", mode = Mode.WRITE)
-    @Description("demeter.set.outputDirectory - Change the default output directory.")
-    public Stream<OutputMessage> setOutputDir(@Name(value = "OutputDirectory") String outputDir) throws ProcedureException {
-
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            nal.logInfo("Changing the Output directory to :" + outputDir);
-
-            String newPath = UtilsController.setOuputdir(outputDir);
-
-            return Stream.of(new OutputMessage(newPath));
-
-        } catch (Exception | Neo4jConnectionError | FileNotFoundException e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
-    }
-
-
-    @Procedure(value = "demeter.check", mode = Mode.WRITE)
-    @Description("demeter.check() - Check if the provided requests are valid")
-    public Stream<OutputMessage> healthCheck(@Name(value = "ApplicationContext") String applicationContext) throws ProcedureException {
-
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
-
-            nal.logInfo("Starting health check..");
-            String info = UtilsController.checkTags(nal, applicationContext);
-            nal.logInfo(info);
-
-            return Stream.of(new OutputMessage(info));
-
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
-    }
-
-    @Procedure(value = "demeter.getVersion", mode = Mode.WRITE)
-    @Description("demeter.getVersion() - Get the version of the Extension")
-    public Stream<OutputMessage> getVersion() throws ProcedureException {
-
-        try {
-            String version = Configuration.get("demeter.version");
-            return Stream.of(new OutputMessage(version));
-        } catch (Exception e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
-    }
-
-    @Procedure(value = "demeter.change.workspace", mode = Mode.WRITE)
-    @Description("demeter.change.workspace(String WorkspacePath) - Change the path of Demeter's Workspace")
-    public Stream<OutputMessage> changeWorkspacePath(@Name(value = "WorkspacePath") String path) throws ProcedureException {
-        try {
-            String pathMsg = UtilsController.changeWorkspacePath(path);
-            return Stream.of(new OutputMessage(pathMsg));
-        } catch (Exception | FileNotFoundException e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
-    }
 }

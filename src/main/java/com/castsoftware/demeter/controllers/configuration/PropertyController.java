@@ -19,5 +19,4 @@
 
 package com.castsoftware.demeter.controllers.configuration;
 
-public class PropertyController {
-}
+public class PropertyController {}

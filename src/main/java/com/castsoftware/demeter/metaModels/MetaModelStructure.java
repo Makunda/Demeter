@@ -26,39 +26,45 @@ import java.util.Objects;
 
 public class MetaModelStructure {
 
-    public String metaModelName;
-    public String language;
-    public boolean splitNotInTransactionsObjects;
-    public boolean splitExternalObjects;
-    public String[] toMergeObjectType;
-    public Map<String, Long[]> customOperations;
+  public String metaModelName;
+  public String language;
+  public boolean splitNotInTransactionsObjects;
+  public boolean splitExternalObjects;
+  public String[] toMergeObjectType;
+  public Map<String, Long[]> customOperations;
 
-    public MetaModelStructure() {
-        this.metaModelName = "YourModelName";
-        this.language = "Java";
-        this.splitExternalObjects = false;
-        this.splitNotInTransactionsObjects = false;
-        this.toMergeObjectType = new String[]{};
-        this.customOperations = new HashMap<>();
-    }
+  public MetaModelStructure() {
+    this.metaModelName = "YourModelName";
+    this.language = "Java";
+    this.splitExternalObjects = false;
+    this.splitNotInTransactionsObjects = false;
+    this.toMergeObjectType = new String[] {};
+    this.customOperations = new HashMap<>();
+  }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        MetaModelStructure that = (MetaModelStructure) o;
-        return splitNotInTransactionsObjects == that.splitNotInTransactionsObjects &&
-                splitExternalObjects == that.splitExternalObjects &&
-                metaModelName.equals(that.metaModelName) &&
-                language.equals(that.language) &&
-                customOperations.equals(that.customOperations) &&
-                Arrays.equals(toMergeObjectType, that.toMergeObjectType);
-    }
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    MetaModelStructure that = (MetaModelStructure) o;
+    return splitNotInTransactionsObjects == that.splitNotInTransactionsObjects
+        && splitExternalObjects == that.splitExternalObjects
+        && metaModelName.equals(that.metaModelName)
+        && language.equals(that.language)
+        && customOperations.equals(that.customOperations)
+        && Arrays.equals(toMergeObjectType, that.toMergeObjectType);
+  }
 
-    @Override
-    public int hashCode() {
-        int result = Objects.hash(metaModelName, language, splitNotInTransactionsObjects, splitExternalObjects, customOperations);
-        result = 31 * result + Arrays.hashCode(toMergeObjectType);
-        return result;
-    }
+  @Override
+  public int hashCode() {
+    int result =
+        Objects.hash(
+            metaModelName,
+            language,
+            splitNotInTransactionsObjects,
+            splitExternalObjects,
+            customOperations);
+    result = 31 * result + Arrays.hashCode(toMergeObjectType);
+    return result;
+  }
 }

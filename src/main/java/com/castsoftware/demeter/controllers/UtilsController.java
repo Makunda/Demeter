@@ -29,6 +29,7 @@ import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.models.BackupNode;
 import com.castsoftware.demeter.models.demeter.*;
+import com.castsoftware.demeter.utils.Workspace;
 import com.castsoftware.exporter.io.Exporter;
 import com.castsoftware.exporter.io.Importer;
 import com.castsoftware.exporter.results.OutputMessage;
@@ -37,192 +38,225 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
 public class UtilsController {
 
-    private static final String ERROR_PREFIX = "UTICx";
-    private static final List<String> ALL_LABELS = Arrays.asList(ConfigurationNode.getLabel(), UseCaseNode.getLabel(),
-            TagNode.getLabel(), StatisticNode.getLabel(),
-            DocumentNode.getLabel(), BackupNode.getLabel());
-    private static final String USE_CASE_RELATIONSHIP = Configuration.get("neo4j.relationships.use_case.to_use_case");
-    private static final String USE_CASE_TO_TAG_RELATIONSHIP = Configuration.get("neo4j.relationships.use_case.to_tag");
+  private static final String ERROR_PREFIX = "UTICx";
+  private static final List<String> ALL_LABELS =
+      Arrays.asList(
+          ConfigurationNode.getLabel(),
+          UseCaseNode.getLabel(),
+          TagNode.getLabel(),
+          StatisticNode.getLabel(),
+          DocumentNode.getLabel(),
+          BackupNode.getLabel());
+  private static final String USE_CASE_RELATIONSHIP =
+      Configuration.get("neo4j.relationships.use_case.to_use_case");
+  private static final String USE_CASE_TO_TAG_RELATIONSHIP =
+      Configuration.get("neo4j.relationships.use_case.to_tag");
 
-    private static final String OBJECT_LABEL = Configuration.get("imaging.node.object.label");
-    private static final String OBJECT_TAG_PROPERTY = Configuration.get("imaging.link.object_property.tags");
-    private static final String TAG_PREFIX = Configuration.get("demeter.prefix.tags");
+  private static final String OBJECT_LABEL = Configuration.get("imaging.node.object.label");
+  private static final String OBJECT_TAG_PROPERTY =
+      Configuration.get("imaging.link.object_property.tags");
+  private static final String TAG_PREFIX = Configuration.get("demeter.prefix.tags");
 
-    private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd_HHmmss");
+  private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd_HHmmss");
 
-    /**
-     * Delete all the nodes related to the configuration
-     *
-     * @param neo4jAL Neo4J Access layer
-     * @return total number of node deleted
-     * @throws Neo4jQueryException If an error is thrown during the process
-     */
-    public static int deleteTaggingNodes(Neo4jAL neo4jAL) throws Neo4jQueryException {
-        // Retrieve every node label
-        int numDeleted = 0;
+  /**
+   * Delete all the nodes related to the configuration
+   *
+   * @param neo4jAL Neo4J Access layer
+   * @return total number of node deleted
+   * @throws Neo4jQueryException If an error is thrown during the process
+   */
+  public static int deleteTaggingNodes(Neo4jAL neo4jAL) throws Neo4jQueryException {
+    // Retrieve every node label
+    int numDeleted = 0;
 
-        for (String labelAsString : ALL_LABELS) {
-            numDeleted += neo4jAL.deleteAllNodesByLabel(Label.label(labelAsString));
-        }
-
-        return numDeleted;
+    for (String labelAsString : ALL_LABELS) {
+      numDeleted += neo4jAL.deleteAllNodesByLabel(Label.label(labelAsString));
     }
 
-    /**
-     * Remove all the tags applied by the procedure
-     *
-     * @param neo4jAL Neo4J Access layer
-     * @return total number of node concerned by the removed
-     * @throws Neo4jQueryException If an error is thrown during the process
-     */
-    public static int removeTags(Neo4jAL neo4jAL) throws Neo4jQueryException {
-        // Retrieve every node label
-        int numDeleted = 0;
+    return numDeleted;
+  }
 
-        String forgedRemoveTags = String.format("MATCH (n:%1$s) WHERE EXISTS(n.%2$s) SET n.%2$s = [x IN n.%2$s WHERE NOT x CONTAINS '%3$s'] RETURN COUNT(n) as del", OBJECT_LABEL, OBJECT_TAG_PROPERTY, TAG_PREFIX);
+  /**
+   * Remove all the tags applied by the procedure
+   *
+   * @param neo4jAL Neo4J Access layer
+   * @return total number of node concerned by the removed
+   * @throws Neo4jQueryException If an error is thrown during the process
+   */
+  public static int removeTags(Neo4jAL neo4jAL) throws Neo4jQueryException {
+    // Retrieve every node label
+    int numDeleted = 0;
 
-        Result res = neo4jAL.executeQuery(forgedRemoveTags);
-        if (res.hasNext()) {
-            Long deleted = (Long) res.next().get("del");
-            numDeleted = deleted.intValue();
-        }
+    String forgedRemoveTags =
+        String.format(
+            "MATCH (n:%1$s) WHERE EXISTS(n.%2$s) SET n.%2$s = [x IN n.%2$s WHERE NOT x CONTAINS '%3$s'] RETURN COUNT(n) as del",
+            OBJECT_LABEL, OBJECT_TAG_PROPERTY, TAG_PREFIX);
 
-        return numDeleted;
+    Result res = neo4jAL.executeQuery(forgedRemoveTags);
+    if (res.hasNext()) {
+      Long deleted = (Long) res.next().get("del");
+      numDeleted = deleted.intValue();
     }
 
-    /**
-     * Remove all the tags applied by the procedure
-     *
-     * @param outputDir The new directory used for reports generation
-     * @return total number of node deleted
-     * @throws Neo4jQueryException If an error is thrown during the process
-     */
-    public static String setOuputdir(String outputDir) throws FileNotFoundException {
+    return numDeleted;
+  }
 
-        Path newDirectory = Path.of(outputDir);
-        if (!Files.exists(newDirectory)) {
-            return "The directory specified doesn't exist. Make sure the directory exists.";
-        }
-        // The the property
-        Configuration.set("pre_statistics.file.path", newDirectory.toString());
-        Configuration.set("statistics.file.path", newDirectory.toString());
-        // Reload the configuration
-        Configuration.saveAndReload();
+  /**
+   * Remove all the tags applied by the procedure
+   *
+   * @param workspace The new Demeter Workspace
+   * @return total number of node deleted
+   * @throws Neo4jQueryException If an error is thrown during the process
+   */
+  public static List<String> setWorkspace(String workspace) throws FileNotFoundException {
 
-        return "Output directory was changed to : " + Configuration.get("pre_statistics.file.path");
+    Path newDirectory = Path.of(workspace);
+    if (!Files.exists(newDirectory)) {
+      return List.of("The directory specified doesn't exist. Make sure the directory exists.");
     }
 
-    /**
-     * Save All nodes related to the configuration, in the specific directory
-     *
-     * @param neo4jAL  Neo4J Access layer
-     * @param path     Path where the file will be created
-     * @param filename Name of the file
-     * @return
-     * @throws ProcedureException
-     */
-    public static Stream<OutputMessage> exportConfiguration(Neo4jAL neo4jAL, String path, String filename) throws com.castsoftware.exporter.exceptions.ProcedureException {
-        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+    List<String> returnList = new ArrayList<>(Workspace.validateWorkspace());
 
-        String forgedFilename = filename + "_" + sdf.format(timestamp);
+    Configuration.set("demeter.workspace.path", newDirectory.toAbsolutePath().toString());
 
-        Exporter exporter = new Exporter(neo4jAL.getDb(), neo4jAL.getLogger());
-        return exporter.save(ALL_LABELS, path, forgedFilename, true, false);
+
+    // Reload the configuration
+    Configuration.saveAndReload();
+
+    return returnList;
+  }
+
+  /**
+   * Get the actual value of the Workspace
+   * @return
+   * @throws FileNotFoundException
+   */
+  public static String getWorkspace() throws FileNotFoundException {
+    return Configuration.get("demeter.workspace.path");
+  }
+
+  /**
+   * Save All nodes related to the configuration, in the specific directory
+   *
+   * @param neo4jAL Neo4J Access layer
+   * @param path Path where the file will be created
+   * @param filename Name of the file
+   * @return
+   * @throws ProcedureException
+   */
+  public static Stream<OutputMessage> exportConfiguration(
+      Neo4jAL neo4jAL, String path, String filename)
+      throws com.castsoftware.exporter.exceptions.ProcedureException {
+    Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+
+    String forgedFilename = filename + "_" + sdf.format(timestamp);
+
+    Exporter exporter = new Exporter(neo4jAL.getDb(), neo4jAL.getLogger());
+    return exporter.save(ALL_LABELS, path, forgedFilename, true, false);
+  }
+
+  /**
+   * Load a previously saved configuration. Can load any "hfexporter" formatted zip file.
+   *
+   * @param neo4jAL Neo4J Access layer
+   * @param path Path where the configuration is saved
+   * @return
+   * @throws ProcedureException
+   */
+  public static Stream<OutputMessage> importConfiguration(Neo4jAL neo4jAL, String path)
+      throws com.castsoftware.exporter.exceptions.ProcedureException {
+    Importer importer = new Importer(neo4jAL.getDb(), neo4jAL.getLogger());
+    return importer.load(path);
+  }
+
+  /**
+   * Check all TagRequest present in the database. And return a report as a <code>String</code>
+   * indicating the percentage of working Queries.
+   *
+   * @param neo4jAL Neo4j Access Layer
+   * @param applicationContext The application to use as a context for the query
+   * @return <code>String</code> The number of working / not working nodes and the percentage of
+   *     success.
+   * @throws Neo4jQueryException
+   */
+  public static String checkTags(Neo4jAL neo4jAL, String applicationContext)
+      throws Neo4jQueryException {
+    int valid = 0;
+    int notValid = 0;
+
+    Label tagLabel = Label.label(TagNode.getLabel());
+
+    for (ResourceIterator<Node> it = neo4jAL.findNodes(tagLabel); it.hasNext(); ) {
+      Node n = it.next();
+
+      try {
+        TagNode tn = TagNode.fromNode(neo4jAL, n);
+        if (tn.checkQuery(applicationContext)) valid++;
+        else notValid++;
+
+      } catch (Exception
+          | Neo4jBadNodeFormatException
+          | Neo4jBadRequestException
+          | Neo4jNoResult e) {
+        neo4jAL
+            .getLogger()
+            .error(
+                String.format(
+                    "An error occurred while retrieving TagNode with id \"%d\" was ignored.",
+                    n.getId()),
+                e);
+      }
     }
 
-    /**
-     * Load a previously saved configuration. Can load any "hfexporter" formatted zip file.
-     *
-     * @param neo4jAL Neo4J Access layer
-     * @param path    Path where the configuration is saved
-     * @return
-     * @throws ProcedureException
-     */
-    public static Stream<OutputMessage> importConfiguration(Neo4jAL neo4jAL, String path) throws com.castsoftware.exporter.exceptions.ProcedureException {
+    double total = (double) (valid + notValid);
+    double p = (double) (valid) / total;
+    return String.format(
+        "%s TagRequest nodes were checked. %d valid node(s) were discovered. %d nonfunctional node(s) were identified. Percentage of success : %.2f",
+        total, valid, notValid, p);
+  }
+
+  /**
+   * Install the Demeter workspace and load the configuration
+   * @param neo4jAL Neo4j Access Layer
+   * @param workspacePath
+   * @return
+   */
+  public static List<String> install(Neo4jAL neo4jAL, String workspacePath) throws FileNotFoundException {
+    // Set the workspace path
+    List<String> returnList = new ArrayList<>();
+    returnList.addAll(setWorkspace(workspacePath));
+
+    Path initDataZip = Workspace.getInitDataZip();
+
+    // Import list of frameworks
+    if (Files.exists(initDataZip)) {
+      try {
+        returnList.add("Initialisation data were discovered.");
         Importer importer = new Importer(neo4jAL.getDb(), neo4jAL.getLogger());
-        return importer.load(path);
+        importer.load(initDataZip.toString());
+        returnList.add("Initialisation was successful !");
+      } catch (Exception | com.castsoftware.exporter.exceptions.ProcedureException e) {
+        returnList.add("The import of the data failed for the following reason: " + e.getLocalizedMessage());
+      }
+
+    } else {
+      returnList.add("The Initialisation was skipped due to missing files");
     }
 
+    return returnList;
+  }
 
-    /**
-     * Check all TagRequest present in the database. And return a report as a <code>String</code> indicating the percentage of working Queries.
-     *
-     * @param neo4jAL            Neo4j Access Layer
-     * @param applicationContext The application to use as a context for the query
-     * @return <code>String</code> The number of working / not working nodes and the percentage of success.
-     * @throws Neo4jQueryException
-     */
-    public static String checkTags(Neo4jAL neo4jAL, String applicationContext) throws Neo4jQueryException {
-        int valid = 0;
-        int notValid = 0;
-
-        Label tagLabel = Label.label(TagNode.getLabel());
-
-        for (ResourceIterator<Node> it = neo4jAL.findNodes(tagLabel); it.hasNext(); ) {
-            Node n = it.next();
-
-            try {
-                TagNode tn = TagNode.fromNode(neo4jAL, n);
-                if (tn.checkQuery(applicationContext)) valid++;
-                else notValid++;
-
-            } catch (Exception | Neo4jBadNodeFormatException | Neo4jBadRequestException | Neo4jNoResult e) {
-                neo4jAL.getLogger().error(String.format("An error occurred while retrieving TagNode with id \"%d\" was ignored.", n.getId()), e);
-            }
-
-        }
-
-        double total = (double) (valid + notValid);
-        double p = (double) (valid) / total;
-        return String.format("%s TagRequest nodes were checked. %d valid node(s) were discovered. %d nonfunctional node(s) were identified. Percentage of success : %.2f", total, valid, notValid, p);
-    }
-
-    /**
-     * Change workspace to another directory.
-     *
-     * @param workspacePath The new path of the workspace
-     * @return Message indicating the new value of the path.
-     * @throws FileNotFoundException
-     */
-    public static String changeWorkspacePath(String workspacePath) throws FileNotFoundException {
-        // Create Workspace folder
-        File workspaceDir = new File(workspacePath);
-        if (!workspaceDir.exists()) {
-            workspaceDir.mkdirs();
-        }
-
-        Configuration.set("demeter.workspace.path", workspaceDir.getAbsolutePath());
-        // Reload the configuration
-        Configuration.saveAndReload();
-
-        // Create Statistics folders
-        String statisticsDirectory = Configuration.get("demeter.workspace.path") + Configuration.get("pre_statistics.file.path");
-        File statisticsDir = new File(statisticsDirectory);
-
-        if (!statisticsDir.exists()) {
-            statisticsDir.mkdirs();
-        }
-
-        // Create Metamodels path
-        String metaModelDirectory = Configuration.get("demeter.workspace.path") + Configuration.get("meta.model.path");
-        File metaModelDir = new File(metaModelDirectory);
-
-        if (!metaModelDir.exists()) {
-            metaModelDir.mkdirs();
-        }
-
-        return String.format("The workspace path is now set to '%s'.", workspaceDir.getAbsolutePath());
-    }
 
 }

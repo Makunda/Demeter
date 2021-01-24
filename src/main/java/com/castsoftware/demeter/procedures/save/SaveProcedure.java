@@ -40,108 +40,121 @@ import java.util.stream.Stream;
 
 public class SaveProcedure {
 
-    @Context
-    public GraphDatabaseService db;
+  @Context public GraphDatabaseService db;
 
-    @Context
-    public Transaction transaction;
+  @Context public Transaction transaction;
 
-    @Context
-    public Log log;
+  @Context public Log log;
 
-    @Procedure(value = "demeter.save.levels", mode = Mode.WRITE)
-    @Description("demeter.save.levels(String ApplicationName, String SaveName) - Save the current state of an application.")
-    public Stream<OutputMessage> saveLevels(@Name(value = "ApplicationName") String applicationName,
-                                            @Name(value = "SaveName") String saveName) throws ProcedureException {
+  @Procedure(value = "demeter.save.levels", mode = Mode.WRITE)
+  @Description(
+      "demeter.save.levels(String ApplicationName, String SaveName) - Save the current state of an application.")
+  public Stream<OutputMessage> saveLevels(
+      @Name(value = "ApplicationName") String applicationName,
+      @Name(value = "SaveName") String saveName)
+      throws ProcedureException {
 
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
-            int count = StateController.saveDemeterLevel5(nal, applicationName, saveName);
-            String msg = String.format("%d Objects were saved in application %s.", count, applicationName);
-            return Stream.of(new OutputMessage(msg));
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jNoResult e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
+      int count = StateController.saveDemeterLevel5(nal, applicationName, saveName);
+      String msg =
+          String.format("%d Objects were saved in application %s.", count, applicationName);
+      return Stream.of(new OutputMessage(msg));
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jNoResult e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
+  }
 
-    @Procedure(value = "demeter.save.getByApplication", mode = Mode.WRITE)
-    @Description("demeter.save.getByApplication(String ApplicationName) - Get all the saves related to a specific application.")
-    public Stream<NodeResult> getSaveNodesByApplication(@Name(value = "ApplicationName") String applicationName) throws ProcedureException {
+  @Procedure(value = "demeter.save.getByApplication", mode = Mode.WRITE)
+  @Description(
+      "demeter.save.getByApplication(String ApplicationName) - Get all the saves related to a specific application.")
+  public Stream<NodeResult> getSaveNodesByApplication(
+      @Name(value = "ApplicationName") String applicationName) throws ProcedureException {
 
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
-            List<Node> nodeList = StateController.getSaveNodesByApplication(nal, applicationName);
-            return nodeList.stream().map(NodeResult::new);
-        } catch (Exception | Neo4jConnectionError | Neo4jNoResult e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
+      List<Node> nodeList = StateController.getSaveNodesByApplication(nal, applicationName);
+      return nodeList.stream().map(NodeResult::new);
+    } catch (Exception | Neo4jConnectionError | Neo4jNoResult e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
+  }
 
-    /**
-     * Get all Demeter save present in the database
-     * @return
-     * @throws ProcedureException
-     */
-    @Procedure(value = "demeter.save.getAll", mode = Mode.WRITE)
-    @Description("demeter.save.getAll() - Get all Demeter save present in the database.")
-    public Stream<NodeResult> getAllSaveNodes() throws ProcedureException {
+  /**
+   * Get all Demeter save present in the database
+   *
+   * @return
+   * @throws ProcedureException
+   */
+  @Procedure(value = "demeter.save.getAll", mode = Mode.WRITE)
+  @Description("demeter.save.getAll() - Get all Demeter save present in the database.")
+  public Stream<NodeResult> getAllSaveNodes() throws ProcedureException {
 
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
-            List<Node> nodeList = StateController.getAllSaveNodes(nal);
-            return nodeList.stream().map(NodeResult::new);
-        } catch (Exception | Neo4jConnectionError | Neo4jNoResult e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
+      List<Node> nodeList = StateController.getAllSaveNodes(nal);
+      return nodeList.stream().map(NodeResult::new);
+    } catch (Exception | Neo4jConnectionError | Neo4jNoResult e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
+  }
 
+  /**
+   * Remove a Demeter 'save' state from the database.
+   *
+   * @param saveName Name of the save to remove
+   * @return True if the operation is a success, False if the node was not found.
+   * @throws ProcedureException
+   */
+  @Procedure(value = "demeter.save.removeSave", mode = Mode.WRITE)
+  @Description(
+      "demeter.save.removeSave(String SaveName) - Delete a specific save by its name in the database.")
+  public Stream<BooleanResult> removeSave(@Name(value = "SaveName") String saveName)
+      throws ProcedureException {
 
-    /**
-     * Remove a Demeter 'save' state from the database.
-     * @param saveName Name of the save to remove
-     * @return True if the operation is a success, False if the node was not found.
-     * @throws ProcedureException
-     */
-    @Procedure(value = "demeter.save.removeSave", mode = Mode.WRITE)
-    @Description("demeter.save.removeSave(String SaveName) - Delete a specific save by its name in the database.")
-    public Stream<BooleanResult> removeSave(@Name(value = "SaveName") String saveName) throws ProcedureException {
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
-
-            boolean found = StateController.removeSave(nal, saveName);
-            return Stream.of(new BooleanResult(found));
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jNoResult | Neo4jBadRequestException e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
+      boolean found = StateController.removeSave(nal, saveName);
+      return Stream.of(new BooleanResult(found));
+    } catch (Exception
+        | Neo4jConnectionError
+        | Neo4jQueryException
+        | Neo4jNoResult
+        | Neo4jBadRequestException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
+  }
 
-    @Procedure(value = "demeter.save.removeAll", mode = Mode.WRITE)
-    @Description("demeter.save.removeAll() - Remove all the Demeter saves from the database.")
-    public Stream<OutputMessage> removeAllSaves() throws ProcedureException {
+  @Procedure(value = "demeter.save.removeAll", mode = Mode.WRITE)
+  @Description("demeter.save.removeAll() - Remove all the Demeter saves from the database.")
+  public Stream<OutputMessage> removeAllSaves() throws ProcedureException {
 
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
-            int count = StateController.removeAllSaves(nal);
-            String msg = String.format("%d save(s) were removed from the database.", count);
-            return Stream.of(new OutputMessage(msg));
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jNoResult | Neo4jBadRequestException e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
+      int count = StateController.removeAllSaves(nal);
+      String msg = String.format("%d save(s) were removed from the database.", count);
+      return Stream.of(new OutputMessage(msg));
+    } catch (Exception
+        | Neo4jConnectionError
+        | Neo4jQueryException
+        | Neo4jNoResult
+        | Neo4jBadRequestException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
-
+  }
 }

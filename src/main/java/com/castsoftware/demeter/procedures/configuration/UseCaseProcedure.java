@@ -42,126 +42,154 @@ import java.util.stream.Stream;
 
 public class UseCaseProcedure {
 
-    @Context
-    public GraphDatabaseService db;
+  @Context public GraphDatabaseService db;
 
-    @Context
-    public Transaction transaction;
+  @Context public Transaction transaction;
 
-    @Context
-    public Log log;
+  @Context public Log log;
 
-    @Procedure(value = "demeter.useCases.add", mode = Mode.WRITE)
-    @Description("demeter.useCases.add( Long idParent, String name, Boolean active) - Add a use case to a configuration node or another usecase node.")
-    public Stream<NodeResult> addUseCase(@Name(value = "idParent") Long idParent, @Name(value = "Name") String name, @Name(value = "Active", defaultValue = "False") Boolean active) throws ProcedureException {
+  @Procedure(value = "demeter.useCases.add", mode = Mode.WRITE)
+  @Description(
+      "demeter.useCases.add( Long idParent, String name, Boolean active) - Add a use case to a configuration node or another usecase node.")
+  public Stream<NodeResult> addUseCase(
+      @Name(value = "idParent") Long idParent,
+      @Name(value = "Name") String name,
+      @Name(value = "Active", defaultValue = "False") Boolean active)
+      throws ProcedureException {
 
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            nal.logInfo(String.format("Adding a use case with parameters { 'Name' : '%s' , 'Active' : %b } ", name, active));
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      nal.logInfo(
+          String.format(
+              "Adding a use case with parameters { 'Name' : '%s' , 'Active' : %b } ",
+              name, active));
 
-            Node n = UseCaseController.addUseCase(nal, name, active, idParent);
+      Node n = UseCaseController.addUseCase(nal, name, active, idParent);
 
-            nal.logInfo("Done !");
+      nal.logInfo("Done !");
 
-            return Stream.of(new NodeResult(n));
+      return Stream.of(new NodeResult(n));
 
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
-
+    } catch (Exception
+        | Neo4jConnectionError
+        | Neo4jQueryException
+        | Neo4jBadRequestException
+        | Neo4jNoResult e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
+  }
 
-    @Procedure(value = "demeter.useCases.list", mode = Mode.WRITE)
-    @Description("demeter.useCases.list() - List all the use cases present.")
-    public Stream<UseCasesMessage> listUseCaseNodes() throws ProcedureException {
+  @Procedure(value = "demeter.useCases.list", mode = Mode.WRITE)
+  @Description("demeter.useCases.list() - List all the use cases present.")
+  public Stream<UseCasesMessage> listUseCaseNodes() throws ProcedureException {
 
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            nal.logInfo("Starting Use Case Listing..");
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      nal.logInfo("Starting Use Case Listing..");
 
-            List<UseCaseNode> useCases = UseCaseController.listUseCases(nal);
-            List<UseCasesMessage> messages = new ArrayList<>();
-            for (UseCaseNode useCase : useCases) {
-                messages.add(new UseCasesMessage(useCase));
-            }
+      List<UseCaseNode> useCases = UseCaseController.listUseCases(nal);
+      List<UseCasesMessage> messages = new ArrayList<>();
+      for (UseCaseNode useCase : useCases) {
+        messages.add(new UseCasesMessage(useCase));
+      }
 
-            return messages.stream();
+      return messages.stream();
 
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
+    } catch (Exception
+        | Neo4jConnectionError
+        | Neo4jQueryException
+        | Neo4jBadRequestException
+        | Neo4jNoResult e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
+  }
 
-    /**
-     * Activate a use case node and all its children.
-     *
-     * @param idUseCase  Id of the use case
-     * @param activation Value that will be set to all matching nodes.
-     * @return The list of all node concerned by the modification
-     * @throws ProcedureException
-     */
-    @Procedure(value = "demeter.useCases.activate", mode = Mode.WRITE)
-    @Description("demeter.useCases.activate(Long idUseCase, Boolean Activation) - Set the activation of the use case node and all other nodes under it.")
-    public Stream<UseCasesMessage> activateUseCase(@Name(value = "Id") Long idUseCase, @Name(value = "Activation") Boolean activation) throws ProcedureException {
+  /**
+   * Activate a use case node and all its children.
+   *
+   * @param idUseCase Id of the use case
+   * @param activation Value that will be set to all matching nodes.
+   * @return The list of all node concerned by the modification
+   * @throws ProcedureException
+   */
+  @Procedure(value = "demeter.useCases.activate", mode = Mode.WRITE)
+  @Description(
+      "demeter.useCases.activate(Long idUseCase, Boolean Activation) - Set the activation of the use case node and all other nodes under it.")
+  public Stream<UseCasesMessage> activateUseCase(
+      @Name(value = "Id") Long idUseCase, @Name(value = "Activation") Boolean activation)
+      throws ProcedureException {
 
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            List<UseCaseNode> useCases = UseCaseController.selectUseCase(nal, idUseCase, activation);
-            List<UseCasesMessage> messages = new ArrayList<>();
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      List<UseCaseNode> useCases = UseCaseController.selectUseCase(nal, idUseCase, activation);
+      List<UseCasesMessage> messages = new ArrayList<>();
 
-            for (UseCaseNode useCase : useCases) {
-                messages.add(new UseCasesMessage(useCase));
-            }
+      for (UseCaseNode useCase : useCases) {
+        messages.add(new UseCasesMessage(useCase));
+      }
 
-            return messages.stream();
+      return messages.stream();
 
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jNoResult e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
+    } catch (Exception
+        | Neo4jConnectionError
+        | Neo4jQueryException
+        | Neo4jBadRequestException
+        | Neo4jNoResult e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
+  }
 
-    @Procedure(value = "demeter.useCases.globalActivation", mode = Mode.WRITE)
-    @Description("demeter.useCases.globalActivation(Boolean Activation) - Set the activation of every use case nodes.")
-    public Stream<OutputMessage> globalActivationUseCase(@Name(value = "Activation") Boolean activation) throws ProcedureException {
+  @Procedure(value = "demeter.useCases.globalActivation", mode = Mode.WRITE)
+  @Description(
+      "demeter.useCases.globalActivation(Boolean Activation) - Set the activation of every use case nodes.")
+  public Stream<OutputMessage> globalActivationUseCase(
+      @Name(value = "Activation") Boolean activation) throws ProcedureException {
 
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            int nModifications = UseCaseController.activateAllUseCase(nal, activation);
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      int nModifications = UseCaseController.activateAllUseCase(nal, activation);
 
-            String message = String.format("The activation parameter is now set to \"%b\" on %d nodes.", activation, nModifications);
+      String message =
+          String.format(
+              "The activation parameter is now set to \"%b\" on %d nodes.",
+              activation, nModifications);
 
-            return Stream.of(new OutputMessage(message));
+      return Stream.of(new OutputMessage(message));
 
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
+  }
 
-    @Procedure(value = "demeter.useCases.globalSelection", mode = Mode.WRITE)
-    @Description("demeter.useCases.globalSelection(Boolean Activation) - Set the Selection of every use case nodes.")
-    public Stream<OutputMessage> globalSelectionUseCase(@Name(value = "Activation") Boolean activation) throws ProcedureException {
+  @Procedure(value = "demeter.useCases.globalSelection", mode = Mode.WRITE)
+  @Description(
+      "demeter.useCases.globalSelection(Boolean Activation) - Set the Selection of every use case nodes.")
+  public Stream<OutputMessage> globalSelectionUseCase(
+      @Name(value = "Activation") Boolean activation) throws ProcedureException {
 
-        try {
-            Neo4jAL nal = new Neo4jAL(db, transaction, log);
-            int nModifications = UseCaseController.selectAllUseCase(nal, activation);
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      int nModifications = UseCaseController.selectAllUseCase(nal, activation);
 
-            String message = String.format("The selection parameter is now set to \"%b\" on %d nodes.", activation, nModifications);
+      String message =
+          String.format(
+              "The selection parameter is now set to \"%b\" on %d nodes.",
+              activation, nModifications);
 
-            return Stream.of(new OutputMessage(message));
+      return Stream.of(new OutputMessage(message));
 
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
     }
-
+  }
 }
