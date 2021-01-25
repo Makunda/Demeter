@@ -34,34 +34,19 @@ import java.util.*;
 public class ModuleGroupController {
 
   // Static Imaging nodes
-  private static final String IMAGING_SUB_OBJECT_LABEL =
-      Configuration.get("imaging.node.sub_object.label");
-  private static final String IMAGING_OBJECT_LABEL = Configuration.get("imaging.node.object.label");
+
   private static final String IMAGING_MODULE_LABEL = Configuration.get("imaging.node.module.label");
   private static final String IMAGING_MODULE_NAME = Configuration.get("imaging.node.module.name");
   private static final String IMAGING_OBJECT_TAGS =
       Configuration.get("imaging.link.object_property.tags");
-  private static final String IMAGING_MODULE_AIP_ID =
-      Configuration.get("imaging.node.module.aipId");
-  private static final String IMAGING_RAW_LABEL = Configuration.get("imaging.node.raw.label");
-
-  private static final String MODULE_PROPERTY = Configuration.get("imaging.node.module_property");
-  private static final String MODULE_SUBSET_PROPERTY =
-      Configuration.get("imaging.node.sub_object.subset_property");
 
   // Demeter Conf
   private static String GROUP_MODULE_TAG_IDENTIFIER =
       UserConfiguration.get("demeter.prefix.module_group");
-  private static final String GENERATED_MODULE_IDENTIFIER =
-      Configuration.get("demeter.prefix.generated_module_prefix");
 
   // Static Imaging relationships
   private static final String IMAGING_CONTAINS =
       Configuration.get("imaging.node.module.links.to_objects");
-  private static final String IMAGING_REFERENCES =
-      Configuration.get("imaging.node.module.links.to_modules");
-  private static final String IMAGING_BELONG_TO =
-      Configuration.get("imaging.node.sub_object.link.to_objects");
 
   static {
     if(GROUP_MODULE_TAG_IDENTIFIER == null) {
@@ -153,21 +138,16 @@ public class ModuleGroupController {
           Neo4jBadRequestException {
 
     RelationshipType containsRel = RelationshipType.withName(IMAGING_CONTAINS);
-    RelationshipType belongToRel = RelationshipType.withName(IMAGING_BELONG_TO);
     Label moduleLabel = Label.label(IMAGING_MODULE_LABEL);
-    Label objectLabel = Label.label(IMAGING_OBJECT_LABEL);
-    Label subObjectLabel = Label.label(IMAGING_SUB_OBJECT_LABEL);
+
+    // Clean the group name by removing the Demeter Prefix
+    groupName = groupName.replace(GROUP_MODULE_TAG_IDENTIFIER, "");
 
     // Assert the application name is not empty
     assert !applicationContext.isEmpty() : "The application name cannot be empty.";
     neo4jAL.logInfo(
         nodeList + " Potential candidates for grouping on module with name : " + groupName);
-
-
-
-    // Clean the group name by removing the Demeter Prefix
-    groupName = groupName.replaceAll(GROUP_MODULE_TAG_IDENTIFIER, "");
-
+    
     // Get other modules nodes
     Set<Node> affectedModules = new HashSet<>();
     for (Node n : nodeList) {
