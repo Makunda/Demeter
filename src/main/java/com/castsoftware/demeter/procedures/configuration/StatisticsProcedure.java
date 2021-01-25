@@ -39,6 +39,7 @@ import org.neo4j.procedure.*;
 import java.util.List;
 import java.util.stream.Stream;
 
+
 public class StatisticsProcedure {
 
   @org.neo4j.procedure.Context public GraphDatabaseService db;
@@ -63,6 +64,7 @@ public class StatisticsProcedure {
       throws ProcedureException {
     try {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
+
       long start = System.currentTimeMillis();
 
       List<String> resList =
@@ -97,6 +99,7 @@ public class StatisticsProcedure {
       throws ProcedureException {
     try {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
+
       List<StatisticResult> statisticResults =
           StatisticsController.getStatisticsResult(nal, configurationName, applicationLabel);
 

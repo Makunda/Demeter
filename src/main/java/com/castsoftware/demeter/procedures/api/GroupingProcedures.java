@@ -101,8 +101,6 @@ public class GroupingProcedures {
     }
 
     // Group candidates
-
-
     @Procedure(value = "demeter.api.get.candidates.level", mode = Mode.WRITE)
     @Description(
             "demeter.api.get.candidates.level() - Get the prefix of the level grouping")

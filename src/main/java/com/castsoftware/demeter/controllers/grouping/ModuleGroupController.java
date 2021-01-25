@@ -163,6 +163,8 @@ public class ModuleGroupController {
     neo4jAL.logInfo(
         nodeList + " Potential candidates for grouping on module with name : " + groupName);
 
+
+
     // Clean the group name by removing the Demeter Prefix
     groupName = groupName.replaceAll(GROUP_MODULE_TAG_IDENTIFIER, "");
 
@@ -188,7 +190,12 @@ public class ModuleGroupController {
     }
 
     // Merge new module
-    String forgedLabel = applicationContext + ":" + IMAGING_MODULE_LABEL;
+    String forgedLabel;
+    if(applicationContext.contains("-")) {
+      forgedLabel = String.format("`%s`:%s", applicationContext, IMAGING_MODULE_LABEL);
+    } else {
+      forgedLabel = String.format("%s:%s", applicationContext, IMAGING_MODULE_LABEL);
+    }
     String forgedFindModule =
         String.format(
             "MATCH (o:%1$s) WHERE o.%2$s='%3$s' RETURN o as node;",
@@ -228,7 +235,7 @@ public class ModuleGroupController {
       // Link objects
       forgedRequest =
           String.format(
-              "MATCH (m:Module:%1$s),(o:Object:%1$s) WHERE ID(m)=%2$s AND ID(o)=%3$s CREATE (m)-[:Contains]->(o);",
+              "MATCH (m:Module:`%1$s`),(o:Object:%1$s) WHERE ID(m)=%2$s AND ID(o)=%3$s CREATE (m)-[:Contains]->(o);",
               applicationContext, newModule.getId(), rObject.getId());
 
       neo4jAL.executeQuery(forgedRequest);
@@ -272,7 +279,7 @@ public class ModuleGroupController {
     // Get the list of nodes prefixed by dm_tag
     String forgedTagRequest =
         String.format(
-            "MATCH (o:%1$s) WHERE any( x in o.%2$s WHERE x CONTAINS '%3$s')  "
+            "MATCH (o:`%1$s`) WHERE any( x in o.%2$s WHERE x CONTAINS '%3$s')  "
                 + "WITH o, [x in o.%2$s WHERE x CONTAINS '%3$s'][0] as g "
                 + "RETURN o as node, g as group;",
             applicationContext, IMAGING_OBJECT_TAGS, GROUP_MODULE_TAG_IDENTIFIER);
@@ -324,7 +331,7 @@ public class ModuleGroupController {
     // Once the operation is done, remove Demeter tag prefix tags
     String removeTagsQuery =
         String.format(
-            "MATCH (o:%1$s) WHERE EXISTS(o.%2$s)  SET o.%2$s = [ x IN o.%2$s WHERE NOT x CONTAINS '%3$s' ] RETURN COUNT(o) as removedTags;",
+            "MATCH (o:`%1$s`) WHERE EXISTS(o.%2$s)  SET o.%2$s = [ x IN o.%2$s WHERE NOT x CONTAINS '%3$s' ] RETURN COUNT(o) as removedTags;",
             applicationContext, IMAGING_OBJECT_TAGS, GROUP_MODULE_TAG_IDENTIFIER);
     Result tagRemoveRes = neo4jAL.executeQuery(removeTagsQuery);
 

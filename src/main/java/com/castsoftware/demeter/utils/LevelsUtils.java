@@ -80,6 +80,10 @@ public class LevelsUtils {
       throws Neo4jQueryException {
     RelationshipType aggregatesRel = RelationshipType.withName(IMAGING_AGGREGATES);
 
+    if(applicationContext.contains("-")) {
+      applicationContext = String.format("`%s`", applicationContext);
+    }
+
     // Refresh from level 4 to  level 1
     for (int i = 4; i > 1; i--) {
       String labelN = getLevelLabelByNumber(i);
@@ -151,6 +155,10 @@ public class LevelsUtils {
       rel.delete();
     }
 
+    if(applicationContext.contains("-")) {
+      applicationContext = String.format("`%s`", applicationContext);
+    }
+
     String forgedToOtherLevel5 =
         String.format(
             "MATCH (inil:%1$s:%2$s)-[:%3$s]->(inio:%4$s:%2$s)-->(o:%4$s:%2$s)<-[:%3$s]-(l:%1$s) WHERE ID(inil)=%5$s AND inil.%6$s=inio.%7$s  AND l.%6$s=o.%7$s RETURN DISTINCT l as level;",
@@ -205,9 +213,10 @@ public class LevelsUtils {
   public static Node refreshLevelCount5(Neo4jAL neo4jAL, String applicationContext, Node levelNode)
       throws Neo4jQueryException {
     // Update the old Level 5 and remove it is there no node linked to it
+
     String forgedNumConnected =
         String.format(
-            "MATCH (n:%1$s:%2$s)-[:%3$s]->(o:%4$s) WHERE ID(n)=%5$s AND n.%6$s=o.%7$s RETURN COUNT(o) as countNode;",
+            "MATCH (n:`%1$s`:%2$s)-[:%3$s]->(o:%4$s) WHERE ID(n)=%5$s AND n.%6$s=o.%7$s RETURN COUNT(o) as countNode;",
             applicationContext,
             Level5Node.getLabel(),
             IMAGING_AGGREGATES,

@@ -36,6 +36,7 @@ import org.neo4j.procedure.*;
 import java.util.List;
 import java.util.stream.Stream;
 
+
 public class TagProcedure {
 
   @Context public GraphDatabaseService db;
@@ -90,6 +91,7 @@ public class TagProcedure {
 
     try {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
+
       List<TagResult> resultList =
           TagController.forecastTag(nal, configurationName, applicationName);
       return resultList.stream();
