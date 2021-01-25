@@ -48,8 +48,8 @@ public class LevelGroupController {
   private static final String IMAGING_LEVEL4_LABEL = Configuration.get("imaging.node.level4.label");
 
   // Demeter Conf
-  private static final String GROUP_TAG_IDENTIFIER =
-          UserConfiguration.get("demeter.prefix.community_group");
+  private static String GROUP_TAG_IDENTIFIER =
+          UserConfiguration.get("demeter.prefix.level_group");
   private static final String AUTO_GROUP_TAG_IDENTIFIER =
       Configuration.get("demeter.prefix.auto_community_group");
   private static final String GENERATED_LEVEL_IDENTIFIER =
@@ -57,6 +57,12 @@ public class LevelGroupController {
 
   // Class Conf
   private static final String ERROR_PREFIX = "GROCx";
+
+  static {
+    if(GROUP_TAG_IDENTIFIER ==null) {
+      GROUP_TAG_IDENTIFIER = Configuration.get("demeter.prefix.level_group");
+    }
+  }
 
   /**
    * Get the level 5 present in the node list. Level are returned as a map, with the key
@@ -100,6 +106,18 @@ public class LevelGroupController {
         .iterator();
   }
 
+  /**
+   * Group a specific tag on the application
+   * @param neo4jAL Neo4j Access layer
+   * @param applicationContext Name of the application
+   * @param groupName Name of the group
+   * @param nodeList List of node concerned by the grouping
+   * @return
+   * @throws Neo4jNoResult
+   * @throws Neo4jQueryException
+   * @throws Neo4jBadNodeFormatException
+   * @throws Neo4jBadRequestException
+   */
   public static Node groupSingleTag(
       Neo4jAL neo4jAL, String applicationContext, String groupName, List<Node> nodeList)
       throws Neo4jNoResult, Neo4jQueryException, Neo4jBadNodeFormatException,
@@ -256,6 +274,13 @@ public class LevelGroupController {
     return newLevelNode;
   }
 
+  /**
+   * Group all the level present in an application
+   * @param neo4jAL Neo4j access Layer
+   * @param applicationContext Name of the Application concerned by the merge
+   * @return
+   * @throws Neo4jQueryException
+   */
   public static List<Node> groupAllLevels(Neo4jAL neo4jAL, String applicationContext)
       throws Neo4jQueryException {
     Map<String, List<Node>> groupMap = new HashMap<>();

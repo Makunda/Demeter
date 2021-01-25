@@ -50,7 +50,7 @@ public class ModuleGroupController {
       Configuration.get("imaging.node.sub_object.subset_property");
 
   // Demeter Conf
-  private static final String GROUP_MODULE_TAG_IDENTIFIER =
+  private static String GROUP_MODULE_TAG_IDENTIFIER =
       UserConfiguration.get("demeter.prefix.module_group");
   private static final String GENERATED_MODULE_IDENTIFIER =
       Configuration.get("demeter.prefix.generated_module_prefix");
@@ -62,6 +62,12 @@ public class ModuleGroupController {
       Configuration.get("imaging.node.module.links.to_modules");
   private static final String IMAGING_BELONG_TO =
       Configuration.get("imaging.node.sub_object.link.to_objects");
+
+  static {
+    if(GROUP_MODULE_TAG_IDENTIFIER == null) {
+      GROUP_MODULE_TAG_IDENTIFIER = Configuration.get("demeter.prefix.module_group");
+    }
+  }
 
   /**
    * Refresh the links between the modules, and recreate the correct links

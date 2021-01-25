@@ -126,14 +126,11 @@ public class UtilsController {
     if (!Files.exists(newDirectory)) {
       return List.of("The directory specified doesn't exist. Make sure the directory exists.");
     }
-
-    List<String> returnList = new ArrayList<>(Workspace.validateWorkspace());
-
     Configuration.set("demeter.workspace.path", newDirectory.toAbsolutePath().toString());
-
-
     // Reload the configuration
     Configuration.saveAndReload();
+
+    List<String> returnList = new ArrayList<>(Workspace.validateWorkspace());
 
     return returnList;
   }
