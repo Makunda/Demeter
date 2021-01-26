@@ -147,7 +147,7 @@ public class ModuleGroupController {
     assert !applicationContext.isEmpty() : "The application name cannot be empty.";
     neo4jAL.logInfo(
         nodeList + " Potential candidates for grouping on module with name : " + groupName);
-    
+
     // Get other modules nodes
     Set<Node> affectedModules = new HashSet<>();
     for (Node n : nodeList) {

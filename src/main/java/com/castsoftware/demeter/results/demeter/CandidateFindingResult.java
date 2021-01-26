@@ -19,14 +19,17 @@
 
 package com.castsoftware.demeter.results.demeter;
 
-public class GroupingResult {
+import java.util.Arrays;
+import java.util.List;
+
+public class CandidateFindingResult {
     public String application;
-    public String tag;
+    public List<String> tags;
     public Long numTags;
 
-    public GroupingResult(String application, String tag, Long numTags) {
+    public CandidateFindingResult(String application, String[] tags, Long numTags) {
         this.application = application;
-        this.tag = tag;
+        this.tags = Arrays.asList(tags);
         this.numTags = numTags;
     }
 }

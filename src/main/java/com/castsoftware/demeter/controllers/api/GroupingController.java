@@ -19,11 +19,13 @@
 
 package com.castsoftware.demeter.controllers.api;
 
+import com.castsoftware.demeter.config.Configuration;
 import com.castsoftware.demeter.config.UserConfiguration;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.file.MissingFileException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.demeter.results.demeter.GroupingResult;
+import com.castsoftware.demeter.results.demeter.CandidateFindingResult;
+import com.castsoftware.demeter.results.demeter.DemeterGroupResult;
 import org.neo4j.graphdb.Result;
 
 import java.util.ArrayList;
@@ -112,21 +114,21 @@ public class GroupingController {
 
 
     /**
-     * Get the number of application concerned by a tag in the database
+     * Get the number of application concerned by a prefixed tag in the database
      * @param neo4jAL Neo4j Access Layer
      * @param tagPrefix Name of the prefix to look for
      * @return A list of match as a list of GroupingResult
      * @throws Neo4jQueryException
      */
-    private static List<GroupingResult> getGroupingResults(Neo4jAL neo4jAL, String tagPrefix) throws Neo4jQueryException {
-        List<GroupingResult> groupingResults = new ArrayList<>();
+    private static List<CandidateFindingResult> getGroupingResults(Neo4jAL neo4jAL, String tagPrefix) throws Neo4jQueryException {
+        List<CandidateFindingResult> candidateFindingResults = new ArrayList<>();
 
         String request = "MATCH (app:Application) " +
                 "WITH [app.Name] as appName " +
                 "MATCH (o:Object) WHERE EXISTS(o.Tags) " +
                 "AND any( x IN o.Tags WHERE x CONTAINS $tagPrefix ) " +
                 "AND any( x IN LABELS(o) WHERE x IN appName) " +
-                "RETURN DISTINCT [ x IN LABELS(o) WHERE x IN appName][0] as application , [x IN o.Tags WHERE x CONTAINS $tagPrefix][0] as tags,  COUNT(o) as numTags";
+                "RETURN DISTINCT [ x IN LABELS(o) WHERE x IN appName][0] as application , [x IN o.Tags WHERE x CONTAINS $tagPrefix] as tags,  COUNT(o) as numTags";
 
         Map<String, Object> parameters = Map.of("tagPrefix", tagPrefix);
         Result res = neo4jAL.executeQuery(request, parameters);
@@ -134,13 +136,13 @@ public class GroupingController {
         while(res.hasNext()) {
             Map<String, Object> result = res.next();
             String applicationName = (String) result.get("application");
-            String tags = (String) result.get("tags");
+            String[] tags = (String[]) result.get("tags");
             Long numTags = (Long) result.get("numTags");
 
-            groupingResults.add(new GroupingResult(applicationName, tags, numTags));
+            candidateFindingResults.add(new CandidateFindingResult(applicationName, tags, numTags));
         }
 
-        return groupingResults;
+        return candidateFindingResults;
     }
 
     /**
@@ -150,15 +152,15 @@ public class GroupingController {
      * @return A list of match as a list of GroupingResult
      * @throws Neo4jQueryException
      */
-    private static List<GroupingResult> getGroupingResultsOneApplication(Neo4jAL neo4jAL, String tagPrefix, String application) throws Neo4jQueryException {
-        List<GroupingResult> groupingResults = new ArrayList<>();
+    private static List<CandidateFindingResult> getGroupingResultsOneApplication(Neo4jAL neo4jAL, String tagPrefix, String application) throws Neo4jQueryException {
+        List<CandidateFindingResult> candidateFindingResults = new ArrayList<>();
 
-        String request = "MATCH (app:Application) WHERE app.Name=$appName" +
+        String request = "MATCH (app:Application) WHERE app.Name=$appName " +
                 "WITH [app.Name] as appName " +
                 "MATCH (o:Object) WHERE EXISTS(o.Tags) " +
                 "AND any( x IN o.Tags WHERE x CONTAINS $tagPrefix ) " +
                 "AND any( x IN LABELS(o) WHERE x IN appName) " +
-                "RETURN DISTINCT [ x IN LABELS(o) WHERE x IN appName][0] as application , [x IN o.Tags WHERE x CONTAINS $tagPrefix][0] as tags,  COUNT(o) as numTags";
+                "RETURN DISTINCT [ x IN LABELS(o) WHERE x IN appName][0] as application , [x IN o.Tags WHERE x CONTAINS $tagPrefix] as tags,  COUNT(o) as numTags";
 
         Map<String, Object> parameters = Map.of("tagPrefix", tagPrefix, "appName", application);
         Result res = neo4jAL.executeQuery(request, parameters);
@@ -166,14 +168,43 @@ public class GroupingController {
         while(res.hasNext()) {
             Map<String, Object> result = res.next();
             String applicationName = (String) result.get("application");
-            String tags = (String) result.get("tags");
+            String[] tags = (String[]) result.get("tags");
             Long numTags = (Long) result.get("numTags");
 
-            groupingResults.add(new GroupingResult(applicationName, tags, numTags));
+            candidateFindingResults.add(new CandidateFindingResult(applicationName, tags, numTags));
         }
 
-        return groupingResults;
+        return candidateFindingResults;
     }
+
+    /**
+     * Get a list of the group with the specified prefix
+     * @param neo4jAL Neo4j Access Layer
+     * @param application Name of the application
+     * @param groupPrefix Prefix of the groups
+     * @return
+     * @throws Neo4jQueryException
+     */
+    private static List<DemeterGroupResult> getDemeterGroupedOneApplication(Neo4jAL neo4jAL, String application, String groupPrefix) throws Neo4jQueryException {
+        List<DemeterGroupResult> demeterGroupResults = new ArrayList<>();
+
+        String request = String.format("MATCH (l:Level5:`%s`)-[:Aggregates]->(o:Object) WHERE l.FullName=~'.*##%s(.*)' RETURN ID(l) as id, l.Name as groupName, COUNT(o) as numObjects ;", application, groupPrefix);
+        Result res = neo4jAL.executeQuery(request);
+
+        while(res.hasNext()) {
+            Map<String, Object> result = res.next();
+            Long id = (Long) result.get("id");
+            String groupName = (String) result.get("groupName");
+            Long numObjects = (Long) result.get("numObjects");
+
+            demeterGroupResults.add(new DemeterGroupResult(id, groupName, application, numObjects));
+        }
+
+        return demeterGroupResults;
+
+    }
+
+
 
 
     /**
@@ -182,12 +213,12 @@ public class GroupingController {
      * @return
      * @throws Neo4jQueryException
      */
-    public static List<GroupingResult> getCandidateApplicationsLevelGroup(Neo4jAL neo4jAL) throws Neo4jQueryException {
+    public static List<CandidateFindingResult> getCandidateApplicationsLevelGroup(Neo4jAL neo4jAL) throws Neo4jQueryException {
         return getGroupingResults(neo4jAL, getLevelGroupPrefix());
     }
 
-    public static List<GroupingResult> getCandidateApplicationsLevelGroup(Neo4jAL neo4jAL, String application) throws Neo4jQueryException {
-        return getGroupingResults(neo4jAL, getLevelGroupPrefix());
+    public static List<CandidateFindingResult> getCandidateApplicationsLevelGroup(Neo4jAL neo4jAL, String application) throws Neo4jQueryException {
+        return getGroupingResultsOneApplication(neo4jAL, getLevelGroupPrefix(), application);
     }
 
     /**
@@ -196,8 +227,36 @@ public class GroupingController {
      * @return
      * @throws Neo4jQueryException
      */
-    public static List<GroupingResult> getCandidateApplicationsModuleGroup(Neo4jAL neo4jAL) throws Neo4jQueryException {
+    public static List<CandidateFindingResult> getCandidateApplicationsModuleGroup(Neo4jAL neo4jAL) throws Neo4jQueryException {
         return getGroupingResults(neo4jAL, getModuleGroupPrefix());
+    }
+
+    public static List<CandidateFindingResult> getCandidateApplicationsModuleGroup(Neo4jAL neo4jAL, String application) throws Neo4jQueryException {
+        return getGroupingResultsOneApplication(neo4jAL, getModuleGroupPrefix(), application);
+    }
+
+    /**
+     * Get the demeter levels in an application
+     * @param neo4jAL Neo4j Access Layer
+     * @param application
+     * @return
+     * @throws Neo4jQueryException
+     */
+    public static List<DemeterGroupResult> getDemeterLevels(Neo4jAL neo4jAL, String application) throws Neo4jQueryException {
+        String generatedLevelPrefix = Configuration.get("demeter.prefix.generated_level_prefix");
+        return getDemeterGroupedOneApplication(neo4jAL, application, generatedLevelPrefix);
+    }
+
+    /**
+     * Get the demeter modules in an application
+     * @param neo4jAL Neo4j Access Layer
+     * @param application
+     * @return
+     * @throws Neo4jQueryException
+     */
+    public static List<DemeterGroupResult> getDemeterModules(Neo4jAL neo4jAL, String application) throws Neo4jQueryException {
+        String generatedLevelPrefix = Configuration.get("demeter.prefix.generated_module_prefix");
+        return getDemeterGroupedOneApplication(neo4jAL, application, generatedLevelPrefix);
     }
 
 
