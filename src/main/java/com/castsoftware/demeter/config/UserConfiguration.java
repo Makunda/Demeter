@@ -34,11 +34,15 @@ public class UserConfiguration {
      * @return <code>String</code> value for the key as a String
      */
     public static String get(String key) {
-        if(PROPERTIES == null){
-            PROPERTIES = loadConfiguration();
-        }
+        try {
+            if(PROPERTIES == null){
+                PROPERTIES = loadConfiguration();
+            }
 
-        return PROPERTIES.get(key).toString();
+            return PROPERTIES.get(key).toString();
+        } catch (NullPointerException e) {
+            return null;
+        }
     }
 
     /**

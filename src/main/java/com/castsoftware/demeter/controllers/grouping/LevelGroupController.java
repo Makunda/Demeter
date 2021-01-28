@@ -43,25 +43,29 @@ public class LevelGroupController {
   private static final String IMAGING_OBJECT_LEVEL = Configuration.get("imaging.node.object.level");
   private static final String IMAGING_AGGREGATES =
       Configuration.get("imaging.node.level_nodes.links");
-  private static final String IMAGING_LEVEL_REFERENCES =
-      Configuration.get("imaging.node.level_nodes.references");
   private static final String IMAGING_LEVEL4_LABEL = Configuration.get("imaging.node.level4.label");
 
   // Demeter Conf
-  private static String GROUP_TAG_IDENTIFIER =
-          UserConfiguration.get("demeter.prefix.level_group");
-  private static final String AUTO_GROUP_TAG_IDENTIFIER =
-      Configuration.get("demeter.prefix.auto_community_group");
   private static final String GENERATED_LEVEL_IDENTIFIER =
       Configuration.get("demeter.prefix.generated_level_prefix");
 
   // Class Conf
   private static final String ERROR_PREFIX = "GROCx";
 
-  static {
-    if(GROUP_TAG_IDENTIFIER ==null) {
-      GROUP_TAG_IDENTIFIER = Configuration.get("demeter.prefix.level_group");
+  /**
+   * Get the Demeter Tag identifier
+   *
+   * @return
+   */
+  public static String getDemeterTagIdentifier() {
+    // Get the Group Tag identifier
+    String tagIdentifier = UserConfiguration.get("demeter.prefix.level_group");
+
+    if (tagIdentifier == null || tagIdentifier.isEmpty()) {
+      tagIdentifier = Configuration.get("demeter.prefix.level_group");
     }
+
+    return tagIdentifier;
   }
 
   /**
@@ -108,6 +112,7 @@ public class LevelGroupController {
 
   /**
    * Group a specific tag on the application
+   *
    * @param neo4jAL Neo4j Access layer
    * @param applicationContext Name of the application
    * @param groupName Name of the group
@@ -187,7 +192,7 @@ public class LevelGroupController {
     Node level4Node = (Node) resLevel4.next().get("node");
 
     // Forge the name of the level by removing the tag identifier
-    String forgedName = groupName.replace(GROUP_TAG_IDENTIFIER, "");
+    String forgedName = groupName.replace(getDemeterTagIdentifier(), "");
 
     // Merge new Level 5 and labelled them with application's name
     String forgedLabel = Level5Node.getLabel() + ":`" + applicationContext + "`";
@@ -277,6 +282,7 @@ public class LevelGroupController {
 
   /**
    * Group all the level present in an application
+   *
    * @param neo4jAL Neo4j access Layer
    * @param applicationContext Name of the Application concerned by the merge
    * @return
@@ -294,7 +300,10 @@ public class LevelGroupController {
             "MATCH (o:%1$s:`%2$s`) WHERE any( x in o.%3$s WHERE x CONTAINS '%4$s')  "
                 + "WITH o, [x in o.%3$s WHERE x CONTAINS '%4$s'][0] as g "
                 + "RETURN o as node, g as group;",
-            IMAGING_OBJECT_LABEL, applicationContext, IMAGING_OBJECT_TAGS, GROUP_TAG_IDENTIFIER);
+            IMAGING_OBJECT_LABEL,
+            applicationContext,
+            IMAGING_OBJECT_TAGS,
+            getDemeterTagIdentifier());
 
     Result res = neo4jAL.executeQuery(forgedTagRequest);
 
@@ -349,7 +358,7 @@ public class LevelGroupController {
     String removeTagsQuery =
         String.format(
             "MATCH (o:`%1$s`) WHERE EXISTS(o.%2$s)  SET o.%2$s = [ x IN o.%2$s WHERE NOT x CONTAINS '%3$s' ] RETURN COUNT(o) as removedTags;",
-            applicationContext, IMAGING_OBJECT_TAGS, GROUP_TAG_IDENTIFIER);
+            applicationContext, IMAGING_OBJECT_TAGS, getDemeterTagIdentifier());
     Result tagRemoveRes = neo4jAL.executeQuery(removeTagsQuery);
 
     if (tagRemoveRes.hasNext()) {

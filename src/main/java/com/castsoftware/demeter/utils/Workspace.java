@@ -48,6 +48,15 @@ public class Workspace {
     return Path.of(workspace).resolve(Configuration.get("demeter.workspace.data.user_configuration"));
   }
 
+  /**
+   * Get current workspace
+   * @return
+   */
+  public static Path getWorkspace() {
+    String workspace = Configuration.get("demeter.workspace.path");
+    return Path.of(workspace);
+  }
+
 
   /**
    * Check if the folder exist. If not, create it
