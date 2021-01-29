@@ -179,8 +179,8 @@ public class UtilsProcedure {
     }
   }
 
-  @Procedure(value = "demeter.get.version", mode = Mode.WRITE)
-  @Description("demeter.get.version() - Get the version of the Extension")
+  @Procedure(value = "demeter.version", mode = Mode.WRITE)
+  @Description("demeter.version() - Get the version of the Extension")
   public Stream<OutputMessage> getVersion() throws ProcedureException {
 
     try {
