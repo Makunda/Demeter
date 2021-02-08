@@ -65,17 +65,25 @@ public class ModuleGroupController {
       throws Neo4jQueryException {
     String forgedToOtherModules =
         String.format(
-            "MATCH (n)-->(:Object)<-[:%1$s]-(l:%2$s) WHERE ID(n)=%3$s AND n<>l MERGE (n)-[:References]->(l);",
-            IMAGING_CONTAINS, IMAGING_MODULE_LABEL, nodeModule.getId());
+            "MATCH (n:Module)--(int)-->(int2)--(l:Module) WHERE ID(n)=%d AND (int:Object OR int:SubObject) AND (int2:Object OR int2:SubObject)  AND n<>l MERGE (n)-[:References]->(l)",
+            nodeModule.getId());
 
     // List incoming modules
     String forgedFromOtherModules =
         String.format(
-            "MATCH (n)<--(:Object)<-[:%1$s]-(l:%2$s) WHERE ID(n)=%3$s AND n<>l MERGE (l)-[:References]->(n);",
-            IMAGING_CONTAINS, IMAGING_MODULE_LABEL, nodeModule.getId());
+            "MATCH (n:Module)<--(int)--(int2)--(l:Module) WHERE ID(n)=%d AND (int:Object OR int:SubObject) AND (int2:Object OR int2:SubObject)  AND n<>l  MERGE (n)<-[:References]-(l)",
+            nodeModule.getId());
 
     Result resTo = neo4jAL.executeQuery(forgedToOtherModules);
+    while (resTo.hasNext()) {
+      neo4jAL.logInfo(String.format("Got a relation to %s", (String) resTo.next().get("distant")));
+    }
+
     Result resFrom = neo4jAL.executeQuery(forgedFromOtherModules);
+    while (resFrom.hasNext()) {
+      neo4jAL.logInfo(String.format("Got a relation from %s", (String) resFrom.next().get("coming")));
+    }
+
   }
 
   /**
@@ -90,8 +98,8 @@ public class ModuleGroupController {
     // Update the old Level 5 and remove it is there no node linked to it
     String forgedNumConnected =
         String.format(
-            "MATCH (n:%1$s)-[:%2$s]->(o) WHERE ID(n)=%3$s RETURN COUNT(o) as countNode;",
-            IMAGING_MODULE_LABEL, IMAGING_CONTAINS, moduleNode.getId());
+            "MATCH (n:Module)-[:Contains]->(o:Object) WHERE ID(n)=%d RETURN COUNT(o) as countNode;",
+             moduleNode.getId());
 
     Result resNumConnected = neo4jAL.executeQuery(forgedNumConnected);
 
@@ -164,67 +172,69 @@ public class ModuleGroupController {
     }
 
     // Backup Modules
-    for (Node mod : affectedModules) {
-      ModuleNode nodeMode = ModuleNode.fromNode(neo4jAL, mod);
-      nodeMode.createBackup(applicationContext, nodeList);
-    }
+//    for (Node mod : affectedModules) {
+//      ModuleNode nodeMode = ModuleNode.fromNode(neo4jAL, mod);
+//      nodeMode.createBackup(applicationContext, nodeList);
+//    }
 
-    // Merge new module
-    String forgedLabel;
-    if(applicationContext.contains("-")) {
-      forgedLabel = String.format("`%s`:%s", applicationContext, IMAGING_MODULE_LABEL);
-    } else {
-      forgedLabel = String.format("%s:%s", applicationContext, IMAGING_MODULE_LABEL);
-    }
-    String forgedFindModule =
-        String.format(
-            "MATCH (o:%1$s) WHERE o.%2$s='%3$s' RETURN o as node;",
-            forgedLabel, IMAGING_MODULE_NAME, groupName);
+    // Get last AIP ID
+    String reqID = "Match (o) WHERE EXISTS(o.AipId) RETURN MAX(o.AipId) + 1 as maxId";
+    Result resId = neo4jAL.executeQuery(reqID);
 
-    Node newModule = null;
+    Long maxId;
+    if(resId.hasNext()) {
 
-    Result result = neo4jAL.executeQuery(forgedFindModule);
-    if (result.hasNext()) {
-      // Module with same name was found, and results will be merge into it
-      newModule = (Node) result.next().get("node");
-    } else {
-      // Create a new module
-      Transaction tx = neo4jAL.getTransaction();
-      Label applicationLabel = Label.label(applicationContext);
+    maxId = (Long) resId.next().get("maxId");
+  } else {
+    maxId = 0L;
+  }
 
-      newModule = tx.createNode(moduleLabel);
-      newModule.addLabel(applicationLabel);
+  // Get num Object + Sub obj
 
-      newModule.setProperty(ModuleNode.getNameProperty(), groupName);
-      newModule.setProperty(ModuleNode.getColorProperty(), "rgb(51, 204, 51)"); // Green
-      newModule.setProperty(ModuleNode.getTypeProperty(), "module");
-      newModule.setProperty(
-          ModuleNode.getAipIdProperty(), "9999999"); // the Node doesn't belong to AIP
-    }
+  // Module Creation of the node
+  String reqModule = String.format("MERGE (m:Module:`%1$s` {Type:'module',Count:$numItems, AipId: $aipId, Color:'rgb(34, 199, 214)', Name:$name}) RETURN m as node", applicationContext);
+  Map<String, Object> params = Map.of("numItems", new Long(nodeList.size()), "aipId", maxId.toString(), "name", groupName);
+  Result resModule = neo4jAL.executeQuery(reqModule, params);
+  neo4jAL.logInfo("Debug request :" + reqModule);
+    if(!resModule.hasNext()) {
+    throw new Neo4jBadRequestException(String.format("The request %s did not produced any result", reqModule), "MODGxGROM1");
+  }
 
+  Node module = (Node) resModule.next().get("node");
     // Treat objects
     // Link all the objects tagged to you modules.
-    // SubObjects referring the object should also be linked
-    // And SubObjects can also have SubObjects
-    int numSubObjects = 0;
-    neo4jAL.logInfo("About to re-link " + nodeList.size() + " objects.");
-
     // Treat node in a first pass
     String forgedRequest;
+    Map<String, Object> paramsNode;
     for (Node rObject : nodeList) {
       // Link objects
-      forgedRequest =
-          String.format(
-              "MATCH (m:Module:`%1$s`),(o:Object:%1$s) WHERE ID(m)=%2$s AND ID(o)=%3$s CREATE (m)-[:Contains]->(o);",
-              applicationContext, newModule.getId(), rObject.getId());
+      paramsNode = Map.of("idObj", rObject.getId(), "idModule", module.getId(), "moduleName", groupName);
 
-      neo4jAL.executeQuery(forgedRequest);
+      String reObj = String.format("MATCH (o:Object:`%s`)<-[r:Contains]-(oldModule:Module) " +
+              "WHERE ID(o)=$idObj SET o.Module = CASE WHEN o.Module IS NULL THEN [$moduleName] ELSE [ x in o.Module WHERE NOT x=oldModule.Name ] + $moduleName END DELETE r " +
+              "WITH o as obj " +
+              "MATCH (newM:Module) WHERE ID(newM)=$idModule " +
+              "CREATE (newM)-[:Contains]->(obj) ", applicationContext);
+
+      String subObj = String.format("MATCH (o:Object:`%s`)<-[:BELONGTO]-(j:SubObject) WHERE ID(o)=$idObj " +
+              "WITH j " +
+              "MATCH (m:Module)-[rd:Contains]->(j) " +
+              "SET j.Module = CASE WHEN j.Module IS NULL THEN [$moduleName] ELSE j.Module + $moduleName END " +
+              "DELETE rd " +
+              "WITH j " +
+              "MATCH (newM:Module) WHERE ID(newM)=$idModule CREATE (newM)-[:Contains]->(j)  ", applicationContext);
+
+
+      neo4jAL.executeQuery(reObj, paramsNode);
+      neo4jAL.logInfo("Executed obj for node with id : "+ rObject.getId());
+      neo4jAL.executeQuery(subObj, paramsNode);
+      neo4jAL.logInfo("Executed subObj for node with id : "+ rObject.getId());
     }
 
     // Count
     try {
-      moduleRecount(neo4jAL, newModule);
-      refreshModuleLinks(neo4jAL, newModule);
+      moduleRecount(neo4jAL, module);
+      refreshModuleLinks(neo4jAL, module);
     } catch (Exception e) {
       neo4jAL.logError("Refresh failed for new module.", e);
     }
@@ -239,7 +249,7 @@ public class ModuleGroupController {
       }
     }
 
-    return newModule;
+    return module;
   }
 
   /**
