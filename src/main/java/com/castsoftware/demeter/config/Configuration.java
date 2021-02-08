@@ -97,4 +97,17 @@ public class Configuration {
   public static void set(String key, String value) {
     properties.setProperty(key, value);
   }
+
+  /**
+   * Get the best match between User in put or Configuration
+   * @param key
+   * @return
+   */
+  public static String getBestOfALl(String key) {
+    if(UserConfiguration.isKey(key) && !UserConfiguration.get(key).isBlank()){
+      return UserConfiguration.get(key);
+    } else {
+      return get(key);
+    }
+  }
 }
