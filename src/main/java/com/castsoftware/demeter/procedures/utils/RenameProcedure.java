@@ -44,7 +44,7 @@ public class RenameProcedure {
   @Context public Log log;
 
   @Procedure(value = "demeter.rename.level", mode = Mode.WRITE)
-  @Description("demeter.rename.level() - Rename a level in an application.")
+  @Description("demeter.rename.level(String application, String oldName, String newName) - Rename a level in an application.")
   public Stream<BooleanResult> renameLevel(
       @Name(value = "ApplicationName") String applicationName,
       @Name(value = "OldName") String oldName,

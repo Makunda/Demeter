@@ -22,6 +22,7 @@ package com.castsoftware.demeter.procedures.grouping;
 import com.castsoftware.demeter.controllers.grouping.ModuleGroupController;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.ProcedureException;
+import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.results.NodeResult;
@@ -51,12 +52,12 @@ public class ModuleProcedure {
 
     try {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
-
-      List<Node> nodes = ModuleGroupController.groupAllModules(nal, applicationName);
+      ModuleGroupController mgc = new ModuleGroupController(nal, applicationName);
+      List<Node> nodes = mgc.launch();
 
       return nodes.stream().map(NodeResult::new);
 
-    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;

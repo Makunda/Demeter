@@ -44,8 +44,6 @@ public class RenameController {
   public static boolean renameLevel(
       Neo4jAL neo4jAL, String applicationContext, String toRename, String newName)
       throws Neo4jNoResult, Neo4jQueryException {
-    // Label backNodeLabel = Label.label(BackupNode.getLabel());
-    // RelationshipType backedUpRelationship = RelationshipType.withName(BACKED_UP_BY_REL);
 
     // Find level to rename
     Level5Node found = null;

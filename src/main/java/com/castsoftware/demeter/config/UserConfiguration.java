@@ -141,6 +141,8 @@ public class UserConfiguration {
      * @return
      */
     public static boolean isKey(String key) {
+        PROPERTIES = loadConfiguration();
+        if(PROPERTIES == null) return false;
         return PROPERTIES.containsKey(key);
     }
 

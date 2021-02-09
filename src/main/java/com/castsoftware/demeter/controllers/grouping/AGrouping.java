@@ -20,6 +20,8 @@
 package com.castsoftware.demeter.controllers.grouping;
 
 import com.castsoftware.demeter.database.Neo4jAL;
+import com.castsoftware.demeter.exceptions.file.FileNotFoundException;
+import com.castsoftware.demeter.exceptions.file.MissingFileException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
@@ -38,9 +40,12 @@ public abstract class AGrouping {
 	protected String applicationContext;
 
 	public abstract String getTagPrefix();
-	public abstract Node group(String groupName, List<Node> nodeList) throws Neo4jQueryException;
+	public abstract void setTagPrefix(String value) throws FileNotFoundException, MissingFileException;
 
-	public List<Node> launch() throws Neo4jQueryException {
+	public abstract void refresh() throws Neo4jQueryException;
+	public abstract Node group(String groupName, List<Node> nodeList) throws Neo4jQueryException, Neo4jBadRequestException;
+
+	public List<Node> launch() throws Neo4jQueryException, Neo4jBadRequestException {
 		List<Node> nodes = new ArrayList<>();
 		Map<String, List<Node>> mapNode = getGroupList();
 
@@ -48,6 +53,13 @@ public abstract class AGrouping {
 			Node n = group(entry.getKey(), entry.getValue());
 			nodes.add(n);
 		}
+
+		// Refresh
+		refresh();
+
+		// Clean tags
+		cleanTags();
+
 
 		return nodes;
 	}

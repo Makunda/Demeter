@@ -20,6 +20,7 @@
 package com.castsoftware.demeter.config;
 
 import com.castsoftware.demeter.exceptions.file.FileNotFoundException;
+import com.castsoftware.demeter.exceptions.file.MissingFileException;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -109,5 +110,20 @@ public class Configuration {
     } else {
       return get(key);
     }
+  }
+
+  /**
+   * Set a value in all the configuration
+   * @param key
+   * @param value
+   * @throws MissingFileException
+   * @throws FileNotFoundException
+   */
+  public static void setEverywhere(String key, String value) throws MissingFileException, FileNotFoundException {
+    UserConfiguration.set(key, value);
+    UserConfiguration.saveAndReload();
+
+    Configuration.set(key, value);
+    Configuration.saveAndReload();
   }
 }

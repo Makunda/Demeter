@@ -17,11 +17,13 @@
  *
  */
 
-package com.castsoftware.demeter.procedures.api;
+package com.castsoftware.demeter.procedures.api.grouping;
 
 import com.castsoftware.demeter.controllers.api.GroupingController;
+import com.castsoftware.demeter.controllers.grouping.ArchitectureGroupController;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.ProcedureException;
+import com.castsoftware.demeter.exceptions.file.FileNotFoundException;
 import com.castsoftware.demeter.exceptions.file.MissingFileException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
@@ -95,6 +97,34 @@ public class GroupingProcedures {
             String newPrefix = GroupingController.setModuleGroupPrefix(prefix);
             return Stream.of(new OutputMessage(newPrefix));
         } catch (Exception | MissingFileException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
+
+    @Procedure(value = "demeter.api.get.prefix.architecture", mode = Mode.WRITE)
+    @Description(
+            "demeter.api.get.prefix.architecture() - Get the prefix of the architecture grouping")
+    public Stream<OutputMessage> getArchiPrefix() throws ProcedureException {
+        try {
+            String prefix = ArchitectureGroupController.getPrefix();
+            return Stream.of(new OutputMessage(prefix));
+        } catch (Exception  e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
+
+    @Procedure(value = "demeter.api.set.prefix.architecture", mode = Mode.WRITE)
+    @Description(
+            "demeter.api.set.prefix.architecture(String newPrefix) - Set the prefix of the architecture grouping")
+    public Stream<OutputMessage> setArchiPrefix(@Name(value = "Prefix") String prefix) throws ProcedureException {
+        try {
+            ArchitectureGroupController.setPrefix(prefix);
+            return Stream.of(new OutputMessage(prefix));
+        } catch (Exception | MissingFileException | FileNotFoundException e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
             throw ex;

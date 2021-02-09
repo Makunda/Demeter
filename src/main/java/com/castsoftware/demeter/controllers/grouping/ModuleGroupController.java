@@ -22,6 +22,8 @@ package com.castsoftware.demeter.controllers.grouping;
 import com.castsoftware.demeter.config.Configuration;
 import com.castsoftware.demeter.config.UserConfiguration;
 import com.castsoftware.demeter.database.Neo4jAL;
+import com.castsoftware.demeter.exceptions.file.FileNotFoundException;
+import com.castsoftware.demeter.exceptions.file.MissingFileException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
@@ -31,14 +33,9 @@ import org.neo4j.graphdb.*;
 
 import java.util.*;
 
-public class ModuleGroupController {
+public class ModuleGroupController extends AGrouping{
 
   // Static Imaging nodes
-
-  private static final String IMAGING_MODULE_LABEL = Configuration.get("imaging.node.module.label");
-  private static final String IMAGING_MODULE_NAME = Configuration.get("imaging.node.module.name");
-  private static final String IMAGING_OBJECT_TAGS =
-      Configuration.get("imaging.link.object_property.tags");
 
   // Demeter Conf
   private static String GROUP_MODULE_TAG_IDENTIFIER =
@@ -54,107 +51,73 @@ public class ModuleGroupController {
     }
   }
 
+  private Set<Node> affectedModules;
+
+
   /**
    * Refresh the links between the modules, and recreate the correct links
-   *
-   * @param neo4jAL Neo4j access layer
-   * @param nodeModule Node to refresh
-   * @throws Neo4jQueryException
    */
-  public static void refreshModuleLinks(Neo4jAL neo4jAL, Node nodeModule)
+  public void refreshModuleLinks()
       throws Neo4jQueryException {
     String forgedToOtherModules =
-        String.format(
-            "MATCH (n:Module)--(int)-->(int2)--(l:Module) WHERE ID(n)=%d AND (int:Object OR int:SubObject) AND (int2:Object OR int2:SubObject)  AND n<>l MERGE (n)-[:References]->(l)",
-            nodeModule.getId());
+            String.format("MATCH (n:Module:`%1$s`)--(int)-->(int2)--(l:Module:`%1$s`) WHERE (int:Object OR int:SubObject) AND (int2:Object OR int2:SubObject) AND ID(n)<>ID(l) " +
+                    "MERGE (n)-[:References]->(l)", applicationContext);
 
-    // List incoming modules
-    String forgedFromOtherModules =
-        String.format(
-            "MATCH (n:Module)<--(int)--(int2)--(l:Module) WHERE ID(n)=%d AND (int:Object OR int:SubObject) AND (int2:Object OR int2:SubObject)  AND n<>l  MERGE (n)<-[:References]-(l)",
-            nodeModule.getId());
 
     Result resTo = neo4jAL.executeQuery(forgedToOtherModules);
     while (resTo.hasNext()) {
       neo4jAL.logInfo(String.format("Got a relation to %s", (String) resTo.next().get("distant")));
     }
-
-    Result resFrom = neo4jAL.executeQuery(forgedFromOtherModules);
-    while (resFrom.hasNext()) {
-      neo4jAL.logInfo(String.format("Got a relation from %s", (String) resFrom.next().get("coming")));
-    }
-
   }
 
   /**
    * Refresh count for modules
-   *
-   * @param neo4jAL Neo4j access layer
-   * @param moduleNode Level node necessitating a
-   * @return
-   * @throws Neo4jQueryException
    */
-  public static Node moduleRecount(Neo4jAL neo4jAL, Node moduleNode) throws Neo4jQueryException {
+  public void moduleRecount() throws Neo4jQueryException {
     // Update the old Level 5 and remove it is there no node linked to it
     String forgedNumConnected =
         String.format(
-            "MATCH (n:Module)-[:Contains]->(o:Object) WHERE ID(n)=%d RETURN COUNT(o) as countNode;",
-             moduleNode.getId());
+            "MATCH (n:Module:`%1$s`)-[:Contains]->(o:Object) WITH n as module, COUNT(o) as links " +
+                    "SET module.Count=links ",
+                applicationContext);
 
-    Result resNumConnected = neo4jAL.executeQuery(forgedNumConnected);
-
-    Long numLeft = 0L;
-    if (resNumConnected.hasNext()) {
-      numLeft = (Long) resNumConnected.next().get("countNode");
-    }
-
-    // Delete the old module node if it's empty
-    if (numLeft == 0) {
-      // Detach
-      for (Relationship rel : moduleNode.getRelationships()) {
-        rel.delete();
-      }
-      // Delete
-      moduleNode.delete();
-      neo4jAL.logInfo("Module had no more relationships with objects and was deleted.");
-    } else {
-      // Update count property
-      moduleNode.setProperty(ModuleNode.getCountProperty(), numLeft);
-      neo4jAL.logInfo(
-          "Module still has " + numLeft + " relationships with objects and will not be deleted.");
-    }
-
-    return moduleNode;
+   neo4jAL.executeQuery(forgedNumConnected);
+   // remove modules without links anymore
+    String removeEmpty =
+            String.format(
+                    "MATCH (n:Module:`%1$s`) WHERE n.Count=0 DETACH DELETE n",
+                    applicationContext);
+    neo4jAL.executeQuery(removeEmpty);
   }
 
-  /**
-   * Group modules in a specific application
-   *
-   * @param neo4jAL Neo4j access Layer
-   * @param applicationContext Application concerned by the module grouping
-   * @param groupName Name of the group to be merge
-   * @param nodeList List of nodes
-   * @return
-   * @throws Neo4jNoResult
-   * @throws Neo4jQueryException
-   * @throws Neo4jBadNodeFormatException
-   * @throws Neo4jBadRequestException
-   */
-  public static Node groupModule(
-      Neo4jAL neo4jAL, String applicationContext, String groupName, List<Node> nodeList)
-      throws Neo4jNoResult, Neo4jQueryException, Neo4jBadNodeFormatException,
-          Neo4jBadRequestException {
 
+  @Override
+  public String getTagPrefix() {
+    return  Configuration.getBestOfALl("demeter.prefix.module_group");
+  }
+
+  @Override
+  public void setTagPrefix(String value) throws FileNotFoundException, MissingFileException {
+    Configuration.setEverywhere("demeter.prefix.module_group", value);
+  }
+
+  @Override
+  public void refresh() throws Neo4jQueryException {
+    moduleRecount();
+    refreshModuleLinks();
+  }
+
+  @Override
+  public Node group(String groupName, List<Node> nodeList) throws Neo4jQueryException, Neo4jBadRequestException {
     RelationshipType containsRel = RelationshipType.withName(IMAGING_CONTAINS);
-    Label moduleLabel = Label.label(IMAGING_MODULE_LABEL);
+    Label moduleLabel = Label.label("Module");
 
     // Clean the group name by removing the Demeter Prefix
     groupName = groupName.replace(GROUP_MODULE_TAG_IDENTIFIER, "");
 
     // Assert the application name is not empty
     assert !applicationContext.isEmpty() : "The application name cannot be empty.";
-    neo4jAL.logInfo(
-        nodeList + " Potential candidates for grouping on module with name : " + groupName);
+
 
     // Get other modules nodes
     Set<Node> affectedModules = new HashSet<>();
@@ -171,12 +134,6 @@ public class ModuleGroupController {
       affectedModules.add(modNode);
     }
 
-    // Backup Modules
-//    for (Node mod : affectedModules) {
-//      ModuleNode nodeMode = ModuleNode.fromNode(neo4jAL, mod);
-//      nodeMode.createBackup(applicationContext, nodeList);
-//    }
-
     // Get last AIP ID
     String reqID = "Match (o) WHERE EXISTS(o.AipId) RETURN MAX(o.AipId) + 1 as maxId";
     Result resId = neo4jAL.executeQuery(reqID);
@@ -184,23 +141,25 @@ public class ModuleGroupController {
     Long maxId;
     if(resId.hasNext()) {
 
-    maxId = (Long) resId.next().get("maxId");
-  } else {
-    maxId = 0L;
-  }
+      maxId = (Long) resId.next().get("maxId");
+    } else {
+      maxId = 0L;
+    }
 
-  // Get num Object + Sub obj
+    // Get num Object + Sub obj
 
-  // Module Creation of the node
-  String reqModule = String.format("MERGE (m:Module:`%1$s` {Type:'module',Count:$numItems, AipId: $aipId, Color:'rgb(34, 199, 214)', Name:$name}) RETURN m as node", applicationContext);
-  Map<String, Object> params = Map.of("numItems", new Long(nodeList.size()), "aipId", maxId.toString(), "name", groupName);
-  Result resModule = neo4jAL.executeQuery(reqModule, params);
-  neo4jAL.logInfo("Debug request :" + reqModule);
+    // Module Creation of the node (Merge existing nodes)
+    String reqModule = String.format("MERGE (m:Module:`%1$s` {Type:'module', Color:'rgb(34, 199, 214)', Name:$name }) " +
+            "SET m.AipId=$aipId SET m.Count = CASE WHEN EXISTS(m.Count) THEN m.Count + $numItems ELSE $numItems END " +
+            "RETURN m as node", applicationContext);
+    Map<String, Object> params = Map.of("numItems", new Long(nodeList.size()), "aipId", maxId.toString(), "name", groupName);
+    Result resModule = neo4jAL.executeQuery(reqModule, params);
+    neo4jAL.logInfo("Debug request :" + reqModule);
     if(!resModule.hasNext()) {
-    throw new Neo4jBadRequestException(String.format("The request %s did not produced any result", reqModule), "MODGxGROM1");
-  }
+      throw new Neo4jBadRequestException(String.format("The request %s did not produced any result", reqModule), "MODGxGROM1");
+    }
 
-  Node module = (Node) resModule.next().get("node");
+    Node module = (Node) resModule.next().get("node");
     // Treat objects
     // Link all the objects tagged to you modules.
     // Treat node in a first pass
@@ -224,114 +183,16 @@ public class ModuleGroupController {
               "WITH j " +
               "MATCH (newM:Module) WHERE ID(newM)=$idModule CREATE (newM)-[:Contains]->(j)  ", applicationContext);
 
-
       neo4jAL.executeQuery(reObj, paramsNode);
-      neo4jAL.logInfo("Executed obj for node with id : "+ rObject.getId());
       neo4jAL.executeQuery(subObj, paramsNode);
-      neo4jAL.logInfo("Executed subObj for node with id : "+ rObject.getId());
-    }
-
-    // Count
-    try {
-      moduleRecount(neo4jAL, module);
-      refreshModuleLinks(neo4jAL, module);
-    } catch (Exception e) {
-      neo4jAL.logError("Refresh failed for new module.", e);
-    }
-
-    // Update old modules w/ recount
-    for (Node mod : affectedModules) {
-      try {
-        moduleRecount(neo4jAL, mod);
-        refreshModuleLinks(neo4jAL, mod);
-      } catch (Exception e) {
-        neo4jAL.logError("Refresh failed for old module.", e);
-      }
     }
 
     return module;
   }
 
-  /**
-   * Group all Module present in an application
-   *
-   * @param neo4jAL Neo4j Access Layer
-   * @param applicationContext Application where the nodes are going to be merged
-   * @return The list of new modules created
-   * @throws Neo4jQueryException
-   */
-  public static List<Node> groupAllModules(Neo4jAL neo4jAL, String applicationContext)
-      throws Neo4jQueryException {
-    Map<String, List<Node>> groupMap = new HashMap<>();
-
-    neo4jAL.logInfo("Starting Demeter module grouping...");
-
-    // Get the list of nodes prefixed by dm_tag
-    String forgedTagRequest =
-        String.format(
-            "MATCH (o:`%1$s`) WHERE any( x in o.%2$s WHERE x CONTAINS '%3$s')  "
-                + "WITH o, [x in o.%2$s WHERE x CONTAINS '%3$s'][0] as g "
-                + "RETURN o as node, g as group;",
-            applicationContext, IMAGING_OBJECT_TAGS, GROUP_MODULE_TAG_IDENTIFIER);
-
-    Result res = neo4jAL.executeQuery(forgedTagRequest);
-
-    // Build the map for each group as <Tag, Node list>
-    while (res.hasNext()) {
-      Map<String, Object> resMap = res.next();
-      String group = (String) resMap.get("group");
-      Node node = (Node) resMap.get("node");
-
-      // Add to  the specific group
-      if (!groupMap.containsKey(group)) {
-        groupMap.put(group, new ArrayList<>());
-      }
-
-      groupMap.get(group).add(node);
-    }
-
-    neo4jAL.logInfo(groupMap.size() + " module groups were identified.");
-    neo4jAL.logInfo("Request launched : " + forgedTagRequest);
-
-    List<Node> resNodes = new ArrayList<>();
-
-    // Build a level 5 and attach the node list
-    for (Map.Entry<String, List<Node>> entry : groupMap.entrySet()) {
-      String groupName = entry.getKey();
-      List<Node> nodeList = entry.getValue();
-
-      if (nodeList.isEmpty()) continue;
-
-      try {
-        neo4jAL.logInfo("# Now processing group with name : " + groupName);
-        Node n = groupModule(neo4jAL, applicationContext, groupName, nodeList);
-        resNodes.add(n);
-      } catch (Exception
-          | Neo4jNoResult
-          | Neo4jBadNodeFormatException
-          | Neo4jBadRequestException err) {
-        neo4jAL.logError(
-            "An error occurred trying to create Level 5 for nodes with tags : " + groupName, err);
-      }
-    }
-
-    neo4jAL.logInfo("Demeter module grouping finished.");
-    neo4jAL.logInfo("Cleaning tags...");
-
-    // Once the operation is done, remove Demeter tag prefix tags
-    String removeTagsQuery =
-        String.format(
-            "MATCH (o:`%1$s`) WHERE EXISTS(o.%2$s)  SET o.%2$s = [ x IN o.%2$s WHERE NOT x CONTAINS '%3$s' ] RETURN COUNT(o) as removedTags;",
-            applicationContext, IMAGING_OBJECT_TAGS, GROUP_MODULE_TAG_IDENTIFIER);
-    Result tagRemoveRes = neo4jAL.executeQuery(removeTagsQuery);
-
-    if (tagRemoveRes.hasNext()) {
-      Long nDel = (Long) tagRemoveRes.next().get("removedTags");
-      neo4jAL.logInfo("# " + nDel + " demeter 'module group tags' were removed from the database.");
-    }
-
-    neo4jAL.logInfo("Cleaning Done !");
-
-    return resNodes;
+  public ModuleGroupController(Neo4jAL neo4jAL, String applicationContext) {
+    super(neo4jAL, applicationContext);
+    this.affectedModules = new HashSet<>();
   }
+
 }
