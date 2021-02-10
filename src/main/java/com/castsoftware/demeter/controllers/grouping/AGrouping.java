@@ -117,4 +117,6 @@ public abstract class AGrouping {
 		this.neo4jAL = neo4jAL;
 		this.applicationContext = applicationContext;
 	}
+
+
 }

@@ -17,10 +17,11 @@
  *
  */
 
-package com.castsoftware.demeter.controllers.grouping;
+package com.castsoftware.demeter.controllers.grouping.modules;
 
 import com.castsoftware.demeter.config.Configuration;
 import com.castsoftware.demeter.config.UserConfiguration;
+import com.castsoftware.demeter.controllers.grouping.AGrouping;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.file.FileNotFoundException;
 import com.castsoftware.demeter.exceptions.file.MissingFileException;
@@ -33,13 +34,13 @@ import org.neo4j.graphdb.*;
 
 import java.util.*;
 
-public class ModuleGroupController extends AGrouping{
+public class ModuleGroupController extends AGrouping {
 
   // Static Imaging nodes
 
   // Demeter Conf
   private static String GROUP_MODULE_TAG_IDENTIFIER =
-      UserConfiguration.get("demeter.prefix.module_group");
+      Configuration.getBestOfALl("demeter.prefix.module_group");
 
   // Static Imaging relationships
   private static final String IMAGING_CONTAINS =
@@ -50,9 +51,6 @@ public class ModuleGroupController extends AGrouping{
       GROUP_MODULE_TAG_IDENTIFIER = Configuration.get("demeter.prefix.module_group");
     }
   }
-
-  private Set<Node> affectedModules;
-
 
   /**
    * Refresh the links between the modules, and recreate the correct links
@@ -120,7 +118,6 @@ public class ModuleGroupController extends AGrouping{
 
 
     // Get other modules nodes
-    Set<Node> affectedModules = new HashSet<>();
     for (Node n : nodeList) {
       // The node is supposed to be linked to only one module
       Iterator<Relationship> relIt = n.getRelationships(Direction.INCOMING, containsRel).iterator();
@@ -129,9 +126,6 @@ public class ModuleGroupController extends AGrouping{
       Node modNode = relIt.next().getStartNode();
       // Assert that the node is a module
       if (!modNode.hasLabel(moduleLabel)) continue;
-
-      // Add to set
-      affectedModules.add(modNode);
     }
 
     // Get last AIP ID
@@ -192,7 +186,6 @@ public class ModuleGroupController extends AGrouping{
 
   public ModuleGroupController(Neo4jAL neo4jAL, String applicationContext) {
     super(neo4jAL, applicationContext);
-    this.affectedModules = new HashSet<>();
   }
 
 }

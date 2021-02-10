@@ -19,7 +19,9 @@
 
 package com.castsoftware.demeter.procedures.grouping;
 
-import com.castsoftware.demeter.controllers.grouping.ModuleGroupController;
+import com.castsoftware.demeter.controllers.grouping.AGrouping;
+import com.castsoftware.demeter.controllers.grouping.GroupingUtilsController;
+import com.castsoftware.demeter.controllers.grouping.modules.ModuleGroupController;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.ProcedureException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
@@ -58,6 +60,24 @@ public class ModuleProcedure {
       return nodes.stream().map(NodeResult::new);
 
     } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+  @Procedure(value = "demeter.api.group.modules.all", mode = Mode.WRITE)
+  @Description(
+          "demeter.api.group.modules.all() - Group the modules following Demeter tags applied")
+  public Stream<NodeResult> groupAll()
+          throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      List<Node> nodes = GroupingUtilsController.groupAllModules(nal);
+      return nodes.stream().map(NodeResult::new);
+
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("An error occurred while executing the procedure", e);
       throw ex;

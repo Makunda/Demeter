@@ -19,13 +19,16 @@
 
 package com.castsoftware.demeter.procedures.grouping;
 
-import com.castsoftware.demeter.controllers.grouping.LevelGroupController;
+import com.castsoftware.demeter.controllers.api.GroupingController;
+import com.castsoftware.demeter.controllers.grouping.levels.LevelGroupController;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.ProcedureException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.results.NodeResult;
 import com.castsoftware.demeter.results.OutputMessage;
+import com.castsoftware.demeter.results.demeter.CandidateFindingResult;
+import com.castsoftware.demeter.results.demeter.DemeterGroupResult;
 import com.castsoftware.demeter.utils.LevelsUtils;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -64,7 +67,69 @@ public class LevelProcedure {
     }
   }
 
-  @Procedure(value = "demeter.group.refresh.abstracts", mode = Mode.WRITE)
+  @Procedure(value = "demeter.api.group.levels.all", mode = Mode.WRITE)
+  @Description(
+          "demeter.api.group.levels.all() - Group levels in every applications")
+  public Stream<NodeResult> groupAllApplications()
+          throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+
+      List<Node> nodes = LevelGroupController.groupInAllApplications(nal);
+
+      return nodes.stream().map(NodeResult::new);
+
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+  // Group candidates
+  @Procedure(value = "demeter.api.get.candidate.levels", mode = Mode.WRITE)
+  @Description(
+          "demeter.api.get.candidate.levels(Optional String application) - Get the candidates for the level grouping")
+  public Stream<CandidateFindingResult> getCandidateLevelGrouping(@Name(value="Application", defaultValue = "") String application) throws ProcedureException {
+    try {
+      Neo4jAL neo4jAL = new Neo4jAL(db, transaction, log);
+      List<CandidateFindingResult> candidates;
+      if(application.isEmpty()) {
+        candidates = GroupingController.getCandidateApplicationsLevelGroup(neo4jAL);
+      } else {
+        candidates = GroupingController.getCandidateApplicationsLevelGroup(neo4jAL, application);
+      }
+
+      return candidates.stream();
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+
+  @Procedure(value = "demeter.api.get.demeter.levels", mode = Mode.WRITE)
+  @Description(
+          "demeter.api.get.demeter.levels(String application) - Get the levels grouped by demeter in one application")
+  public Stream<DemeterGroupResult> getDemeterLevels(@Name(value="Application") String application) throws ProcedureException {
+    try {
+      Neo4jAL neo4jAL = new Neo4jAL(db, transaction, log);
+      List<DemeterGroupResult> levels = GroupingController.getDemeterLevels(neo4jAL, application);
+
+      return levels.stream();
+    } catch (Exception | Neo4jQueryException | Neo4jConnectionError e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
+
+
+
+  @Procedure(value = "demeter.api.group.refresh.abstracts", mode = Mode.WRITE)
   @Description(
       "demeter.group.refresh.abstracts(String applicationName) - Refresh the abstract level of your application")
   public Stream<OutputMessage> refreshAbstractLevels(

@@ -17,9 +17,10 @@
  *
  */
 
-package com.castsoftware.demeter.controllers.grouping;
+package com.castsoftware.demeter.controllers.grouping.architectures;
 
 import com.castsoftware.demeter.config.Configuration;
+import com.castsoftware.demeter.controllers.grouping.AGrouping;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.file.FileNotFoundException;
 import com.castsoftware.demeter.exceptions.file.MissingFileException;

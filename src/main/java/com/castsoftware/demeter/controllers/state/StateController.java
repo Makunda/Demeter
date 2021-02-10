@@ -17,7 +17,7 @@
  *
  */
 
-package com.castsoftware.demeter.controllers.sate;
+package com.castsoftware.demeter.controllers.state;
 
 import com.castsoftware.demeter.config.Configuration;
 import com.castsoftware.demeter.database.Neo4jAL;

@@ -22,6 +22,7 @@ package com.castsoftware.demeter.controllers.api;
 import com.castsoftware.demeter.config.Configuration;
 import com.castsoftware.demeter.config.UserConfiguration;
 import com.castsoftware.demeter.database.Neo4jAL;
+import com.castsoftware.demeter.exceptions.file.FileNotFoundException;
 import com.castsoftware.demeter.exceptions.file.MissingFileException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.results.demeter.CandidateFindingResult;
@@ -40,7 +41,7 @@ public class GroupingController {
      * @return
      */
     public static String getLevelGroupPrefix() {
-        return UserConfiguration.get("demeter.prefix.level_group");
+        return Configuration.getBestOfALl("demeter.prefix.level_group");
     }
 
 
@@ -50,8 +51,9 @@ public class GroupingController {
      * @return The new prefix
      * @throws MissingFileException
      */
-    public static String setLevelGroupPrefix(String prefix) throws MissingFileException {
-        return UserConfiguration.set("demeter.prefix.level_group", prefix);
+    public static String setLevelGroupPrefix(String prefix) throws MissingFileException, FileNotFoundException {
+        Configuration.setEverywhere("demeter.prefix.level_group", prefix);
+        return prefix;
     }
 
     // Module prefix

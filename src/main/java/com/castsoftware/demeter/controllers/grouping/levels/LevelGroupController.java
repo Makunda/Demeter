@@ -17,10 +17,9 @@
  *
  */
 
-package com.castsoftware.demeter.controllers.grouping;
+package com.castsoftware.demeter.controllers.grouping.levels;
 
 import com.castsoftware.demeter.config.Configuration;
-import com.castsoftware.demeter.config.UserConfiguration;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
@@ -34,6 +33,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 
+// TODO : Rewrite this class to be compliant with AGrouping
 public class LevelGroupController {
 
   // Imaging Conf
@@ -57,15 +57,8 @@ public class LevelGroupController {
    *
    * @return
    */
-  public static String getDemeterTagIdentifier() {
-    // Get the Group Tag identifier
-    String tagIdentifier = UserConfiguration.get("demeter.prefix.level_group");
-
-    if (tagIdentifier == null || tagIdentifier.isEmpty()) {
-      tagIdentifier = Configuration.get("demeter.prefix.level_group");
-    }
-
-    return tagIdentifier;
+  public static String getLevelPrefix() {
+    return Configuration.getBestOfALl("demeter.prefix.level_group");
   }
 
   /**
@@ -108,6 +101,27 @@ public class LevelGroupController {
     return level5map.entrySet().stream()
         .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
         .iterator();
+  }
+
+  /**
+   * Clean the application from the Demeter tags
+   *
+   * @param neo4jAL
+   * @param applicationContext
+   * @throws Neo4jQueryException
+   */
+  public static void clean(Neo4jAL neo4jAL, String applicationContext) throws Neo4jQueryException {
+    // Once the operation is done, remove Demeter tag prefix tags
+    String removeTagsQuery =
+        String.format(
+            "MATCH (o:`%1$s`) WHERE EXISTS(o.%2$s)  SET o.%2$s = [ x IN o.%2$s WHERE NOT x CONTAINS '%3$s' ] RETURN COUNT(o) as removedTags;",
+            applicationContext, IMAGING_OBJECT_TAGS, getLevelPrefix());
+    Result tagRemoveRes = neo4jAL.executeQuery(removeTagsQuery);
+
+    if (tagRemoveRes.hasNext()) {
+      Long nDel = (Long) tagRemoveRes.next().get("removedTags");
+      neo4jAL.logInfo("# " + nDel + " demeter 'group tags' were removed from the database.");
+    }
   }
 
   /**
@@ -192,7 +206,7 @@ public class LevelGroupController {
     Node level4Node = (Node) resLevel4.next().get("node");
 
     // Forge the name of the level by removing the tag identifier
-    String forgedName = groupName.replace(getDemeterTagIdentifier(), "");
+    String forgedName = groupName.replace(getLevelPrefix(), "");
 
     // Merge new Level 5 and labelled them with application's name
     String forgedLabel = Level5Node.getLabel() + ":`" + applicationContext + "`";
@@ -300,14 +314,9 @@ public class LevelGroupController {
             "MATCH (o:%1$s:`%2$s`) WHERE any( x in o.%3$s WHERE x CONTAINS '%4$s')  "
                 + "WITH o, [x in o.%3$s WHERE x CONTAINS '%4$s'][0] as g "
                 + "RETURN o as node, g as group;",
-            IMAGING_OBJECT_LABEL,
-            applicationContext,
-            IMAGING_OBJECT_TAGS,
-            getDemeterTagIdentifier());
+            IMAGING_OBJECT_LABEL, applicationContext, IMAGING_OBJECT_TAGS, getLevelPrefix());
 
     Result res = neo4jAL.executeQuery(forgedTagRequest);
-
-    Instant start = Instant.now();
 
     // Build the map for each group as <Tag, Node list>
     while (res.hasNext()) {
@@ -323,12 +332,6 @@ public class LevelGroupController {
       groupMap.get(group).add(node);
     }
 
-    Instant finish = Instant.now();
-    long timeElapsed = Duration.between(start, finish).toMillis();
-    neo4jAL.logInfo(
-        String.format(
-            "%d groups were identified in %d Milliseconds.", groupMap.size(), timeElapsed));
-
     List<Node> resNodes = new ArrayList<>();
 
     // Build a level 5 and attach the node list
@@ -339,7 +342,6 @@ public class LevelGroupController {
       if (nodeList.isEmpty()) continue;
 
       try {
-        neo4jAL.logInfo("Now processing group with name : " + groupName);
         Node n = groupSingleTag(neo4jAL, applicationContext, groupName, nodeList);
         resNodes.add(n);
       } catch (Exception
@@ -351,23 +353,32 @@ public class LevelGroupController {
       }
     }
 
-    neo4jAL.logInfo("Demeter level 5 grouping finished.");
-    neo4jAL.logInfo("Cleaning tags...");
-
-    // Once the operation is done, remove Demeter tag prefix tags
-    String removeTagsQuery =
-        String.format(
-            "MATCH (o:`%1$s`) WHERE EXISTS(o.%2$s)  SET o.%2$s = [ x IN o.%2$s WHERE NOT x CONTAINS '%3$s' ] RETURN COUNT(o) as removedTags;",
-            applicationContext, IMAGING_OBJECT_TAGS, getDemeterTagIdentifier());
-    Result tagRemoveRes = neo4jAL.executeQuery(removeTagsQuery);
-
-    if (tagRemoveRes.hasNext()) {
-      Long nDel = (Long) tagRemoveRes.next().get("removedTags");
-      neo4jAL.logInfo("# " + nDel + " demeter 'group tags' were removed from the database.");
-    }
-
-    neo4jAL.logInfo("Cleaning Done !");
+    // Clean residual tags
+    clean(neo4jAL, applicationContext);
 
     return resNodes;
+  }
+
+  /**
+   * Group demeter levels in every applications
+   * @param neo4jAL
+   * @return
+   * @throws Neo4jQueryException
+   */
+  public static List<Node> groupInAllApplications(Neo4jAL neo4jAL) throws Neo4jQueryException {
+    String applicationReq =
+        "MATCH (o:Object) WHERE EXISTS (o.Tags) AND any(x in o.Tags WHERE x CONTAINS $tagPrefix) "
+            + "RETURN DISTINCT [ x in LABELS(o) WHERE NOT x='Object'][0] as application;";
+    Map<String, Object> params = Map.of("tagPrefix", getLevelPrefix());
+
+    Result res = neo4jAL.executeQuery(applicationReq, params);
+    List<Node> fullResults = new ArrayList<>();
+
+    // Parse all the application
+    while (res.hasNext()) {
+      fullResults.addAll(groupAllLevels(neo4jAL, (String) res.next().get("application")));
+    }
+
+    return fullResults;
   }
 }

@@ -19,7 +19,7 @@
 
 package com.castsoftware.demeter.procedures.save;
 
-import com.castsoftware.demeter.controllers.sate.StateController;
+import com.castsoftware.demeter.controllers.state.StateController;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.ProcedureException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;

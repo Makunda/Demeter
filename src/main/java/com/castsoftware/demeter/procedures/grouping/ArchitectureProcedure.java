@@ -19,20 +19,15 @@
 
 package com.castsoftware.demeter.procedures.grouping;
 
-import com.castsoftware.demeter.controllers.api.GroupingController;
-import com.castsoftware.demeter.controllers.grouping.ArchitectureGroupController;
-import com.castsoftware.demeter.controllers.grouping.ModuleGroupController;
+import com.castsoftware.demeter.controllers.grouping.GroupingUtilsController;
+import com.castsoftware.demeter.controllers.grouping.architectures.ArchitectureGroupController;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.ProcedureException;
-import com.castsoftware.demeter.exceptions.file.FileNotFoundException;
-import com.castsoftware.demeter.exceptions.file.MissingFileException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.results.LongResult;
 import com.castsoftware.demeter.results.NodeResult;
-import com.castsoftware.demeter.results.OutputMessage;
-import com.castsoftware.demeter.results.demeter.CandidateFindingResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -105,6 +100,25 @@ public class ArchitectureProcedure {
 			Long numObj = ag.deleteArchi(architecture);
 
 			return Stream.of(new LongResult(numObj));
+
+		} catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+			ProcedureException ex = new ProcedureException(e);
+			log.error("An error occurred while executing the procedure", e);
+			throw ex;
+		}
+	}
+
+	@Procedure(value = "demeter.api.group.architectures.views.all", mode = Mode.WRITE)
+	@Description(
+			"demeter.api.group.architectures.views.all() - Group all the architectures view")
+	public Stream<NodeResult> groupInAllApplications()
+			throws ProcedureException {
+
+		try {
+			Neo4jAL nal = new Neo4jAL(db, transaction, log);
+			List<Node> nodeList = GroupingUtilsController.groupAllArchitecture(nal);
+
+			return nodeList.stream().map(NodeResult::new);
 
 		} catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
 			ProcedureException ex = new ProcedureException(e);

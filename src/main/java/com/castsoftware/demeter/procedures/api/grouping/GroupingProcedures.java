@@ -20,7 +20,7 @@
 package com.castsoftware.demeter.procedures.api.grouping;
 
 import com.castsoftware.demeter.controllers.api.GroupingController;
-import com.castsoftware.demeter.controllers.grouping.ArchitectureGroupController;
+import com.castsoftware.demeter.controllers.grouping.architectures.ArchitectureGroupController;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.ProcedureException;
 import com.castsoftware.demeter.exceptions.file.FileNotFoundException;
@@ -68,7 +68,7 @@ public class GroupingProcedures {
         try {
             String newPrefix = GroupingController.setLevelGroupPrefix(prefix);
             return Stream.of(new OutputMessage(newPrefix));
-        } catch (Exception | MissingFileException e) {
+        } catch (Exception | MissingFileException | FileNotFoundException e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
             throw ex;
@@ -131,27 +131,6 @@ public class GroupingProcedures {
         }
     }
 
-    // Group candidates
-    @Procedure(value = "demeter.api.get.candidate.levels", mode = Mode.WRITE)
-    @Description(
-            "demeter.api.get.candidate.levels(Optional String application) - Get the candidates for the level grouping")
-    public Stream<CandidateFindingResult> getCandidateLevelGrouping(@Name(value="Application", defaultValue = "") String application) throws ProcedureException {
-        try {
-            Neo4jAL neo4jAL = new Neo4jAL(db, transaction, log);
-            List<CandidateFindingResult> candidates;
-            if(application.isEmpty()) {
-                candidates = GroupingController.getCandidateApplicationsLevelGroup(neo4jAL);
-            } else {
-                candidates = GroupingController.getCandidateApplicationsLevelGroup(neo4jAL, application);
-            }
-
-            return candidates.stream();
-        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
-    }
 
 
     @Procedure(value = "demeter.api.get.candidate.modules", mode = Mode.WRITE)
@@ -174,21 +153,8 @@ public class GroupingProcedures {
         }
     }
 
-    @Procedure(value = "demeter.api.get.demeter.levels", mode = Mode.WRITE)
-    @Description(
-            "demeter.api.get.demeter.levels(String application) - Get the levels grouped by demeter in one application")
-    public Stream<DemeterGroupResult> getDemeterLevels(@Name(value="Application") String application) throws ProcedureException {
-        try {
-            Neo4jAL neo4jAL = new Neo4jAL(db, transaction, log);
-            List<DemeterGroupResult> levels = GroupingController.getDemeterLevels(neo4jAL, application);
 
-            return levels.stream();
-        } catch (Exception | Neo4jQueryException | Neo4jConnectionError e) {
-            ProcedureException ex = new ProcedureException(e);
-            log.error("An error occurred while executing the procedure", e);
-            throw ex;
-        }
-    }
+
 
     @Procedure(value = "demeter.api.get.demeter.modules", mode = Mode.WRITE)
     @Description(
