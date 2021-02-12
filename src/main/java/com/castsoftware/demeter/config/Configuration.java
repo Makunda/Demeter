@@ -119,11 +119,12 @@ public class Configuration {
    * @throws MissingFileException
    * @throws FileNotFoundException
    */
-  public static void setEverywhere(String key, String value) throws MissingFileException, FileNotFoundException {
+  public static String setEverywhere(String key, String value) throws MissingFileException, FileNotFoundException {
     UserConfiguration.set(key, value);
     UserConfiguration.saveAndReload();
 
     Configuration.set(key, value);
     Configuration.saveAndReload();
+    return value;
   }
 }

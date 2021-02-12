@@ -96,7 +96,7 @@ public class GroupingProcedures {
         try {
             String newPrefix = GroupingController.setModuleGroupPrefix(prefix);
             return Stream.of(new OutputMessage(newPrefix));
-        } catch (Exception | MissingFileException e) {
+        } catch (Exception | MissingFileException | FileNotFoundException e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
             throw ex;

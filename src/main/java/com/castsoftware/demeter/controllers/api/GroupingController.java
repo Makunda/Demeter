@@ -63,7 +63,7 @@ public class GroupingController {
      * @return
      */
     public static String getModuleGroupPrefix() {
-        return UserConfiguration.get("demeter.prefix.module_group");
+        return Configuration.getBestOfALl("demeter.prefix.module_group");
     }
 
     /**
@@ -72,8 +72,8 @@ public class GroupingController {
      * @return
      * @throws MissingFileException
      */
-    public static String setModuleGroupPrefix(String prefix) throws MissingFileException {
-        return UserConfiguration.set("demeter.prefix.module_group", prefix);
+    public static String setModuleGroupPrefix(String prefix) throws MissingFileException, FileNotFoundException {
+        return Configuration.setEverywhere("demeter.prefix.module_group", prefix);
     }
 
     // View prefix
@@ -91,8 +91,8 @@ public class GroupingController {
      * @param prefix New prefix for the grouping
      * @return
      */
-    public static String setViewGroupPrefix(String prefix) throws MissingFileException {
-        return UserConfiguration.set("demeter.prefix.view_group", prefix);
+    public static String setViewGroupPrefix(String prefix) throws MissingFileException, FileNotFoundException {
+        return Configuration.setEverywhere("demeter.prefix.view_group", prefix);
     }
 
     // Architecture prefix
@@ -102,7 +102,7 @@ public class GroupingController {
      * @return
      */
     public static String getArchitectureGroupPrefix() {
-        return UserConfiguration.get("demeter.prefix.architecture_group");
+        return Configuration.getBestOfALl("demeter.prefix.architecture_group");
     }
 
     /**
@@ -110,8 +110,8 @@ public class GroupingController {
      * @param prefix New prefix for the grouping
      * @return
      */
-    public static String getArchitectureGroupPrefix(String prefix) throws MissingFileException {
-        return UserConfiguration.set("demeter.prefix.architecture_group", prefix);
+    public static String getArchitectureGroupPrefix(String prefix) throws MissingFileException, FileNotFoundException {
+        return Configuration.setEverywhere("demeter.prefix.architecture_group", prefix);
     }
 
 

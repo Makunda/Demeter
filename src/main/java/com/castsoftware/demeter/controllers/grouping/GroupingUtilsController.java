@@ -41,7 +41,7 @@ public class GroupingUtilsController {
 	 * @param neo4jAL Neo
 	 * @return
 	 */
-	private static  List<Node> groupInAllApplications(Neo4jAL neo4jAL,  Class<? extends AGrouping> controller, String prefix) throws Neo4jQueryException {
+	private static List<String> getCandidatesApplications(Neo4jAL neo4jAL,  Class<? extends AGrouping> controller, String prefix) throws Neo4jQueryException {
 
 		String applicationReq =
 				"MATCH (o:Object) WHERE EXISTS (o.Tags) AND any(x in o.Tags WHERE x CONTAINS $tagPrefix) "
@@ -49,23 +49,10 @@ public class GroupingUtilsController {
 		Map<String, Object> params = Map.of("tagPrefix", prefix);
 
 		Result res = neo4jAL.executeQuery(applicationReq, params);
-		List<Node> fullResults = new ArrayList<>();
+		List<String> fullResults = new ArrayList<>();
 
-		// Parse all the applications
-		Class[] cArg = new Class[2];
-		cArg[0] = Neo4jAL.class;
-		cArg[1] = String.class;
-
-		String application;
 		while (res.hasNext()) {
-			application = (String) res.next().get("application");
-
-			try {
-				AGrouping instance = controller.getDeclaredConstructor(cArg).newInstance(neo4jAL, application);
-				fullResults.addAll(instance.launch());
-			} catch (Exception | Neo4jBadRequestException e) {
-				neo4jAL.logError(String.format("Failed to group application %s", application), e);
-			}
+			fullResults.add((String) res.next().get("application"));
 		}
 
 		return fullResults;
@@ -74,12 +61,31 @@ public class GroupingUtilsController {
 	// Modules
 	public static List<Node> groupAllModules(Neo4jAL neo4jAL) throws Neo4jQueryException {
 		String prefix = Configuration.getBestOfALl("demeter.prefix.module_group");
-		return groupInAllApplications(neo4jAL, ModuleGroupController.class, prefix);
+		List<Node> res = new ArrayList<>();
+
+		for(String application : getCandidatesApplications(neo4jAL, ModuleGroupController.class, prefix)) {
+			try {
+				res.addAll((new ModuleGroupController(neo4jAL, application)).launch());
+			} catch (Neo4jBadRequestException e) {
+				neo4jAL.logError(String.format("Failed to execute module grouping on application %s", application), e);
+			}
+		}
+		return res;
 	}
 
 	// Architectures
 	public static  List<Node> groupAllArchitecture(Neo4jAL neo4jAL) throws  Neo4jQueryException{
 		String prefix = Configuration.getBestOfALl("demeter.prefix.architecture_group");
-		return groupInAllApplications(neo4jAL, ArchitectureGroupController.class, prefix);
+		List<Node> res = new ArrayList<>();
+
+		for(String application : getCandidatesApplications(neo4jAL, ModuleGroupController.class, prefix)) {
+			try {
+				res.addAll((new ArchitectureGroupController(neo4jAL, application)).launch());
+			} catch (Neo4jBadRequestException e) {
+				neo4jAL.logError(String.format("Failed to execute module grouping on application %s", application), e);
+			}
+		}
+
+		return res;
 	}
 }
