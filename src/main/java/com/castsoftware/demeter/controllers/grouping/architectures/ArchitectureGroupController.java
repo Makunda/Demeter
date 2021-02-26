@@ -103,7 +103,7 @@ public class ArchitectureGroupController extends AGrouping {
     // Get nodes under the subModel
     String reqDelSubset =
         String.format(
-            "MATCH (s:Subset:`%s`) WHERE o.Name=$nameSubset " + "DETACH DELETE s ",
+            "MATCH (s:Subset:`%s`) WHERE s.Name=$nameSubset DETACH DELETE s ",
             applicationContext);
     neo4jAL.executeQuery(reqDelSubset, params);
 
@@ -121,36 +121,67 @@ public class ArchitectureGroupController extends AGrouping {
   private void refreshSubset() throws Neo4jQueryException {
     String reqRefreshCount =
         String.format(
-            "MATCH (s:Subset:`%s`)-[:Contains]->(o:Object) WHERE o:Object OR o:SubObject WITH s, COUNT(o) as tot SET s.Count=tot",
+            "MATCH (s:Subset:`%s`) " +
+            "WITH s " +
+            "MATCH (s)-[:Contains]->(o:Object) " +
+            "WITH s, COUNT(o) as tot SET s.Count=tot RETURN s as subset, tot as total",
+
             applicationContext);
-    neo4jAL.executeQuery(reqRefreshCount);
+    Result res = neo4jAL.executeQuery(reqRefreshCount);
+    if(res.hasNext()) {
+      Map<String, Object> results = res.next();
+      Long count = (Long) results.get("total");
+      Node n = (Node) results.get("subset");
+
+      if(count == 0L) n.delete();
+    }
 
     String refreshLinkReq =
         String.format("MATCH (n:Subset:`%1$s`)--(int)-->(int2)--(l:Subset:`%1$s`) WHERE ID(n)<>ID(l) AND (int:Object OR int:SubObject) AND (int2:Object OR int2:SubObject) "
                     + "MERGE (n)-[:References]->(l)", applicationContext);
     neo4jAL.executeQuery(refreshLinkReq);
+    String refreshConnections =
+            String.format("MATCH (n:Subset:`%1$s`)-[]->(o) WHERE NOT (n)<-[]-(:ArchiModel) AND (o:Object OR o:SubObject) "
+                    + "SET o.Subset = [ x in o.Subset WHERE NOT x=n.Name ] DETACH DELETE n", applicationContext);
+    neo4jAL.executeQuery(refreshConnections);
   }
 
   /** Refresh Archi models in the application */
   private void refreshArchiModel() throws Neo4jQueryException {
     String reqRefreshCount =
         String.format(
-            "MATCH (s:ArchiModel:`%s`)-[:Contains]->(o:Subset) WITH s, SUM(o.Count) as tot SET s.Count=tot;",
+            "MATCH (s:ArchiModel:`%s`) " +
+            "WITH s " +
+            "MATCH (s)-[:Contains]->(o:Subset) WITH s, SUM(o.Count) as tot SET s.Count=tot RETURN s as archi, tot as total;",
             applicationContext);
-    neo4jAL.executeQuery(reqRefreshCount);
+    Result res = neo4jAL.executeQuery(reqRefreshCount);
+    if(res.hasNext()) {
+      Map<String, Object> results = res.next();
+      Long count = (Long) results.get("total");
+      Node n = (Node) results.get("archi");
+
+      if(count == 0L) n.delete();
+    }
+
+
   }
 
+  /**
+   * Clean one specific tag from all the objects
+   * @param tag
+   * @throws Neo4jQueryException
+   */
   private void cleanOneTag(String tag) throws Neo4jQueryException {
     String removeTagsQuery =
         String.format(
-            "MATCH (o:`%1$s`) WHERE EXISTS(o.Tags)  SET o.Tags = [ x IN o.Tags WHERE NOT x CONTAINS $tag ] RETURN COUNT(o) as removedTags;",
+            "MATCH (o:`%1$s`) WHERE EXISTS(o.Tags) SET o.Tags = [ x IN o.Tags WHERE NOT x=$tag ] RETURN DISTINCT COLLECT(o.Tags) as removedTags;",
             applicationContext);
     Map<String, Object> params = Map.of("tag", tag);
     neo4jAL.executeQuery(removeTagsQuery, params);
     neo4jAL.logError(
         String.format(
-            "Architecture Tag '%s' was not in a good format, and was removed from the database.",
-            applicationContext));
+            "Architecture Tag [ %s ] in application '%s' was not in a good format, and was removed from the database.",
+                tag, applicationContext));
   }
 
   @Override

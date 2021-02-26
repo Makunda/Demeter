@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.castsoftware</groupId>
   <artifactId>demeter-extension</artifactId>
-  <version>2.3.3</version>
+  <version>2.4.1</version>
   <build>
     <resources>
       <resource>

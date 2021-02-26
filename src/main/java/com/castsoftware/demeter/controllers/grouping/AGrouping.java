@@ -95,7 +95,7 @@ public abstract class AGrouping {
 			groupMap.get(group).add(node);
 		}
 
-		neo4jAL.logInfo(groupMap.size() + " module groups were identified.");
+		neo4jAL.logInfo(String.format("%d module groups (Prefix: %s) were identified.", groupMap.size(), getTagPrefix()));
 		return groupMap;
 	}
 

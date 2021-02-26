@@ -107,7 +107,7 @@ public class LevelGroupController {
    * Clean the application from the Demeter tags
    *
    * @param neo4jAL
-   * @param applicationContext
+   * @param applicationContextW
    * @throws Neo4jQueryException
    */
   public static void clean(Neo4jAL neo4jAL, String applicationContext) throws Neo4jQueryException {
