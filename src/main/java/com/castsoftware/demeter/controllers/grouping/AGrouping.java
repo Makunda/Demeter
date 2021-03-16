@@ -59,8 +59,20 @@ public abstract class AGrouping {
 
 		// Clean tags
 		cleanTags();
+		return nodes;
+	}
 
+	public List<Node> launchWithoutClean() throws Neo4jQueryException, Neo4jBadRequestException {
+		List<Node> nodes = new ArrayList<>();
+		Map<String, List<Node>> mapNode = getGroupList();
 
+		for (Map.Entry<String, List<Node>> entry : mapNode.entrySet()) {
+			Node n = group(entry.getKey(), entry.getValue());
+			nodes.add(n);
+		}
+
+		// Refresh
+		refresh();
 		return nodes;
 	}
 
@@ -75,7 +87,7 @@ public abstract class AGrouping {
 				String.format(
 						"MATCH (o:`%1$s`) WHERE any( x in o.Tags WHERE x CONTAINS $tagPrefix)  "
 								+ "WITH o, [x in o.Tags WHERE x CONTAINS $tagPrefix][0] as g "
-								+ "RETURN o as node, g as group;",
+								+ "RETURN DISTINCT o as node, g as group;",
 						applicationContext);
 		Map<String, Object> params = Map.of("tagPrefix", getTagPrefix());
 
@@ -96,7 +108,11 @@ public abstract class AGrouping {
 		}
 
 		neo4jAL.logInfo(String.format("%d module groups (Prefix: %s) were identified.", groupMap.size(), getTagPrefix()));
-		return groupMap;
+		for (String l : groupMap.keySet()) {
+			neo4jAL.logInfo(String.format("Group name : %s and size : %d", l, groupMap.get(l).size()));
+		}
+
+    	return groupMap;
 	}
 
 	/**

@@ -137,7 +137,8 @@ public class ArchitectureGroupController extends AGrouping {
     }
 
     String refreshLinkReq =
-        String.format("MATCH (n:Subset:`%1$s`)--(int)-->(int2)--(l:Subset:`%1$s`) WHERE ID(n)<>ID(l) AND (int:Object OR int:SubObject) AND (int2:Object OR int2:SubObject) "
+        String.format("MATCH (a:ArchiModel:`%1$s`) WITH a " +
+                "MATCH (a)-->(n:Subset:`%1$s`)--(int)-->(int2)--(l:Subset:`%1$s`)<--(a) WHERE ID(n)<>ID(l) AND (int:Object OR int:SubObject) AND (int2:Object OR int2:SubObject) "
                     + "MERGE (n)-[:References]->(l)", applicationContext);
     neo4jAL.executeQuery(refreshLinkReq);
     String refreshConnections =
@@ -184,6 +185,42 @@ public class ArchitectureGroupController extends AGrouping {
                 tag, applicationContext));
   }
 
+  /**
+   * Refresh the connection of nodes present in the subset
+   * @param nodeList
+   * @param idSubset
+   * @param nameSubset
+   * @throws Neo4jQueryException
+   */
+  protected void refreshNodes(List<Node> nodeList, Long idSubset, String nameSubset) throws Neo4jQueryException {
+    Map<String, Object> paramsNode;
+    for (Node rObject : nodeList) {
+      // Link objects
+      paramsNode = Map.of("idObj", rObject.getId(), "idSubset", idSubset, "subsetName", nameSubset);
+
+      String reObj =
+              String.format(
+                      "MATCH (o:Object:`%s`) WHERE ID(o)=$idObj "
+                              + "SET o.Subset = CASE WHEN o.Subset IS NULL THEN [$subsetName] ELSE o.Subset + $subsetName END "
+                              + "WITH o as obj "
+                              + "MATCH (newS:Subset) WHERE ID(newS)=$idSubset "
+                              + "MERGE (newS)-[:Contains]->(obj) ",
+                      applicationContext);
+
+      String subObj =
+              String.format(
+                      "MATCH (o:Object:`%s`)<-[:BELONGTO]-(j:SubObject) WHERE ID(o)=$idObj "
+                              + "SET j.Subset = CASE WHEN j.Subset IS NULL THEN [$subsetName] ELSE o.Subset + $subsetName END "
+                              + "WITH j "
+                              + "MATCH (newS:Subset) WHERE ID(newS)=$idSubset MERGE (newS)-[:Contains]->(j)  ",
+                      applicationContext);
+
+      neo4jAL.executeQuery(reObj, paramsNode);
+      neo4jAL.executeQuery(subObj, paramsNode);
+    }
+
+  }
+
   @Override
   public String getTagPrefix() {
     return getPrefix();
@@ -210,6 +247,7 @@ public class ArchitectureGroupController extends AGrouping {
 
     String nameView = cleanedGroupName[0];
     String nameSubset = cleanedGroupName[1];
+    neo4jAL.logInfo(String.format("DEBUG :: Group Name creating : %s -> %s", nameView, nameSubset));
 
     // Create archi model
     String modelIdReq =
@@ -227,7 +265,7 @@ public class ArchitectureGroupController extends AGrouping {
       }
     }
 
-    // Merge & update
+    // Merge & update Archi model
     String req =
         String.format(
             "MERGE (n:ArchiModel:`%s` { Type:'archimodel', Color:'rgb(34,199,214)',Name:$groupName} ) "
@@ -261,61 +299,59 @@ public class ArchitectureGroupController extends AGrouping {
       }
     }
 
-    // Merge the relationship between the Archi model and the subSet
-    String reqSubset =
-        String.format(
-            "MERGE (n:Subset:`%s` { Type:'subset', Color:'rgb(34,199,214)',Name:$groupName } ) "
-                + "SET n.ModelId= $maxModelID  "
-                + "SET n.Count=CASE WHEN EXISTS(n.Count) THEN n.Count + $count ELSE $count END SET n.SubsetId=$subsetID "
-                + "WITH n as node "
-                + "MATCH (n:ArchiModel:`%1$s`) WHERE ID(n)=$idArchi MERGE (n)-[:Contains]->(node) "
-                + "RETURN node as node;",
-            applicationContext);
+    // Subset parameters
     Map<String, Object> paramsSubset =
-        Map.of(
-            "groupName",
-            nameSubset,
-            "count",
-            new Long(nodeList.size()),
-            "maxModelID",
-            maxId.toString(),
-            "subsetID",
-            maxIdSub.toString(),
-            "idArchi",
-            new Long(archiNode.getId()));
-    Result resSubset = neo4jAL.executeQuery(reqSubset, paramsSubset);
+            Map.of(
+                    "groupName",
+                    nameSubset,
+                    "count",
+                    new Long(nodeList.size()),
+                    "maxModelID",
+                    maxId.toString(),
+                    "subsetID",
+                    maxIdSub.toString(),
+                    "idArchi",
+                    new Long(archiNode.getId()));
 
-    Node subsetNode = (Node) resSubset.next().get("node");
+
+    // Verify if the subset already exists
+    String reqSubsetExists = String.format("MATCH (archi:ArchiModel:`%1$s`)-[:Contains]->(n:Subset:`%s`) WHERE ID(archi)=$idArchi AND n.Name=$groupName " +
+                "RETURN n as sub", applicationContext);
+    Result resSubsetExist = neo4jAL.executeQuery(reqSubsetExists, paramsSubset);
+
+    Node subsetNode = null;
+    if(resSubsetExist.hasNext()) {
+      // Subset already exists Update
+      neo4jAL.logInfo(String.format("Subset '%s' already exists for subset with id: %d.", nameSubset, maxId));
+      subsetNode = (Node) resSubsetExist.next().get("sub");
+      subsetNode.setProperty("ModelId",maxId.toString());
+      subsetNode.setProperty("SubsetId",maxIdSub.toString());
+
+      Long count = subsetNode.hasProperty("Count") ? (Long) subsetNode.getProperty("Count") : 0L;
+      subsetNode.setProperty("Count", count + nodeList.size());
+
+    } else {
+      // Merge the relationship between the Archi model and the subSet
+      String reqSubset =
+              String.format(
+                      "CREATE (n:Subset:`%s` { Type:'subset', Color:'rgb(34,199,214)',Name:$groupName } ) "
+                              + "SET n.ModelId= $maxModelID "
+                              + "SET n.Count=CASE WHEN EXISTS(n.Count) THEN n.Count + $count ELSE $count END SET n.SubsetId=$subsetID "
+                              + "WITH n as node "
+                              + "MATCH (archi:ArchiModel:`%1$s`) WHERE ID(archi)=$idArchi MERGE (archi)-[:Contains]->(node) " +
+                              "RETURN node as node",
+                      applicationContext);
+
+      Result resSubset = neo4jAL.executeQuery(reqSubset, paramsSubset);
+
+      subsetNode = (Node) resSubset.next().get("node");
+    }
+
     Long idSubset = new Long(subsetNode.getId());
-
     neo4jAL.logInfo("Subset node with ID :" + idSubset);
 
     // Add the objects and the SubObjects to the subset
-    Map<String, Object> paramsNode;
-    for (Node rObject : nodeList) {
-      // Link objects
-      paramsNode = Map.of("idObj", rObject.getId(), "idSubset", idSubset, "subsetName", nameSubset);
-
-      String reObj =
-          String.format(
-              "MATCH (o:Object:`%s`) WHERE ID(o)=$idObj "
-                  + "SET o.Subset = CASE WHEN o.Subset IS NULL THEN [$subsetName] ELSE o.Subset + $subsetName END "
-                  + "WITH o as obj "
-                  + "MATCH (newS:Subset) WHERE ID(newS)=$idSubset "
-                  + "MERGE (newS)-[:Contains]->(obj) ",
-              applicationContext);
-
-      String subObj =
-          String.format(
-              "MATCH (o:Object:`%s`)<-[:BELONGTO]-(j:SubObject) WHERE ID(o)=$idObj "
-                  + "SET j.Subset = CASE WHEN j.Subset IS NULL THEN [$subsetName] ELSE o.Subset + $subsetName END "
-                  + "WITH j "
-                  + "MATCH (newS:Subset) WHERE ID(newS)=$idSubset MERGE (newS)-[:Contains]->(j)  ",
-              applicationContext);
-
-      neo4jAL.executeQuery(reObj, paramsNode);
-      neo4jAL.executeQuery(subObj, paramsNode);
-    }
+    refreshNodes(nodeList, idSubset, nameSubset);
 
     return subsetNode;
   }

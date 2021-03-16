@@ -17,7 +17,7 @@
  *
  */
 
-package com.castsoftware.demeter.procedures.grouping;
+package com.castsoftware.demeter.procedures.grouping.architecture;
 
 import com.castsoftware.demeter.controllers.grouping.GroupingUtilsController;
 import com.castsoftware.demeter.controllers.grouping.architectures.ArchitectureGroupController;
