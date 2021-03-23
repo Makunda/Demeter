@@ -229,8 +229,10 @@ public class MicroserviceController extends ArchitectureGroupController {
           Node out = rel.getOtherNode(treat);
           toVisit.add(out);
         }
+
+        processedOne++;
       }
-      processedOne++;
+
     }
 
     neo4jAL.logInfo(

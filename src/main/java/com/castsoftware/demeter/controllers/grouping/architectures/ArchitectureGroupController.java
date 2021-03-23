@@ -133,18 +133,25 @@ public class ArchitectureGroupController extends AGrouping {
       Long count = (Long) results.get("total");
       Node n = (Node) results.get("subset");
 
-      if(count == 0L) n.delete();
+      if(count == 0L) {
+        n.delete();
+      }
     }
 
     String refreshLinkReq =
-        String.format("MATCH (a:ArchiModel:`%1$s`) WITH a " +
-                "MATCH (a)-->(n:Subset:`%1$s`)--(int)-->(int2)--(l:Subset:`%1$s`)<--(a) WHERE ID(n)<>ID(l) AND (int:Object OR int:SubObject) AND (int2:Object OR int2:SubObject) "
-                    + "MERGE (n)-[:References]->(l)", applicationContext);
+        String.format(
+            "MATCH (a:ArchiModel:`%1$s`) WITH a "
+                + "MATCH (a)-[]->(n:Subset:`%1$s`)-->(int)-->(int2)<--(l:Subset:`%1$s`) WHERE ID(n)<>ID(l) AND (int:Object OR int:SubObject) AND (int2:Object OR int2:SubObject) "
+                + "MERGE (n)-[:References]->(l);",
+            applicationContext);
     neo4jAL.executeQuery(refreshLinkReq);
+    neo4jAL.logInfo("Subset were refreshed..");
+
     String refreshConnections =
             String.format("MATCH (n:Subset:`%1$s`)-[]->(o) WHERE NOT (n)<-[]-(:ArchiModel) AND (o:Object OR o:SubObject) "
                     + "SET o.Subset = [ x in o.Subset WHERE NOT x=n.Name ] DETACH DELETE n", applicationContext);
     neo4jAL.executeQuery(refreshConnections);
+    neo4jAL.logInfo("Subset Connections were refreshed..");
   }
 
   /** Refresh Archi models in the application */
@@ -163,6 +170,7 @@ public class ArchitectureGroupController extends AGrouping {
 
       if(count == 0L) n.delete();
     }
+    neo4jAL.logInfo("Archi model was refreshed..");
 
 
   }

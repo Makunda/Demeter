@@ -55,9 +55,11 @@ public abstract class AGrouping {
 		}
 
 		// Refresh
+		neo4jAL.logInfo("Start refreshing views...");
 		refresh();
 
 		// Clean tags
+		neo4jAL.logInfo("Cleaning tags...");
 		cleanTags();
 		return nodes;
 	}
