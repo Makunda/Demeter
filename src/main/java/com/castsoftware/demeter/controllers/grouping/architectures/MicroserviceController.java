@@ -19,7 +19,10 @@
 
 package com.castsoftware.demeter.controllers.grouping.architectures;
 
+import com.castsoftware.demeter.config.Configuration;
 import com.castsoftware.demeter.database.Neo4jAL;
+import com.castsoftware.demeter.exceptions.file.FileNotFoundException;
+import com.castsoftware.demeter.exceptions.file.MissingFileException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
@@ -31,6 +34,10 @@ public class MicroserviceController extends ArchitectureGroupController {
 
   public MicroserviceController(Neo4jAL neo4jAL, String applicationContext) {
     super(neo4jAL, applicationContext);
+  }
+
+  public static String getPrefix() {
+    return Configuration.getBestOfALl("demeter.prefix.microservice_group");
   }
 
   // Override the groups
@@ -72,40 +79,6 @@ public class MicroserviceController extends ArchitectureGroupController {
     return groupMap;
   }
 
-  public void addObjectToSubset(
-      Neo4jAL neo4jAL,
-      Long idSubset,
-      String nameSubset,
-      List<Node> nodeList,
-      String applicationContext)
-      throws Neo4jQueryException {
-    // Add the objects and the SubObjects to the subset
-    Map<String, Object> paramsNode;
-    for (Node rObject : nodeList) {
-      // Link objects
-      paramsNode = Map.of("idObj", rObject.getId(), "idSubset", idSubset, "subsetName", nameSubset);
-
-      String reObj =
-          String.format(
-              "MATCH (o:Object:`%s`) WHERE ID(o)=$idObj "
-                  + "SET o.Subset = CASE WHEN o.Subset IS NULL THEN [$subsetName] ELSE o.Subset + $subsetName END "
-                  + "WITH o as obj "
-                  + "MATCH (newS:Subset) WHERE ID(newS)=$idSubset "
-                  + "MERGE (newS)-[:Contains]->(obj) ",
-              applicationContext);
-
-      String subObj =
-          String.format(
-              "MATCH (o:Object:`%s`)<-[:BELONGTO]-(j:SubObject) WHERE ID(o)=$idObj "
-                  + "SET j.Subset = CASE WHEN j.Subset IS NULL THEN [$subsetName] ELSE o.Subset + $subsetName END "
-                  + "WITH j "
-                  + "MATCH (newS:Subset) WHERE ID(newS)=$idSubset MERGE (newS)-[:Contains]->(j)  ",
-              applicationContext);
-
-      neo4jAL.executeQuery(reObj, paramsNode);
-      neo4jAL.executeQuery(subObj, paramsNode);
-    }
-  }
 
   /**
    * Get the objects under the architecture model
@@ -242,35 +215,46 @@ public class MicroserviceController extends ArchitectureGroupController {
     return visited;
   }
 
+  @Override
+  public String getTagPrefix() {
+    return getPrefix();
+  }
+
+  @Override
+  public void setTagPrefix(String value) throws FileNotFoundException, MissingFileException {
+    setPrefix(value);
+  }
+
   public void extractMicroservice(String architecturePrefix)
       throws Neo4jQueryException, Neo4jBadRequestException {
 
     // Get all node controllers
     String req =
         String.format(
-            "MATCH (obj:Object:`%1$s`) WHERE obj.Name CONTAINS 'Controller' AND obj.Level='C# Presentation' RETURN obj as controller ORDER BY obj.Name",
+            "MATCH (obj:Object:`%1$s`) WHERE any([x in obj.Tags WHERE NOT x  STARTS WITH $tagName]) RETURN obj as node ORDER BY obj.Name",
             applicationContext);
+    Map<String, Object> reqGather = Map.of("tagName", getPrefix());
     Result res = neo4jAL.executeQuery(req);
 
-    List<Node> controllers = new ArrayList<>();
+    List<Node> candidates = new ArrayList<>();
     while (res.hasNext()) {
-      controllers.add((Node) res.next().get("controller"));
+      candidates.add((Node) res.next().get("node"));
     }
 
-    neo4jAL.logInfo(String.format("Detected %d controllers", controllers.size()));
+    neo4jAL.logInfo(String.format("Detected %d candidates", candidates.size()));
 
     List<String> createdArchiModels = new ArrayList<>();
-    long processed = 0L;
+
     long uniqueId = 0L;
-    for (Node con : controllers) {
+    for (Node con : candidates) {
       neo4jAL.logInfo("Processing node: " + con.getProperty("Name"));
       // forge name
       String uniqueArchi = String.format("%s-%d", architecturePrefix, uniqueId);
-      String microserviceName = ((String) con.getProperty("Name")).replace("Controller", "");
+      String microserviceName = ((String) con.getProperty("Name"));
       String microserviceFullName = uniqueArchi + " " + microserviceName + " Microservice$";
 
       // Flag
-      processed += flagNode(microserviceFullName, con, Direction.OUTGOING).size();
+      flagNode(microserviceFullName, con, Direction.OUTGOING).size();
       // processed += flagNode(microserviceFullName, con, Direction.INCOMING).size();
       uniqueId++;
 
@@ -283,7 +267,7 @@ public class MicroserviceController extends ArchitectureGroupController {
           String.format(
               "MATCH(o:Object:`%1$s`) WHERE EXISTS(o.Tags) SET o.Tags=[x in o.Tags WHERE NOT x  STARTS WITH $tagName]",
               applicationContext);
-      Map<String, Object> paramsTag = Map.of("tagName", "$a_" + microserviceFullName);
+      Map<String, Object> paramsTag = Map.of("tagName", getPrefix() + microserviceFullName);
       neo4jAL.logInfo("Cleaning launched for : " + con.getProperty("Name"));
       neo4jAL.executeQuery(removeTag, paramsTag);
 
