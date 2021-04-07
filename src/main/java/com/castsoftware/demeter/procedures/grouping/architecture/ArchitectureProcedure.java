@@ -127,4 +127,23 @@ public class ArchitectureProcedure {
 		}
 	}
 
+	@Procedure(value = "demeter.api.refresh.architecture", mode = Mode.WRITE)
+	@Description(
+			"demeter.api.refresh.architecture(String application, String architecture) - Refresh and recalculate the link of one architecture.")
+	public void refreshArchitectureView(@Name(value = "ApplicationName") String applicationName,
+							@Name(value = "architecture") String architectureName)
+			throws ProcedureException {
+
+		try {
+			Neo4jAL nal = new Neo4jAL(db, transaction, log);
+			GroupingUtilsController.refreshArchitecture(nal, applicationName, architectureName);
+
+		} catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+			ProcedureException ex = new ProcedureException(e);
+			log.error("An error occurred while executing the procedure", e);
+			throw ex;
+		}
+	}
+
+
 }

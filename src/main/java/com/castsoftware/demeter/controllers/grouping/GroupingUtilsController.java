@@ -88,4 +88,18 @@ public class GroupingUtilsController {
 
 		return res;
 	}
+
+	/**
+	 * Refresh a specific architecture in the application
+	 * @param neo4jAL Neo4j access layer
+	 * @param application Name of the application
+	 * @param archiName Architecture name
+	 * @throws Neo4jQueryException
+	 */
+	public static void refreshArchitecture(Neo4jAL neo4jAL, String application, String archiName) throws  Neo4jQueryException{
+		ArchitectureGroupController ag = new ArchitectureGroupController(neo4jAL, application);
+
+		ag.refreshSubset(archiName);
+		ag.refreshArchiModel(archiName);
+	}
 }

@@ -27,22 +27,18 @@ import com.castsoftware.demeter.exceptions.file.MissingFileException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.Transaction;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ArchitectureGroupController extends AGrouping {
 
+  private final Set<String> createdArchitectures ;
+
+
   public ArchitectureGroupController(Neo4jAL neo4jAL, String applicationContext) {
     super(neo4jAL, applicationContext);
-  }
-
-  public static String getPrefix() {
-    return Configuration.getBestOfALl("demeter.prefix.architecture_group");
-  }
-
-  public static void setPrefix(String value) throws FileNotFoundException, MissingFileException {
-    Configuration.setEverywhere("demeter.prefix.architecture_group", value);
+    createdArchitectures = new HashSet<>();
   }
 
   /**
@@ -79,6 +75,111 @@ public class ArchitectureGroupController extends AGrouping {
     refresh();
 
     return numRemoved;
+  }  public static String getPrefix() {
+    return Configuration.getBestOfALl("demeter.prefix.architecture_group");
+  }
+
+  /**
+   * Refresh the subsets in the application
+   *
+   * @throws Neo4jQueryException
+   */
+  public void refreshSubset(String architectureName) throws Neo4jQueryException {
+
+    // Match all subset in the architecture
+    String reqRefreshCount =
+        String.format(
+            "MATCH  (a:ArchiModel:`%1$s`)-[]->(s:Subset:`%1$s`) WHERE a.Name=$archiName " +
+            "WITH s " +
+            "MATCH (s)-[:Contains]->(o:Object) " +
+            "WITH s, COUNT(o) as tot SET s.Count=tot RETURN s as subset, tot as total",
+
+            applicationContext);
+    Map<String, Object> parameters = Map.of("archiName", architectureName);
+    Result res = neo4jAL.executeQuery(reqRefreshCount, parameters);
+
+    if(res.hasNext()) {
+      Map<String, Object> results = res.next();
+      Long count = (Long) results.get("total");
+      Node n = (Node) results.get("subset");
+
+      if(count == 0L) {
+        n.delete();
+      }
+    }
+
+    // Generate random tag
+
+    StringBuilder generatedString = new StringBuilder();
+    Random r = new Random();
+    String alphabet = "123456789azertyuiiopqsdfghjklmwxcvbnxyz";
+    for (int i = 0; i < 10; i++) {
+      generatedString.append(alphabet.charAt(r.nextInt(alphabet.length())));
+    }
+
+    neo4jAL.logInfo("Flagging objects and subObjects ...");
+    // Get Subsets and objects, flag objects
+    String req = String.format("MATCH (a:ArchiModel:`%1$s`)  WHERE a.Name=$archiName " +
+                "WITH a MATCH (a)-[]->(s:Subset:`%1$s`)-[]->(o) WHERE (o:Object OR o:SubObject) " +
+                "SET o.TempSubset_%2$s=s.Name SET o.Subset = [ x in o.Subset WHERE NOT x=s.Name ];", applicationContext, generatedString.toString());
+    neo4jAL.executeQuery(req, parameters);
+
+    neo4jAL.logInfo("Getting relationships ...");
+    // Linking subset
+    String req2 = String.format("MATCH (o:`%1$s`)-[]->(o2:`%1$s`) WHERE NOT o.TempSubset_%2$s=o2.TempSubset_%2$s " +
+            "AND (o:Object OR o:SubObject) AND (o2:Object OR o2:SubObject) " +
+          "RETURN DISTINCT o.TempSubset_%2$s as source_module, o2.TempSubset_%2$s as target_module", applicationContext, generatedString.toString());
+
+    Result res2 = neo4jAL.executeQuery(req2, parameters);
+    if(!res.hasNext()) neo4jAL.logInfo("No subset to relink.");
+
+    while (res2.hasNext()) {
+      Map<String, Object> t = res2.next();
+      neo4jAL.logInfo(String.format("Create references between subset : '%s' and subset '%s'.",  t.get("source_module"), t.get("target_module")));
+
+      String reqRel = String.format("MATCH (a:ArchiModel:`%1$s`)-[]->(s:Subset:`%1$s`), (a:ArchiModel:`%1$s`)-[]->(s2:Subset:`%1$s`) WHERE a.Name=$archiName " +
+                    "AND s.Name=$subsetSource AND s2.Name=$subsetTarget " +
+                    "MERGE (s)-[:References]->(s2)", applicationContext);
+      Map<String, Object> params = Map.of("archiName", architectureName, "subsetSource",  t.get("source_module"), "subsetTarget", t.get("target_module"));
+      neo4jAL.executeQuery(reqRel, params);
+    }
+
+
+    // Clean temp tags
+    String removeTagReq = String.format("MATCH (o:`%1$s`) WHERE (o:Object OR o:SubObject) AND EXISTS(o.TempSubset_%2$s) REMOVE o.TempSubset_%2$s", applicationContext, generatedString.toString());
+    neo4jAL.executeQuery(removeTagReq);
+
+
+    /*String refreshConnections =
+            String.format("MATCH (a:ArchiModel:`%1$s`)-[]->(n:Subset:`%1$s`)-[]->(o) WHERE a.Name=$archiName AND NOT (n)<-[]-(:ArchiModel) AND (o:Object OR o:SubObject) "
+                    + "SET o.Subset = [ x in o.Subset WHERE NOT x=n.Name ] DETACH DELETE n", applicationContext);
+    neo4jAL.executeQuery(refreshConnections, parameters);*/
+    neo4jAL.logInfo("Subsets Connections were refreshed..");
+  }  public static void setPrefix(String value) throws FileNotFoundException, MissingFileException {
+    Configuration.setEverywhere("demeter.prefix.architecture_group", value);
+  }
+
+  /** Refresh Archi models in the application */
+  public void refreshArchiModel(String architectureName) throws Neo4jQueryException {
+    String reqRefreshCount =
+        String.format(
+            "MATCH (s:ArchiModel:`%s`) WHERE s.Name=$archiName  " +
+            "WITH s " +
+            "MATCH (s)-[:Contains]->(o:Subset) WITH s, SUM(o.Count) as tot SET s.Count=tot RETURN s as archi, tot as total;",
+            applicationContext);
+    Map<String, Object> parameters = Map.of("archiName", architectureName);
+    Result res = neo4jAL.executeQuery(reqRefreshCount, parameters);
+
+    if(res.hasNext()) {
+      Map<String, Object> results = res.next();
+      Long count = (Long) results.get("total");
+      Node n = (Node) results.get("archi");
+
+      if(count == 0L) n.delete();
+    }
+    neo4jAL.logInfo("Archi model was refreshed..");
+
+
   }
 
   public Long deleteArchi(String subModelName) throws Neo4jQueryException {
@@ -113,67 +214,9 @@ public class ArchitectureGroupController extends AGrouping {
     return numRemoved;
   }
 
-  /**
-   * Refresh the subsets in the application
-   *
-   * @throws Neo4jQueryException
-   */
-  private void refreshSubset() throws Neo4jQueryException {
-    String reqRefreshCount =
-        String.format(
-            "MATCH (s:Subset:`%s`) " +
-            "WITH s " +
-            "MATCH (s)-[:Contains]->(o:Object) " +
-            "WITH s, COUNT(o) as tot SET s.Count=tot RETURN s as subset, tot as total",
-
-            applicationContext);
-    Result res = neo4jAL.executeQuery(reqRefreshCount);
-    if(res.hasNext()) {
-      Map<String, Object> results = res.next();
-      Long count = (Long) results.get("total");
-      Node n = (Node) results.get("subset");
-
-      if(count == 0L) {
-        n.delete();
-      }
-    }
-
-    String refreshLinkReq =
-        String.format(
-            "MATCH (a:ArchiModel:`%1$s`) WITH a "
-                + "MATCH (a)-[]->(n:Subset:`%1$s`)-->(int)-->(int2)<--(l:Subset:`%1$s`) WHERE ID(n)<>ID(l) AND (int:Object OR int:SubObject) AND (int2:Object OR int2:SubObject) "
-                + "MERGE (n)-[:References]->(l);",
-            applicationContext);
-    neo4jAL.executeQuery(refreshLinkReq);
-    neo4jAL.logInfo("Subset were refreshed..");
-
-    String refreshConnections =
-            String.format("MATCH (n:Subset:`%1$s`)-[]->(o) WHERE NOT (n)<-[]-(:ArchiModel) AND (o:Object OR o:SubObject) "
-                    + "SET o.Subset = [ x in o.Subset WHERE NOT x=n.Name ] DETACH DELETE n", applicationContext);
-    neo4jAL.executeQuery(refreshConnections);
-    neo4jAL.logInfo("Subset Connections were refreshed..");
-  }
-
-  /** Refresh Archi models in the application */
-  private void refreshArchiModel() throws Neo4jQueryException {
-    String reqRefreshCount =
-        String.format(
-            "MATCH (s:ArchiModel:`%s`) " +
-            "WITH s " +
-            "MATCH (s)-[:Contains]->(o:Subset) WITH s, SUM(o.Count) as tot SET s.Count=tot RETURN s as archi, tot as total;",
-            applicationContext);
-    Result res = neo4jAL.executeQuery(reqRefreshCount);
-    if(res.hasNext()) {
-      Map<String, Object> results = res.next();
-      Long count = (Long) results.get("total");
-      Node n = (Node) results.get("archi");
-
-      if(count == 0L) n.delete();
-    }
-    neo4jAL.logInfo("Archi model was refreshed..");
 
 
-  }
+
 
   /**
    * Clean one specific tag from all the objects
@@ -202,29 +245,41 @@ public class ArchitectureGroupController extends AGrouping {
    */
   protected void refreshNodes(List<Node> nodeList, Long idSubset, String nameSubset) throws Neo4jQueryException {
     Map<String, Object> paramsNode;
+    Long count = 0L;
+    String reObj;
+    String subObj;
+
+    // This function needs to be optimized as much as possible
     for (Node rObject : nodeList) {
       // Link objects
-      paramsNode = Map.of("idObj", rObject.getId(), "idSubset", idSubset, "subsetName", nameSubset);
+      try(Transaction tn = neo4jAL.getTransaction()) {
+        count++;
+        if(count % 100 == 0) neo4jAL.logInfo("Still refreshing nodes ( "+count+" on " + nodeList.size() + " ) ");
 
-      String reObj =
-              String.format(
-                      "MATCH (o:Object:`%s`) WHERE ID(o)=$idObj "
-                              + "SET o.Subset = CASE WHEN o.Subset IS NULL THEN [$subsetName] ELSE o.Subset + $subsetName END "
-                              + "WITH o as obj "
-                              + "MATCH (newS:Subset) WHERE ID(newS)=$idSubset "
-                              + "MERGE (newS)-[:Contains]->(obj) ",
-                      applicationContext);
+        paramsNode = Map.of("idObj", rObject.getId(), "idSubset", idSubset, "subsetName", nameSubset);
 
-      String subObj =
-              String.format(
-                      "MATCH (o:Object:`%s`)<-[:BELONGTO]-(j:SubObject) WHERE ID(o)=$idObj "
-                              + "SET j.Subset = CASE WHEN j.Subset IS NULL THEN [$subsetName] ELSE o.Subset + $subsetName END "
-                              + "WITH j "
-                              + "MATCH (newS:Subset) WHERE ID(newS)=$idSubset MERGE (newS)-[:Contains]->(j)  ",
-                      applicationContext);
+        reObj = "MATCH (newS:Subset) WHERE ID(newS)=$idSubset " +
+                "WITH newS " +
+                "MATCH (o:Object:`"+applicationContext+"`) WHERE ID(o)=$idObj "
+                + "SET o.Subset = CASE WHEN o.Subset IS NULL THEN [$subsetName] ELSE o.Subset + $subsetName END "
+                + "WITH news, o as obj "
+                + "MERGE (newS)-[:Contains]->(obj) ";
 
-      neo4jAL.executeQuery(reObj, paramsNode);
-      neo4jAL.executeQuery(subObj, paramsNode);
+        subObj = "MATCH (newS:Subset) WHERE ID(newS)=$idSubset " +
+                "WITH newS " +
+                "MATCH (o:Object:`"+applicationContext+"`)<-[:BELONGTO]-(j:SubObject) WHERE ID(o)=$idObj "
+                + "SET j.Subset = CASE WHEN j.Subset IS NULL THEN [$subsetName] ELSE o.Subset + $subsetName END "
+                + "WITH newS, j "
+                + "MERGE (newS)-[:Contains]->(j)  ";
+
+        tn.execute(reObj, paramsNode);
+        tn.execute(subObj, paramsNode);
+
+        tn.commit();
+      } catch (Exception ignored) {
+        neo4jAL.logError("Failed to refresh node with id "+rObject.getId());
+      }
+
     }
 
   }
@@ -241,8 +296,10 @@ public class ArchitectureGroupController extends AGrouping {
 
   @Override
   public void refresh() throws Neo4jQueryException {
-    refreshSubset();
-    refreshArchiModel();
+    for(String archiName : createdArchitectures) {
+      refreshSubset(archiName);
+      refreshArchiModel(archiName);
+    }
   }
 
   @Override
@@ -257,12 +314,14 @@ public class ArchitectureGroupController extends AGrouping {
     String nameSubset = cleanedGroupName[1];
     neo4jAL.logInfo(String.format("DEBUG :: Group Name creating : %s -> %s", nameView, nameSubset));
 
+    createdArchitectures.add(nameView);
+
     // Create archi model
     String modelIdReq =
         String.format("MATCH (n:ArchiModel:`%s`) RETURN n.ModelId as modelId", applicationContext);
     Result res = this.neo4jAL.executeQuery(modelIdReq);
     String temp;
-    Long maxId = 1L;
+    long maxId = 1L;
     while (res.hasNext()) {
       try {
         temp = (String) res.next().get("modelId");
@@ -287,7 +346,7 @@ public class ArchitectureGroupController extends AGrouping {
             "count",
             new Long(nodeList.size()),
             "maxModelID",
-            maxId.toString());
+                Long.toString(maxId));
     Result result = neo4jAL.executeQuery(req, params);
     Node archiNode = (Node) result.next().get("node");
 
@@ -315,7 +374,7 @@ public class ArchitectureGroupController extends AGrouping {
                     "count",
                     new Long(nodeList.size()),
                     "maxModelID",
-                    maxId.toString(),
+                    Long.toString(maxId),
                     "subsetID",
                     maxIdSub.toString(),
                     "idArchi",
@@ -332,7 +391,7 @@ public class ArchitectureGroupController extends AGrouping {
       // Subset already exists Update
       neo4jAL.logInfo(String.format("Subset '%s' already exists for subset with id: %d.", nameSubset, maxId));
       subsetNode = (Node) resSubsetExist.next().get("sub");
-      subsetNode.setProperty("ModelId",maxId.toString());
+      subsetNode.setProperty("ModelId", Long.toString(maxId));
       subsetNode.setProperty("SubsetId",maxIdSub.toString());
 
       Long count = subsetNode.hasProperty("Count") ? (Long) subsetNode.getProperty("Count") : 0L;
