@@ -262,7 +262,7 @@ public class ArchitectureGroupController extends AGrouping {
                 "WITH newS " +
                 "MATCH (o:Object:`"+applicationContext+"`) WHERE ID(o)=$idObj "
                 + "SET o.Subset = CASE WHEN o.Subset IS NULL THEN [$subsetName] ELSE o.Subset + $subsetName END "
-                + "WITH news, o as obj "
+                + "WITH newS, o as obj "
                 + "MERGE (newS)-[:Contains]->(obj) ";
 
         subObj = "MATCH (newS:Subset) WHERE ID(newS)=$idSubset " +
@@ -276,8 +276,8 @@ public class ArchitectureGroupController extends AGrouping {
         tn.execute(subObj, paramsNode);
 
         tn.commit();
-      } catch (Exception ignored) {
-        neo4jAL.logError("Failed to refresh node with id "+rObject.getId());
+      } catch (Exception e) {
+        neo4jAL.logError("Failed to refresh node with id "+rObject.getId(), e);
       }
 
     }
