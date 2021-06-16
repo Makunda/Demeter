@@ -23,6 +23,7 @@ import com.castsoftware.demeter.config.Configuration;
 import com.castsoftware.demeter.config.UserConfiguration;
 import com.castsoftware.demeter.controllers.grouping.AGrouping;
 import com.castsoftware.demeter.database.Neo4jAL;
+import com.castsoftware.demeter.database.Neo4jTypeManager;
 import com.castsoftware.demeter.exceptions.file.FileNotFoundException;
 import com.castsoftware.demeter.exceptions.file.MissingFileException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadNodeFormatException;
@@ -132,19 +133,13 @@ public class ModuleGroupController extends AGrouping {
     String reqID = "Match (o) WHERE EXISTS(o.AipId) RETURN MAX(o.AipId) + 1 as maxId";
     Result resId = neo4jAL.executeQuery(reqID);
 
-    Long maxId;
-    if(resId.hasNext()) {
-
-      maxId = (Long) resId.next().get("maxId");
-    } else {
-      maxId = 0L;
-    }
+    Long maxId = Neo4jTypeManager.getAsLong(resId.next().get("maxId"), 0L);
 
     // Get num Object + Sub obj
 
     // Module Creation of the node (Merge existing nodes)
     String reqModule = String.format("MERGE (m:Module:`%1$s` {Type:'module', Color:'rgb(34, 199, 214)', Name:$name }) " +
-            "SET m.AipId=$aipId SET m.Count = CASE WHEN EXISTS(m.Count) THEN m.Count + $numItems ELSE $numItems END " +
+            "SET m.AipId=$aipId SET m.AlternateDrilldown=true SET m.Count = CASE WHEN EXISTS(m.Count) THEN m.Count + $numItems ELSE $numItems END " +
             "RETURN m as node", applicationContext);
     Map<String, Object> params = Map.of("numItems", new Long(nodeList.size()), "aipId", maxId.toString(), "name", groupName);
     Result resModule = neo4jAL.executeQuery(reqModule, params);
@@ -163,15 +158,17 @@ public class ModuleGroupController extends AGrouping {
       // Link objects
       paramsNode = Map.of("idObj", rObject.getId(), "idModule", module.getId(), "moduleName", groupName);
 
-      String reObj = String.format("MATCH (o:Object:`%s`)<-[r:Contains]-(oldModule:Module) " +
-              "WHERE ID(o)=$idObj SET o.Module = CASE WHEN o.Module IS NULL THEN [$moduleName] ELSE [ x in o.Module WHERE NOT x=oldModule.Name ] + $moduleName END DELETE r " +
+      String reObj = String.format("MATCH (o:Object:`%s`) WHERE ID(o)=$idObj " +
+              "OPTIONAL MATCH (o)<-[r:Contains]-(oldModule:Module) " +
+              "SET o.Module = CASE WHEN o.Module IS NULL THEN [$moduleName] ELSE [ x in o.Module WHERE NOT x=oldModule.Name ] + $moduleName END " +
+              "DELETE r " +
               "WITH o as obj " +
               "MATCH (newM:Module) WHERE ID(newM)=$idModule " +
               "CREATE (newM)-[:Contains]->(obj) ", applicationContext);
 
       String subObj = String.format("MATCH (o:Object:`%s`)<-[:BELONGTO]-(j:SubObject) WHERE ID(o)=$idObj " +
               "WITH j " +
-              "MATCH (m:Module)-[rd:Contains]->(j) " +
+              "OPTIONAL MATCH (m:Module)-[rd:Contains]->(j) " +
               "SET j.Module = CASE WHEN j.Module IS NULL THEN [$moduleName] ELSE j.Module + $moduleName END " +
               "DELETE rd " +
               "WITH j " +
@@ -186,6 +183,7 @@ public class ModuleGroupController extends AGrouping {
 
   public ModuleGroupController(Neo4jAL neo4jAL, String applicationContext) {
     super(neo4jAL, applicationContext);
+
   }
 
 }

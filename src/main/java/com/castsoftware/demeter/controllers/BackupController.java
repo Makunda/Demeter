@@ -107,7 +107,7 @@ public class BackupController {
       // Find nodes with the ancient level 5 name
       forgeRequest =
           String.format(
-              "MATCH (o:%1$s)<-[:%2$s]-(l:%3$s) WHERE o.Level='%4$s' AND NOT l.Name='%4$s' SET o.Level=l.Name;",
+              "MATCH (o:`%1$s`)<-[:%2$s]-(l:`%3$s`) WHERE o.Level='%4$s' AND NOT l.Name='%4$s' SET o.Level=l.Name;",
               forgedLabel, IMAGING_AGGREGATES, IMAGING_LEVEL_5_LABEL, levelName);
       neo4jAL.executeQuery(forgeRequest);
     }

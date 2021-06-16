@@ -38,10 +38,11 @@ public class GroupingUtilsController {
 
 	/**
 	 * Retrieve the list of applications containing Modules tags
-	 * @param neo4jAL Neo
-	 * @return
+	 * @param neo4jAL Neo4j Access Layer
+	 * @param prefix Prefix of the controleler
+	 * @return The list of application
 	 */
-	private static List<String> getCandidatesApplications(Neo4jAL neo4jAL,  Class<? extends AGrouping> controller, String prefix) throws Neo4jQueryException {
+	private static List<String> getCandidatesApplications(Neo4jAL neo4jAL, String prefix) throws Neo4jQueryException {
 
 		String applicationReq =
 				"MATCH (o:Object) WHERE EXISTS (o.Tags) AND any(x in o.Tags WHERE x CONTAINS $tagPrefix) "
@@ -58,12 +59,17 @@ public class GroupingUtilsController {
 		return fullResults;
 	}
 
-	// Modules
+	/**
+	 * Group all the modules found ( nodes with modules prefix ) across all the applications
+	 * @param neo4jAL Neo4j Access Layer
+	 * @return List of the module created
+	 * @throws Neo4jQueryException If Neo4j Cypher requests are not valid
+	 */
 	public static List<Node> groupAllModules(Neo4jAL neo4jAL) throws Neo4jQueryException {
 		String prefix = Configuration.getBestOfALl("demeter.prefix.module_group");
 		List<Node> res = new ArrayList<>();
 
-		for(String application : getCandidatesApplications(neo4jAL, ModuleGroupController.class, prefix)) {
+		for(String application : getCandidatesApplications(neo4jAL, prefix)) {
 			try {
 				res.addAll((new ModuleGroupController(neo4jAL, application)).launch());
 			} catch (Neo4jBadRequestException e) {
@@ -73,12 +79,17 @@ public class GroupingUtilsController {
 		return res;
 	}
 
-	// Architectures
+	/**
+	 * Group all the Architecture level across all the applications
+	 * @param neo4jAL Neo4j Access Layer
+	 * @return The list of Architecture nodes created
+	 * @throws Neo4jQueryException If Neo4j Cypher requests are not valid
+	 */
 	public static  List<Node> groupAllArchitecture(Neo4jAL neo4jAL) throws  Neo4jQueryException{
 		String prefix = Configuration.getBestOfALl("demeter.prefix.architecture_group");
 		List<Node> res = new ArrayList<>();
 
-		for(String application : getCandidatesApplications(neo4jAL, ModuleGroupController.class, prefix)) {
+		for(String application : getCandidatesApplications(neo4jAL, prefix)) {
 			try {
 				res.addAll((new ArchitectureGroupController(neo4jAL, application)).launch());
 			} catch (Neo4jBadRequestException e) {
@@ -94,7 +105,7 @@ public class GroupingUtilsController {
 	 * @param neo4jAL Neo4j access layer
 	 * @param application Name of the application
 	 * @param archiName Architecture name
-	 * @throws Neo4jQueryException
+	 * @throws Neo4jQueryException If Neo4j Cypher requests are not valid
 	 */
 	public static void refreshArchitecture(Neo4jAL neo4jAL, String application, String archiName) throws  Neo4jQueryException{
 		ArchitectureGroupController ag = new ArchitectureGroupController(neo4jAL, application);

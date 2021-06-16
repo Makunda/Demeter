@@ -243,7 +243,7 @@ public class BackupNode extends Neo4jObject {
     String forgedLabel = LABEL + ":" + applicationContext;
     String bkAppQuery =
         String.format(
-            "MATCH (p:%s) WHERE p.%s='%s' RETURN p as node;",
+            "MATCH (p:`%s`) WHERE p.%s='%s' RETURN p as node;",
             forgedLabel, BackupNode.getNodeLabelProperty(), nodeLabel);
     List<BackupNode> resNodes = new ArrayList<>();
     try {

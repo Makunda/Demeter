@@ -133,7 +133,8 @@ public abstract class AGrouping {
 
 	public AGrouping(Neo4jAL neo4jAL, String applicationContext) {
 		this.neo4jAL = neo4jAL;
-		this.applicationContext = applicationContext;
+		// Hot Fix Sanitize Application name
+
 	}
 
 

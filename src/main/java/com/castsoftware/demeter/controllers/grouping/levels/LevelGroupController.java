@@ -107,11 +107,12 @@ public class LevelGroupController {
    * Clean the application from the Demeter tags
    *
    * @param neo4jAL
-   * @param applicationContextW
+   * @param applicationContext
    * @throws Neo4jQueryException
    */
   public static void clean(Neo4jAL neo4jAL, String applicationContext) throws Neo4jQueryException {
     // Once the operation is done, remove Demeter tag prefix tags
+
     String removeTagsQuery =
         String.format(
             "MATCH (o:`%1$s`) WHERE EXISTS(o.%2$s)  SET o.%2$s = [ x IN o.%2$s WHERE NOT x CONTAINS '%3$s' ] RETURN COUNT(o) as removedTags;",
@@ -270,11 +271,12 @@ public class LevelGroupController {
     neo4jAL.logInfo("Refreshing the new level relationships and recount elements.");
 
     LevelsUtils.refreshLevel5(neo4jAL, applicationContext, newLevelNode); // refresh new level
+    String finalApplicationContext = applicationContext;
     affectedLevels.forEach(
         x -> {
           try {
             LevelsUtils.refreshLevel5(
-                neo4jAL, applicationContext, x.getNode()); // refresh old levels
+                neo4jAL, finalApplicationContext, x.getNode()); // refresh old levels
           } catch (Neo4jQueryException | Neo4jNoResult e) {
             neo4jAL.logInfo(
                 String.format(
@@ -307,6 +309,8 @@ public class LevelGroupController {
     Map<String, List<Node>> groupMap = new HashMap<>();
 
     neo4jAL.logInfo("Starting Demeter level 5 grouping...");
+
+    // Hot Fix Sanitize Application name
 
     // Get the list of nodes prefixed by dm_tag
     String forgedTagRequest =

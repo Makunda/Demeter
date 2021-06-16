@@ -55,7 +55,7 @@ public class LevelProcedure {
 
     try {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
-
+      // Hot Fix Sanitize Application name
       List<Node> nodes = LevelGroupController.groupAllLevels(nal, applicationName);
 
       return nodes.stream().map(NodeResult::new);
@@ -94,6 +94,7 @@ public class LevelProcedure {
   public Stream<CandidateFindingResult> getCandidateLevelGrouping(@Name(value="Application", defaultValue = "") String application) throws ProcedureException {
     try {
       Neo4jAL neo4jAL = new Neo4jAL(db, transaction, log);
+
       List<CandidateFindingResult> candidates;
       if(application.isEmpty()) {
         candidates = GroupingController.getCandidateApplicationsLevelGroup(neo4jAL);
@@ -116,6 +117,7 @@ public class LevelProcedure {
   public Stream<DemeterGroupResult> getDemeterLevels(@Name(value="Application") String application) throws ProcedureException {
     try {
       Neo4jAL neo4jAL = new Neo4jAL(db, transaction, log);
+
       List<DemeterGroupResult> levels = GroupingController.getDemeterLevels(neo4jAL, application);
 
       return levels.stream();
@@ -137,6 +139,7 @@ public class LevelProcedure {
 
     try {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
+
       nal.logInfo("Starting abstract level refresh...");
 
       LevelsUtils.refreshAllAbstractLevel(nal, applicationName);

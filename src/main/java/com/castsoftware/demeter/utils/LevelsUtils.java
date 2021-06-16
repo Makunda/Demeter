@@ -80,9 +80,6 @@ public class LevelsUtils {
       throws Neo4jQueryException {
     RelationshipType aggregatesRel = RelationshipType.withName(IMAGING_AGGREGATES);
 
-    if(applicationContext.contains("-")) {
-      applicationContext = String.format("`%s`", applicationContext);
-    }
 
     // Refresh from level 4 to  level 1
     for (int i = 4; i > 1; i--) {
@@ -91,7 +88,7 @@ public class LevelsUtils {
 
       // Get nodes for this specific level
       String getNodeReq =
-          String.format("MATCH (l:%1$s:%2$s) RETURN l as level", labelN, applicationContext);
+          String.format("MATCH (l:`%1$s`:`%2$s`) RETURN l as level", labelN, applicationContext);
       Result result = neo4jAL.executeQuery(getNodeReq);
 
       while (result.hasNext()) {
@@ -99,17 +96,17 @@ public class LevelsUtils {
 
         String forgedToLevels =
             String.format(
-                "MATCH (level:%1$s:%2$s)-[:%3$s]->(:%4$s:%2$s)-->(o:%4$s:%2$s)<-[:%3$s]-(l:%1$s) WHERE ID(level)=%5$d RETURN DISTINCT l as level;",
+                "MATCH (level:`%1$s`:`%2$s`)-[:%3$s]->(:`%4$s`:`%2$s`)-->(o:`%4$s`:`%2$s`)<-[:%3$s]-(l:`%1$s`) WHERE ID(level)=%5$d RETURN DISTINCT l as level;",
                 labelN, applicationContext, IMAGING_AGGREGATES, labelN0, ln.getId());
 
         String forgedFromLevel =
             String.format(
-                "MATCH (level:%1$s:%2$s)-[:%3$s]->(:%4$s:%2$s)<--(o:%4$s:%2$s)<-[:%3$s]-(l:%1$s) WHERE ID(level)=%5$d RETURN DISTINCT l as level;",
+                "MATCH (level:`%1$s`:`%2$s`)-[:%3$s]->(:`%4$s`:`%2$s`)<--(o:`%4$s`:`%2$s`)<-[:%3$s]-(l:`%1$s`) WHERE ID(level)=%5$d RETURN DISTINCT l as level;",
                 labelN, applicationContext, IMAGING_AGGREGATES, labelN0, ln.getId());
 
         String deleteOldRelations =
             String.format(
-                "MATCH (level:%1$s:%2$s)-[r:%3$s]-(:%1s:%2$s) WHERE ID(level)=%4$d DELETE r",
+                "MATCH (level:`%1$s`:`%2$s`)-[r:%3$s]-(:`%1s`:`%2$s`) WHERE ID(level)=%4$d DELETE r",
                 labelN, applicationContext, IMAGING_AGGREGATES, ln.getId());
 
         // Remove old relations
@@ -155,13 +152,9 @@ public class LevelsUtils {
       rel.delete();
     }
 
-    if(applicationContext.contains("-")) {
-      applicationContext = String.format("`%s`", applicationContext);
-    }
-
     String forgedToOtherLevel5 =
         String.format(
-            "MATCH (inil:%1$s:%2$s)-[:%3$s]->(inio:%4$s:%2$s)-->(o:%4$s:%2$s)<-[:%3$s]-(l:%1$s) WHERE ID(inil)=%5$s AND inil.%6$s=inio.%7$s  AND l.%6$s=o.%7$s RETURN DISTINCT l as level;",
+            "MATCH (inil:`%1$s`:`%2$s`)-[:%3$s]->(inio:%4$s:`%2$s`)-->(o:`%4$s`:`%2$s`)<-[:%3$s]-(l:`%1$s`) WHERE ID(inil)=%5$s AND inil.%6$s=inio.%7$s  AND l.%6$s=o.%7$s RETURN DISTINCT l as level;",
             Level5Node.getLabel(),
             applicationContext,
             IMAGING_AGGREGATES,
@@ -172,7 +165,7 @@ public class LevelsUtils {
     // List incoming level 5
     String forgedFromOtherLevel5 =
         String.format(
-            "MATCH (inil:%1$s:%2$s)-[:%3$s]->(inio:%4$s:%2$s)<--(o:%4$s:%2$s)<-[:%3$s]-(l:%1$s) WHERE ID(inil)=%5$s AND inil.%6$s=inio.%7$s  AND l.%6$s=o.%7$s RETURN DISTINCT l as level;",
+            "MATCH (inil:`%1$s`:`%2$s`)-[:%3$s]->(inio:%4$s:`%2$s`)<--(o:`%4$s`:`%2$s`)<-[:%3$s]-(l:`%1$s`) WHERE ID(inil)=%5$s AND inil.%6$s=inio.%7$s  AND l.%6$s=o.%7$s RETURN DISTINCT l as level;",
             Level5Node.getLabel(),
             applicationContext,
             IMAGING_AGGREGATES,
@@ -216,7 +209,7 @@ public class LevelsUtils {
 
     String forgedNumConnected =
         String.format(
-            "MATCH (n:`%1$s`:%2$s)-[:%3$s]->(o:%4$s) WHERE ID(n)=%5$s AND n.%6$s=o.%7$s RETURN COUNT(o) as countNode;",
+            "MATCH (n:`%1$s`:`%2$s`)-[:%3$s]->(o:`%4$s`) WHERE ID(n)=%5$s AND n.%6$s=o.%7$s RETURN COUNT(o) as countNode;",
             applicationContext,
             Level5Node.getLabel(),
             IMAGING_AGGREGATES,

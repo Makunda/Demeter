@@ -252,7 +252,7 @@ public class ArchitectureGroupController extends AGrouping {
     // This function needs to be optimized as much as possible
     for (Node rObject : nodeList) {
       // Link objects
-      try(Transaction tn = neo4jAL.getTransaction()) {
+      try {
         count++;
         if(count % 100 == 0) neo4jAL.logInfo("Still refreshing nodes ( "+count+" on " + nodeList.size() + " ) ");
 
@@ -272,10 +272,9 @@ public class ArchitectureGroupController extends AGrouping {
                 + "WITH newS, j "
                 + "MERGE (newS)-[:Contains]->(j)  ";
 
-        tn.execute(reObj, paramsNode);
-        tn.execute(subObj, paramsNode);
+        neo4jAL.executeQuery(reObj, paramsNode);
+        neo4jAL.executeQuery(subObj, paramsNode);
 
-        tn.commit();
       } catch (Exception e) {
         neo4jAL.logError("Failed to refresh node with id "+rObject.getId(), e);
       }
