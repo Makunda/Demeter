@@ -44,6 +44,7 @@ public class LevelGroupController {
   private static final String IMAGING_AGGREGATES =
       Configuration.get("imaging.node.level_nodes.links");
   private static final String IMAGING_LEVEL4_LABEL = Configuration.get("imaging.node.level4.label");
+  private static final String IMAGING_LEVEL5_LABEL = Configuration.get("imaging.node.level5.label");
 
   // Demeter Conf
   private static final String GENERATED_LEVEL_IDENTIFIER =
@@ -74,6 +75,7 @@ public class LevelGroupController {
   private static Iterator<Map.Entry<Node, Integer>> getLevel5(Neo4jAL neo4jAL, List<Node> nodeList)
       throws Neo4jNoResult {
 
+    Label level5Label = Label.label(IMAGING_LEVEL5_LABEL);
     RelationshipType relLevel = RelationshipType.withName(IMAGING_AGGREGATES);
 
     // Get Actual Level 5 and connections
@@ -85,6 +87,7 @@ public class LevelGroupController {
           rObject.getRelationships(Direction.INCOMING, relLevel).iterator();
       if (oldRel.hasNext()) {
         Node level5 = oldRel.next().getStartNode();
+        if(!level5.hasLabel(level5Label)) continue;
 
         level5map.putIfAbsent(level5, 0);
         level5map.compute(level5, (x, v) -> v + 1);
@@ -155,18 +158,22 @@ public class LevelGroupController {
     Node oldLevel5Node = null;
     // Retrieve most encountered Level 5
     for (Iterator<Map.Entry<Node, Integer>> it = getLevel5(neo4jAL, nodeList); it.hasNext(); ) {
-      Map.Entry<Node, Integer> level5entry = it.next();
+      try {
+        Map.Entry<Node, Integer> level5entry = it.next();
 
-      // Get first node. Corresponding to the most frequent one
-      if (oldLevel5Node == null) {
-        oldLevel5Node = level5entry.getKey();
+        // Get first node. Corresponding to the most frequent one
+        if (oldLevel5Node == null) {
+          oldLevel5Node = level5entry.getKey();
+        }
+
+        // Save the level and their nodes
+        Level5Node level = Level5Node.fromNode(neo4jAL, level5entry.getKey());
+        level.createLevel5Backup(applicationContext, nodeList);
+
+        affectedLevels.add(level);
+      } catch (Exception ignored) {
+        // Pass this exception to  avoid treating node not correclty formatted
       }
-
-      // Save the level and their nodes
-      Level5Node level = Level5Node.fromNode(neo4jAL, level5entry.getKey());
-      level.createLevel5Backup(applicationContext, nodeList);
-
-      affectedLevels.add(level);
     }
 
     finishTimer = Instant.now();

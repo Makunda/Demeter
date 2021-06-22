@@ -46,8 +46,8 @@ public class MicroserviceController extends ArchitectureGroupController {
     // Get the list of nodes prefixed by dm_tag
     String forgedTagRequest =
         String.format(
-            "MATCH (o:`%1$s`) WHERE any( x in o.Tags WHERE x CONTAINS $tagPrefix)  "
-                + "WITH o, [x in o.Tags WHERE x CONTAINS $tagPrefix] as g "
+            "MATCH (o:`%1$s`) WHERE any( x in o.Tags WHERE x STARTS WITH $tagPrefix)  "
+                + "WITH o, [x in o.Tags WHERE x STARTS WITH $tagPrefix] as g "
                 + "RETURN DISTINCT o as node, g as group;",
             applicationContext);
     Map<String, Object> params = Map.of("tagPrefix", getTagPrefix());

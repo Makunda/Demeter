@@ -45,7 +45,7 @@ public class GroupingUtilsController {
 	private static List<String> getCandidatesApplications(Neo4jAL neo4jAL, String prefix) throws Neo4jQueryException {
 
 		String applicationReq =
-				"MATCH (o:Object) WHERE EXISTS (o.Tags) AND any(x in o.Tags WHERE x CONTAINS $tagPrefix) "
+				"MATCH (o:Object) WHERE EXISTS (o.Tags) AND any(x in o.Tags WHERE x STARTS WITH $tagPrefix) "
 						+ "RETURN DISTINCT [ x in LABELS(o) WHERE NOT x='Object'][0] as application;";
 		Map<String, Object> params = Map.of("tagPrefix", prefix);
 

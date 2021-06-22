@@ -87,8 +87,8 @@ public abstract class AGrouping {
 		// Get the list of nodes prefixed by dm_tag
 		String forgedTagRequest =
 				String.format(
-						"MATCH (o:`%1$s`) WHERE any( x in o.Tags WHERE x CONTAINS $tagPrefix)  "
-								+ "WITH o, [x in o.Tags WHERE x CONTAINS $tagPrefix][0] as g "
+						"MATCH (o:`%1$s`:Object) WHERE any( x in o.Tags WHERE x STARTS WITH $tagPrefix)  "
+								+ "WITH o, [x in o.Tags WHERE x STARTS WITH $tagPrefix][0] as g "
 								+ "RETURN DISTINCT o as node, g as group;",
 						applicationContext);
 		Map<String, Object> params = Map.of("tagPrefix", getTagPrefix());
@@ -97,16 +97,20 @@ public abstract class AGrouping {
 		Result res = neo4jAL.executeQuery(forgedTagRequest, params);
 		// Build the map for each group as <Tag, Node list>
 		while (res.hasNext()) {
-			Map<String, Object> resMap = res.next();
-			String group = (String) resMap.get("group");
-			Node node = (Node) resMap.get("node");
+			try {
+				Map<String, Object> resMap = res.next();
+				String group = (String) resMap.get("group");
+				Node node = (Node) resMap.get("node");
 
-			// Add to  the specific group
-			if (!groupMap.containsKey(group)) {
-				groupMap.put(group, new ArrayList<>());
+				// Add to  the specific group
+				if (!groupMap.containsKey(group)) {
+					groupMap.put(group, new ArrayList<>());
+				}
+
+				groupMap.get(group).add(node);
+			} catch (Exception ignored) {
+				// Ignore poorly formatted nodes
 			}
-
-			groupMap.get(group).add(node);
 		}
 
 		neo4jAL.logInfo(String.format("%d module groups (Prefix: %s) were identified.", groupMap.size(), getTagPrefix()));
@@ -133,7 +137,7 @@ public abstract class AGrouping {
 
 	public AGrouping(Neo4jAL neo4jAL, String applicationContext) {
 		this.neo4jAL = neo4jAL;
-		// Hot Fix Sanitize Application name
+		this.applicationContext = applicationContext;
 
 	}
 
