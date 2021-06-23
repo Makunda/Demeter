@@ -20,35 +20,33 @@
 package com.castsoftware.demeter.controllers.grouping.modules;
 
 import com.castsoftware.demeter.config.Configuration;
-import com.castsoftware.demeter.config.UserConfiguration;
 import com.castsoftware.demeter.controllers.grouping.AGrouping;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.database.Neo4jTypeManager;
 import com.castsoftware.demeter.exceptions.file.FileNotFoundException;
 import com.castsoftware.demeter.exceptions.file.MissingFileException;
-import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
-import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.demeter.models.imaging.ModuleNode;
 import org.neo4j.graphdb.*;
 
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 public class ModuleGroupController extends AGrouping {
 
   // Static Imaging nodes
 
-  // Demeter Conf
-  private static String GROUP_MODULE_TAG_IDENTIFIER =
-      Configuration.getBestOfALl("demeter.prefix.module_group");
-
+  private static final String HIDDEN_MODULE_LABEL = Configuration.get("demeter.module.hidden.label");
   // Static Imaging relationships
   private static final String IMAGING_CONTAINS =
-      Configuration.get("imaging.node.module.links.to_objects");
+          Configuration.get("imaging.node.module.links.to_objects");
+  // Demeter Conf
+  private static String GROUP_MODULE_TAG_IDENTIFIER =
+          Configuration.getBestOfALl("demeter.prefix.module_group");
 
   static {
-    if(GROUP_MODULE_TAG_IDENTIFIER == null) {
+    if (GROUP_MODULE_TAG_IDENTIFIER == null) {
       GROUP_MODULE_TAG_IDENTIFIER = Configuration.get("demeter.prefix.module_group");
     }
   }
@@ -152,7 +150,7 @@ public class ModuleGroupController extends AGrouping {
     // Treat objects
     // Link all the objects tagged to you modules.
     // Treat node in a first pass
-    String forgedRequest;
+
     Map<String, Object> paramsNode;
     for (Node rObject : nodeList) {
       // Link objects
@@ -160,19 +158,21 @@ public class ModuleGroupController extends AGrouping {
 
       String reObj = String.format("MATCH (o:Object:`%s`) WHERE ID(o)=$idObj " +
               "OPTIONAL MATCH (o)<-[r:Contains]-(oldModule:Module) " +
+              "OPTIONAL MATCH (o)<-[r:Contains]-(oldModule:`%2$s`) " +
               "SET o.Module = CASE WHEN o.Module IS NULL THEN [$moduleName] ELSE [ x in o.Module WHERE NOT x=oldModule.Name ] + $moduleName END " +
               "DELETE r " +
               "WITH o as obj " +
               "MATCH (newM:Module) WHERE ID(newM)=$idModule " +
-              "CREATE (newM)-[:Contains]->(obj) ", applicationContext);
+              "CREATE (newM)-[:Contains]->(obj) ", applicationContext, HIDDEN_MODULE_LABEL);
 
       String subObj = String.format("MATCH (o:Object:`%s`)<-[:BELONGTO]-(j:SubObject) WHERE ID(o)=$idObj " +
               "WITH j " +
               "OPTIONAL MATCH (m:Module)-[rd:Contains]->(j) " +
+              "OPTIONAL MATCH (m:`%2$s`)-[rd:Contains]->(j) " +
               "SET j.Module = CASE WHEN j.Module IS NULL THEN [$moduleName] ELSE j.Module + $moduleName END " +
               "DELETE rd " +
               "WITH j " +
-              "MATCH (newM:Module) WHERE ID(newM)=$idModule CREATE (newM)-[:Contains]->(j)  ", applicationContext);
+              "MATCH (newM:Module) WHERE ID(newM)=$idModule CREATE (newM)-[:Contains]->(j)  ", applicationContext, HIDDEN_MODULE_LABEL);
 
       neo4jAL.executeQuery(reObj, paramsNode);
       neo4jAL.executeQuery(subObj, paramsNode);
