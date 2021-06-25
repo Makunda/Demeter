@@ -21,6 +21,7 @@ package com.castsoftware.demeter.controllers.grouping.architectures;
 
 import com.castsoftware.demeter.config.Configuration;
 import com.castsoftware.demeter.controllers.grouping.AGrouping;
+import com.castsoftware.demeter.controllers.imaging.ArchitectureController;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.file.FileNotFoundException;
 import com.castsoftware.demeter.exceptions.file.MissingFileException;
@@ -42,21 +43,19 @@ public class ArchitectureGroupController extends AGrouping {
   }
 
   /**
-   * Remove a submodel in the extensions
-   *
-   * @param subModelName
-   * @return
+   * Remove a subset in the application without refreshing
+   * @param subsetID Id of the subset
+   * @return The number of object affected
+   * @throws Neo4jQueryException
    */
-  public Long deleteSubModel(String subModelName) throws Neo4jQueryException {
+  private Long removeSubset(Long subsetID) throws Neo4jQueryException {
     // Get nodes under the subModel
     String reqNodes =
-        String.format(
-            "MATCH (s:Subset:`%s`)-[r:Contains]->(o:Object) WHERE s.Name=$nameSubset "
-                + "SET o.Subset = [ x in o.Subset WHERE NOT x=$nameSubset ] "
-                + "DELETE r "
-                + "RETURN COUNT(o) as removed",
-            applicationContext);
-    Map<String, Object> params = Map.of("nameSubset", subModelName);
+            String.format("MATCH (s)-[r:Contains]->(o:Object) WHERE (s:Subset OR s:%1$s) AND ID(s)=$idSubset "
+                                + "SET o.Subset = [ x in o.Subset WHERE NOT x=s.Name ] "
+                                + "DELETE r "
+                                + "RETURN COUNT(o) as removed", ArchitectureController.getHiddenSubsetPrefix());
+    Map<String, Object> params = Map.of("idSubset", subsetID);
     Result res = neo4jAL.executeQuery(reqNodes, params);
     Long numRemoved = 0L;
     if (res.hasNext()) {
@@ -66,16 +65,29 @@ public class ArchitectureGroupController extends AGrouping {
     // Delete the node
     // Get nodes under the subModel
     String reqDelSubset =
-        String.format(
-            "MATCH (s:Subset:`%s`) WHERE s.Name=$nameSubset DETACH DELETE s ",
-            applicationContext);
+            String.format(
+                    "MATCH (s) WHERE (s:Subset OR s:%1$s) AND ID(s)=$idSubset DETACH DELETE s ",
+                    ArchitectureController.getHiddenSubsetPrefix());
     neo4jAL.executeQuery(reqDelSubset, params);
 
+    return numRemoved;
+  }
+
+  /**
+   * Delete a Subset in the application and refresh the application
+   * @param subsetId Id of the subset in the application
+   * @return
+   */
+  public Long deleteSubModel(Long subsetId) throws Neo4jQueryException {
+
+    Long val = this.removeSubset(subsetId);
     // Refresh the archi node
     refresh();
+    return val;
+  }
 
-    return numRemoved;
-  }  public static String getPrefix() {
+
+  public static String getPrefix() {
     return Configuration.getBestOfALl("demeter.prefix.architecture_group");
   }
 
@@ -182,36 +194,36 @@ public class ArchitectureGroupController extends AGrouping {
 
   }
 
-  public Long deleteArchi(String subModelName) throws Neo4jQueryException {
+  /**
+   * Delete an Architecture using its ID
+   * @param architectureID Id of the architecture to delete
+   * @return
+   * @throws Neo4jQueryException
+   */
+  public void deleteArchi(Long architectureID) throws Neo4jQueryException {
+
+    Map<String, Object> params = Map.of("architectureID", architectureID);
 
     // Get nodes under the subModel
     String reqNodes =
         String.format(
-            "MATCH (s:Subset:`%s`)-[r:Contains]->(o:Object) "
-                + "SET o.Subset = [ x in o.Subset WHERE NOT x=$nameSubset ] "
-                + "DELETE r "
-                + "RETURN COUNT(o) as removed",
-            applicationContext);
-    Map<String, Object> params = Map.of("nameSubset", subModelName);
+                "MATCH (a)-[:Contains]->(s:Subset) WHERE ID(a)=$architectureID AND (a:ArchiModel OR a:%1$s)" +
+                "RETURN s as node", ArchitectureController.getHiddenArchimodelPrefix());
     Result res = neo4jAL.executeQuery(reqNodes, params);
-    Long numRemoved = 0L;
 
-    if (res.hasNext()) {
-      numRemoved = (Long) res.next().get("removed");
+    // Delete all the subset and reassign the objects
+    while(res.hasNext()) {
+      Node subset = (Node) res.next().get("node");
+      this.removeSubset(subset.getId());
     }
 
-    // Delete the node
-    // Get nodes under the subModel
     String reqDelSubset =
         String.format(
-            "MATCH (s:Subset:`%s`) WHERE s.Name=$nameSubset DETACH DELETE s ",
-            applicationContext);
+            "MATCH (a) WHERE (a:ArchiModel OR a:%1$s) AND ID(a)=$architectureID DETACH DELETE a ",
+                ArchitectureController.getHiddenArchimodelPrefix());
     neo4jAL.executeQuery(reqDelSubset, params);
 
-    // Refresh the archi node
-    refresh();
-
-    return numRemoved;
+    this.refresh();
   }
 
 
