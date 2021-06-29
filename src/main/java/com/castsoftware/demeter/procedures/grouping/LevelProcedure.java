@@ -56,7 +56,8 @@ public class LevelProcedure {
     try {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
       // Hot Fix Sanitize Application name
-      List<Node> nodes = LevelGroupController.groupAllLevels(nal, applicationName);
+      LevelGroupController lg = new LevelGroupController(nal);
+      List<Node> nodes = lg.groupAllLevels(applicationName);
 
       return nodes.stream().map(NodeResult::new);
 
@@ -76,7 +77,8 @@ public class LevelProcedure {
     try {
       Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
-      List<Node> nodes = LevelGroupController.groupInAllApplications(nal);
+      LevelGroupController lg = new LevelGroupController(nal);
+      List<Node> nodes = lg.groupInAllApplications();
 
       return nodes.stream().map(NodeResult::new);
 

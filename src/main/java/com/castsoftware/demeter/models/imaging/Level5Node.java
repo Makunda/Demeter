@@ -38,12 +38,14 @@ public class Level5Node extends Neo4jObject {
 
   // Static Properties
   private static final String LABEL = Configuration.get("imaging.node.level5.label");
+  private static final String HIDDEN_LABEL = Configuration.get("imaging.node.hidden.level.prefix");
+
   private static final String NAME_PROPERTY = Configuration.get("imaging.node.level5.name");
   private static final String CONCEPT_PROPERTY = Configuration.get("imaging.node.level5.concept");
   private static final String DRILL_DOWN_PROPERTY =
-      Configuration.get("imaging.node.level5.alternateDrilldown");
+          Configuration.get("imaging.node.level5.alternateDrilldown");
   private static final String FULL_NAME_PROPERTY =
-      Configuration.get("imaging.node.level5.fullName");
+          Configuration.get("imaging.node.level5.fullName");
   private static final String COLOR_PROPERTY = Configuration.get("imaging.node.level5.color");
   private static final String LEVEL_PROPERTY = Configuration.get("imaging.node.level5.level");
   private static final String COUNT_PROPERTY = Configuration.get("imaging.node.level5.count");
@@ -131,12 +133,15 @@ public class Level5Node extends Neo4jObject {
    *     malformed property.
    */
   public static Level5Node fromNode(Neo4jAL neo4jAL, Node node) throws Neo4jBadNodeFormatException {
-    if (!node.hasLabel(Label.label(LABEL))) {
+
+    Label level5Label = Label.label(LABEL);
+
+    if (!(node.hasLabel(level5Label))) {
       throw new Neo4jBadNodeFormatException(
-          String.format(
-              "The node with Id '%d' does not contain the correct label. Expected to have : %s",
-              node.getId(), LABEL),
-          ERROR_PREFIX + "FROMN1");
+              String.format(
+                      "The node with Id '%d' does not contain the correct label. Expected to have : %s ",
+                      node.getId(), LABEL),
+              ERROR_PREFIX + "FROMN1");
     }
 
     try {
