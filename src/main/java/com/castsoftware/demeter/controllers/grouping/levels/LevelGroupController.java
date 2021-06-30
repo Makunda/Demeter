@@ -32,6 +32,7 @@ import org.neo4j.graphdb.*;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 // TODO : Rewrite this class to be compliant with AGrouping
 public class LevelGroupController {
@@ -186,10 +187,7 @@ public class LevelGroupController {
         addStatus(String.format("[%s] produced an error when trying to group them. Check the logs.", String.join(", ", faultyTags)));
       }
 
-      addStatus(String.format("%d level have been created in application '%s'.", resNodes.size(), applicationContext));
-
-      // Clean residual tags
-      clean(applicationContext);
+      addStatus(String.format("%d levels have been created in application '%s'.", resNodes.size(), applicationContext));
 
       return resNodes;
     } catch (Exception | Neo4jQueryException err) {
@@ -227,6 +225,65 @@ public class LevelGroupController {
   }
 
   /**
+   * Create backup node for each node in the list
+   * @param application Name of the application
+   * @param nodeList List of node to backup
+   */
+  private void createBackups(String application, List<Node> nodeList) {
+    // For each node get the Level 5
+    Map<Level5Node, List<Node>> toBackup = new HashMap<>();
+
+    int failed = 0;
+    int critical = 0;
+
+    String req = "MATCH (o:Object)<-[:Aggregates]-(l:Level5) WHERE ID(o)=$idNode AND NOT l.FullName CONTAINS $genPrefix " +
+            "RETURN DISTINCT l as level";
+    Map<String, Object> params;
+    Result res;
+    for (Node n : nodeList) {
+      try {
+        params = Map.of("idNode", n.getId(), "genPrefix", GENERATED_LEVEL_IDENTIFIER);
+        res = neo4jAL.executeQuery(req, params);
+
+        if(!res.hasNext()) continue;
+
+        Node levelNode = (Node) res.next().get("level");
+        Level5Node l5 = Level5Node.fromNode(neo4jAL, levelNode);
+
+        if(!toBackup.containsKey(l5)) toBackup.put(l5, new ArrayList<>());
+        toBackup.get(l5).add(n);
+
+      } catch (Exception | Neo4jQueryException | Neo4jBadNodeFormatException error) {
+        failed++;
+        neo4jAL.logError("Failed to backup ", error);
+      }
+    }
+
+    // Create Backup nodes
+    for (Map.Entry<Level5Node, List<Node>> en : toBackup.entrySet()) {
+      try {
+        Level5Node  ln = en.getKey();
+        List<Node> toBackupList = en.getValue();
+
+        ln.createLevel5Backup(application, toBackupList);
+      } catch (Exception | Neo4jBadRequestException | Neo4jNoResult | Neo4jQueryException err) {
+        critical++;
+        neo4jAL.logError(String.format("Failed to create a backup for level with name '%s'.", en.getKey().getName()), err);
+      }
+    }
+
+    addStatus(String.format("%d Objects are backup by %d backup nodes.", nodeList.size(), toBackup.size()));
+
+    if(failed != 0) {
+      addStatus(String.format("Failed to backup %d nodes due to bad node format. Not critical/important.", failed));
+    }
+
+    if(critical != 0) {
+      addStatus(String.format("Failed to create %d backup nodes. Critical error.", failed));
+    }
+  }
+
+  /**
    * Group a specific tag on the application
    *
    * @param applicationContext Name of the application
@@ -252,6 +309,11 @@ public class LevelGroupController {
 
     // Retrieve most encountered Level 5
     Node oldLevel5Node = getLevel5(nodeList);
+
+
+    // Create backup for the levels
+    createBackups(applicationContext, nodeList);
+
 
     if (oldLevel5Node == null) {
       addStatus(String.format("Failed to find a Level 5 attached to Objects with tags '%s'.", groupName));
@@ -312,8 +374,12 @@ public class LevelGroupController {
 
     addStatus("All the level in the application were refreshed.");
 
+    // Clean the tag processes
+    cleanTag(applicationContext, groupName);
+
     return newLevel5;
   }
+
 
   /**
    * Clean the application from the Demeter tags
@@ -321,13 +387,34 @@ public class LevelGroupController {
    * @param applicationContext Name of the application
    * @throws Neo4jQueryException
    */
-  public void clean(String applicationContext) throws Neo4jQueryException {
+  public void cleanAllTags(String applicationContext) throws Neo4jQueryException {
     // Once the operation is done, remove Demeter tag prefix tags
     String removeTagsQuery =
             String.format(
                     "MATCH (o:`%1$s`) WHERE EXISTS(o.%2$s)  SET o.%2$s = [ x IN o.%2$s WHERE NOT x CONTAINS '%3$s' ] RETURN COUNT(o) as removedTags;",
                     applicationContext, IMAGING_OBJECT_TAGS, getLevelPrefix());
     Result tagRemoveRes = neo4jAL.executeQuery(removeTagsQuery);
+
+    if (tagRemoveRes.hasNext()) {
+      Long nDel = (Long) tagRemoveRes.next().get("removedTags");
+      neo4jAL.logInfo("# " + nDel + " demeter 'group tags' were removed from the database.");
+    }
+  }
+
+  /**
+   * Clean a specific group in the application
+   * @param applicationContext Name of the application
+   * @throws Neo4jQueryException If the query produced an error
+   */
+  public void cleanTag(String applicationContext, String group) throws Neo4jQueryException {
+    // Once the operation is done, remove Demeter tag prefix tags
+    String tag = getLevelPrefix() + group;
+    String removeTagsQuery =
+            String.format(
+                    "MATCH (o:`%1$s`) WHERE EXISTS(o.%2$s)  SET o.%2$s = [ x IN o.%2$s WHERE NOT x CONTAINS $tag ] RETURN COUNT(o) as removedTags;",
+                    applicationContext, IMAGING_OBJECT_TAGS);
+    Map<String, Object> params = Map.of("tag", tag);
+    Result tagRemoveRes = neo4jAL.executeQuery(removeTagsQuery, params);
 
     if (tagRemoveRes.hasNext()) {
       Long nDel = (Long) tagRemoveRes.next().get("removedTags");
@@ -348,7 +435,7 @@ public class LevelGroupController {
           throws Neo4jNoResult, Neo4jQueryException {
 
     // Search level 5 using Id list
-    Long[] idList = nodeList.stream().map(Node::getId).toArray(Long[]::new);
+    List<Long> idList = nodeList.stream().map(Node::getId).collect(Collectors.toList());
     String req = "MATCH (o:Object)<-[:Aggregates]-(l:Level5) WHERE ID(o) IN $idList " +
             "RETURN DISTINCT  COUNT(DISTINCT o), l as node ORDER BY COUNT(DISTINCT o) DESC";
     Map<String, Object> params = Map.of("idList", idList);

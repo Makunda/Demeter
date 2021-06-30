@@ -80,56 +80,52 @@ public class LevelsUtils {
       throws Neo4jQueryException {
     RelationshipType aggregatesRel = RelationshipType.withName(IMAGING_AGGREGATES);
 
+    String deleteLinks = null;
+    String refreshLinks = null;
+    String refreshCount = null;
 
-    // Refresh from level 4 to  level 1
-    for (int i = 4; i > 1; i--) {
-      String labelN = getLevelLabelByNumber(i);
-      String labelN0 = getLevelLabelByNumber(i - 1);
 
-      // Get nodes for this specific level
-      String getNodeReq =
-          String.format("MATCH (l:`%1$s`:`%2$s`) RETURN l as level", labelN, applicationContext);
-      Result result = neo4jAL.executeQuery(getNodeReq);
+    String deleteEmptyLevel5 = String.format("MATCH (l:Level5:`%s`) WHERE NOT (l)-[]->(:Object) DETACH DELETE l", applicationContext);
 
-      while (result.hasNext()) {
-        Node ln = (Node) result.next().get("level");
+    // Refresh from 1 to 4 levels
+    for(int i = 5; i >= 1; i--) {
+      try {
+        neo4jAL.logInfo(String.format("Refreshing level %d in application '%s'...", i, applicationContext));
+        // Delete to refresh
+        deleteLinks = String.format("MATCH (:Level%2$d:`%1$s`)-[r]->(:Level%2$d:`%1$s`) DELETE r", applicationContext,i);
 
-        String forgedToLevels =
-            String.format(
-                "MATCH (level:`%1$s`:`%2$s`)-[:%3$s]->(:`%4$s`:`%2$s`)-->(o:`%4$s`:`%2$s`)<-[:%3$s]-(l:`%1$s`) WHERE ID(level)=%5$d RETURN DISTINCT l as level;",
-                labelN, applicationContext, IMAGING_AGGREGATES, labelN0, ln.getId());
+        neo4jAL.executeQuery(deleteLinks);
 
-        String forgedFromLevel =
-            String.format(
-                "MATCH (level:`%1$s`:`%2$s`)-[:%3$s]->(:`%4$s`:`%2$s`)<--(o:`%4$s`:`%2$s`)<-[:%3$s]-(l:`%1$s`) WHERE ID(level)=%5$d RETURN DISTINCT l as level;",
-                labelN, applicationContext, IMAGING_AGGREGATES, labelN0, ln.getId());
+        if(i == 5) {
+          refreshLinks = String.format("MATCH (l:Level5:`%1$s`)-[]->(o)-->(o2)<-[]-(l2:Level5:`%1$s`) " +
+                  "WHERE ( o:Object OR o:SubObject ) AND ( o2:Object OR o2:SubObject ) AND ID(l)<>ID(l2) " +
+                  "MERGE (l)-[:References]->(l2); ", applicationContext);
 
-        String deleteOldRelations =
-            String.format(
-                "MATCH (level:`%1$s`:`%2$s`)-[r:%3$s]-(:`%1s`:`%2$s`) WHERE ID(level)=%4$d DELETE r",
-                labelN, applicationContext, IMAGING_AGGREGATES, ln.getId());
+          refreshCount = String.format("MATCH (l:Level5:`%1$s`)-[]->(o:Object) " +
+                  "WITH l, COUNT(DISTINCT o) as objCount " +
+                  "SET l.Count=objCount;", applicationContext);
+        } else {
+          refreshLinks = String.format("MATCH (l:Level%2$d:`%1$s`)-[]->(o)-->(o2)<-[]-(l2:Level%2$d:`%1$s`) " +
+                  "WHERE o:Level%3$d AND o2:Level%3$d AND ID(l)<>ID(l2) " +
+                  "MERGE (l)-[:References]->(l2); ", applicationContext, i, i+1);
 
-        // Remove old relations
-        neo4jAL.executeQuery(deleteOldRelations);
-
-        // Get others levels linked to this level - Outgoing level
-        Result resTo = neo4jAL.executeQuery(forgedToLevels);
-        while (resTo.hasNext()) {
-          Node resToNode = (Node) resTo.next().get("level");
-          if (resToNode.getId() == ln.getId()) continue; // Ignore self relationships
-
-          ln.createRelationshipTo(resToNode, aggregatesRel);
-          ;
+          refreshCount = String.format("MATCH (l:Level%2$d:`%1$s`)-[]->(lChild:Level%3$d) WHERE EXISTS(lChild.Count) " +
+                  "WITH l, SUM(lChild.Count) as objCount " +
+                  "SET l.Count=objCount;", applicationContext, i, i+1);
         }
 
-        // Get others levels linked to this level - Incoming level
-        Result resFrom = neo4jAL.executeQuery(forgedFromLevel);
-        while (resFrom.hasNext()) {
-          Node resFromNode = (Node) resFrom.next().get("level");
-          if (resFromNode.getId() == ln.getId()) continue; // Ignore self relationships
+        neo4jAL.executeQuery(refreshLinks);
+        neo4jAL.executeQuery(refreshCount);
 
-          resFromNode.createRelationshipTo(ln, aggregatesRel);
-        }
+        neo4jAL.executeQuery(deleteEmptyLevel5);
+
+      } catch (Exception | Neo4jQueryException err) {
+        neo4jAL.logError(String.format("Failed to refresh level '%d' in application '%s'.", i, applicationContext), err);
+        if(deleteLinks != null) neo4jAL.logError("Delete Links : " +deleteLinks);
+        if(refreshLinks != null) neo4jAL.logError("Refresh Links : " +refreshLinks);
+        if(refreshCount != null) neo4jAL.logError("Refresh Count : " +refreshCount);
+        neo4jAL.logError("Delete Empty level 5: " + deleteEmptyLevel5);
+        throw err;
       }
     }
   }

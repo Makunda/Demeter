@@ -21,6 +21,7 @@ package com.castsoftware.demeter.models.imaging;
 
 import com.castsoftware.demeter.config.Configuration;
 import com.castsoftware.demeter.database.Neo4jAL;
+import com.castsoftware.demeter.database.Neo4jTypeManager;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadRequestException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
@@ -147,10 +148,10 @@ public class Level5Node extends Neo4jObject {
     try {
       // Initialize the node
       String name = (String) node.getProperty(getNameProperty());
-      Boolean concept = (Boolean) node.getProperty(getConceptProperty());
+      Boolean concept = Neo4jTypeManager.getAsBoolean(node, getConceptProperty(), false);
       String fullName = (String) node.getProperty(getFullNameProperty());
       String color = (String) node.getProperty(getColorProperty());
-      Long level = (Long) node.getProperty(getLevelProperty());
+      Long level = Neo4jTypeManager.getAsLong(node, getLevelProperty(), 5L);
       String shade = (String) node.getProperty(getShadeProperty());
 
       // optional properties

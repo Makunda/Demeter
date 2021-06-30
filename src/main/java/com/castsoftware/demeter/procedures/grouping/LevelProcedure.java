@@ -68,6 +68,25 @@ public class LevelProcedure {
     }
   }
 
+  @Procedure(value = "demeter.api.refresh.levels", mode = Mode.WRITE)
+  @Description(
+          "demeter.api.refresh.levels(String Application) - Refresh all the levels in the application")
+  public Stream<OutputMessage> refreshLevels(@Name(value = "Application") String application)
+          throws ProcedureException {
+
+    try {
+      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+      LevelsUtils.refreshAllAbstractLevel(nal, application);
+
+      return Stream.of(new OutputMessage("Levels refreshed"));
+
+    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("An error occurred while executing the procedure", e);
+      throw ex;
+    }
+  }
+
   @Procedure(value = "demeter.api.group.levels.all", mode = Mode.WRITE)
   @Description(
           "demeter.api.group.levels.all() - Group levels in every applications")
