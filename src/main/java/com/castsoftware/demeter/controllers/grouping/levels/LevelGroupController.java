@@ -408,17 +408,16 @@ public class LevelGroupController {
    */
   public void cleanTag(String applicationContext, String group) throws Neo4jQueryException {
     // Once the operation is done, remove Demeter tag prefix tags
-    String tag = getLevelPrefix() + group;
     String removeTagsQuery =
             String.format(
                     "MATCH (o:`%1$s`) WHERE EXISTS(o.%2$s)  SET o.%2$s = [ x IN o.%2$s WHERE NOT x CONTAINS $tag ] RETURN COUNT(o) as removedTags;",
                     applicationContext, IMAGING_OBJECT_TAGS);
-    Map<String, Object> params = Map.of("tag", tag);
+    Map<String, Object> params = Map.of("tag", group);
     Result tagRemoveRes = neo4jAL.executeQuery(removeTagsQuery, params);
 
     if (tagRemoveRes.hasNext()) {
       Long nDel = (Long) tagRemoveRes.next().get("removedTags");
-      neo4jAL.logInfo("# " + nDel + " demeter 'group tags' were removed from the database.");
+      neo4jAL.logInfo("# " + nDel + " demeter tag ("+group+") were removed from the database.");
     }
   }
 

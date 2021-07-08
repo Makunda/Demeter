@@ -270,16 +270,18 @@ public class ArchitectureGroupController extends AGrouping {
 
         paramsNode = Map.of("idObj", rObject.getId(), "idSubset", idSubset, "subsetName", nameSubset);
 
-        reObj = "MATCH (newS:Subset) WHERE ID(newS)=$idSubset " +
-                "WITH newS " +
+        reObj = "MATCH (newS:Subset)<-[]-(a:ArchiModel) WHERE ID(newS)=$idSubset " +
+                "WITH newS, a " +
                 "MATCH (o:Object:`"+applicationContext+"`) WHERE ID(o)=$idObj "
+                + "OPTIONAL MATCH (o)<-[r]-(sOld:Subset)<-[]-(a) DELETE r "
                 + "SET o.Subset = CASE WHEN o.Subset IS NULL THEN [$subsetName] ELSE o.Subset + $subsetName END "
                 + "WITH newS, o as obj "
                 + "MERGE (newS)-[:Contains]->(obj) ";
 
-        subObj = "MATCH (newS:Subset) WHERE ID(newS)=$idSubset " +
+        subObj = "MATCH (newS:Subset)<-[]-(a:ArchiModel) WHERE ID(newS)=$idSubset " +
                 "WITH newS " +
                 "MATCH (o:Object:`"+applicationContext+"`)<-[:BELONGTO]-(j:SubObject) WHERE ID(o)=$idObj "
+                + "OPTIONAL MATCH (j)<-[r]-(sOld:Subset)<-[]-(a) DELETE r "
                 + "SET j.Subset = CASE WHEN j.Subset IS NULL THEN [$subsetName] ELSE o.Subset + $subsetName END "
                 + "WITH newS, j "
                 + "MERGE (newS)-[:Contains]->(j)  ";
