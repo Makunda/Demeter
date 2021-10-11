@@ -17,7 +17,7 @@
  *
  */
 
-package com.castsoftware.demeter.procedures.grouping;
+package com.castsoftware.demeter.procedures.grouping.module;
 
 import com.castsoftware.demeter.config.Configuration;
 import com.castsoftware.demeter.controllers.grouping.AGrouping;

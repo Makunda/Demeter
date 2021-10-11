@@ -92,6 +92,42 @@ public class Neo4jAL {
   }
 
   /**
+   * Delete a node by its ID
+   * @param idNode Id of the node to delete
+   * @throws Neo4jQueryException Exception during the execution of the query
+   */
+  public void deleteNodeById(Long idNode) throws Neo4jQueryException {
+    String req = "MATCH (o) WHERE ID(o)=$idNode DETACH DELETE o;";
+    Map<String, Object> params = Map.of("idNode", idNode);
+
+    try {
+      this.executeQuery(req, params);
+    } catch (QueryExecutionException e) {
+      throw new Neo4jQueryException(
+              "Error while deleting a node.", req, e, ERROR_PREFIX + "DELN1");
+    }
+  }
+
+
+  /**
+   * Delete a node by its ID
+   * @param idNode Id of the node to delete
+   * @throws Neo4jQueryException Exception during the execution of the query
+   */
+  public void deleteByIdAndLabel(Long idNode, String label) throws Neo4jQueryException {
+    String req = String.format("MATCH (o:`%s`) WHERE ID(o)=$idNode DETACH DELETE o;", label);
+    Map<String, Object> params = Map.of("idNode", idNode);
+
+    try {
+      this.executeQuery(req, params);
+    } catch (QueryExecutionException e) {
+      throw new Neo4jQueryException(
+              "Error while deleting a node.", req, e, ERROR_PREFIX + "DELN1");
+    }
+  }
+
+
+  /**
    * Execute a single query
    *
    * @param query Cypher query to execute

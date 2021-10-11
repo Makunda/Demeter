@@ -17,7 +17,7 @@
  *
  */
 
-package com.castsoftware.demeter.procedures.grouping;
+package com.castsoftware.demeter.procedures.grouping.level;
 
 import com.castsoftware.demeter.controllers.api.GroupingController;
 import com.castsoftware.demeter.controllers.grouping.levels.LevelGroupController;
@@ -39,7 +39,7 @@ import org.neo4j.procedure.*;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class LevelProcedure {
+public class LevelProcedures {
 
   @Context public GraphDatabaseService db;
 
