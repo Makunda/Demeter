@@ -26,10 +26,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 import picocli.CommandLine;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class AggregationController {
 
@@ -220,10 +217,20 @@ public class AggregationController {
 		// Link the objects
 		String reqLinks = String.format("MATCH (a:%s:`%2$s`) WHERE ID(a)=$id " +
 				"WITH a " +
-				"MATCH (o:Object:`%2$s`) WHERE ID(o) in $idNodes " +
+				"MATCH (o:Object:`%2$s`) WHERE ID(o)=$idObj " +
 				"MERGE (a)-[:Aggregates]->(o)", CUSTOM_LABEL, application);
-		Map<String, Object> paramsLinks = Map.of("id", customNode.getId(), "idNodes", idNodes);
-		this.neo4jAL.executeQuery(reqLinks, paramsLinks);
+
+		Map<String, Object> paramsLinks;
+		int count = 0;
+		for(Long id : idNodes) {
+			paramsLinks = Map.of("id", customNode.getId(), "idObj", id);
+			this.neo4jAL.executeQuery(reqLinks, paramsLinks);
+			count ++;
+		}
+
+		neo4jAL.logInfo(String.format("Executed %d queries to link the " +
+				"objects for custom node with id '%d' ", count, customNode.getId()));
+
 	}
 
 	/**
@@ -292,8 +299,9 @@ public class AggregationController {
 		Result res = this.neo4jAL.executeQuery(req, params);
 		List<Long> nodeIdList = new ArrayList<>();
 		while(res.hasNext()) {
-			nodeIdList.add((Long) res.next().get("node"));
+			nodeIdList.add((Long) res.next().get("idNode"));
 		}
+		nodeIdList.removeAll(Collections.singleton(null));
 
 		this.neo4jAL.logInfo(String.format("Creating a custom nodes with %d objects attached.", nodeIdList.size()));
 
