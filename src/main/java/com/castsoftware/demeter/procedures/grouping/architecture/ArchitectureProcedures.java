@@ -68,6 +68,29 @@ public class ArchitectureProcedures {
 		}
 	}
 
+	@Procedure(value = "demeter.create.architecture", mode = Mode.WRITE)
+	@Description(
+			"demeter.create.architecture(String applicationName, String architectureName, List<Long> IdList) " +
+					"- Group the list of tags provided as new an architecture")
+	public Stream<NodeResult> manualArchitectureGroup(@Name(value = "ApplicationName") String applicationName,
+													  @Name(value = "ArchitectureName") String architectureName,
+													  @Name(value = "IdList") List<Long> idList)
+			throws ProcedureException {
+
+		try {
+			Neo4jAL nal = new Neo4jAL(db, transaction, log);
+			ArchitectureGroupController ag = new ArchitectureGroupController(nal, applicationName);
+			Node node = ag.manualLaunch(architectureName, idList);
+
+			return Stream.of(new NodeResult(node)); // return the architecture created
+
+		} catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException e) {
+			ProcedureException ex = new ProcedureException(e);
+			log.error("An error occurred while executing the procedure", e);
+			throw ex;
+		}
+	}
+
 	@Procedure(value = "demeter.delete.architecture.subset", mode = Mode.WRITE)
 	@Description(
 			"demeter.delete.architectures.subset(String applicationName, Long SubsetId) - Delete a subset in a view")

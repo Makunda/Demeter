@@ -28,6 +28,7 @@ import org.neo4j.logging.Log;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class Neo4jAL {
 
@@ -102,6 +103,27 @@ public class Neo4jAL {
 
     try {
       this.executeQuery(req, params);
+    } catch (QueryExecutionException e) {
+      throw new Neo4jQueryException(
+              "Error while deleting a node.", req, e, ERROR_PREFIX + "DELN1");
+    }
+  }
+
+  /**
+   * Find a node by its ID
+   * @param idNode Id of the node to delete
+   * @throws Neo4jQueryException Exception during the execution of the query
+   */
+  public Optional<Node> findNodeById(Long idNode) throws Neo4jQueryException {
+    String req = "MATCH (o) WHERE ID(o)=$idNode RETURN o as node;";
+    Map<String, Object> params = Map.of("idNode", idNode);
+
+    try {
+      Result res = this.executeQuery(req, params);
+      if(!res.hasNext()) return Optional.empty();
+
+      Node n = (Node) res.next().get("node");
+      return Optional.of(n);
     } catch (QueryExecutionException e) {
       throw new Neo4jQueryException(
               "Error while deleting a node.", req, e, ERROR_PREFIX + "DELN1");

@@ -29,10 +29,7 @@ import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public abstract class AGrouping {
 
@@ -62,6 +59,31 @@ public abstract class AGrouping {
 		neo4jAL.logInfo("Cleaning tags...");
 		cleanTags();
 		return nodes;
+	}
+
+	/***
+	 * Launch manually the grouping of a controller
+	 * @param groupName Name of the group to create
+	 * @param idList List of nodes IDs to merge
+	 * @return The list node created
+	 * @throws Neo4jQueryException
+	 * @throws Neo4jBadRequestException
+	 */
+	public Node manualLaunch(String groupName, List<Long> idList) throws Neo4jQueryException, Neo4jBadRequestException {
+		List<Node> nodeList = new ArrayList<>();
+
+		Optional<Node> optNode;
+		for(Long id : idList) { // find the ID list of the nodes
+			optNode = neo4jAL.findNodeById(id);
+			optNode.ifPresent(nodeList::add);
+		}
+
+		// Group the nodes
+		neo4jAL.logInfo(String.format("Grouping Controller : Found %d nodes to merge.", nodeList.size()));
+		Node n = group(groupName, nodeList);
+
+		neo4jAL.logInfo(String.format("Grouping Controller : Successfully grouped %s community.", groupName));
+		return n;
 	}
 
 	public List<Node> launchWithoutClean() throws Neo4jQueryException, Neo4jBadRequestException {
