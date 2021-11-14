@@ -351,7 +351,6 @@ public class LevelGroupController {
     ;
     addStatus("New Level5 and ancient level 4 were linked together");
 
-    startTimer = Instant.now();
 
     // Delete old relationships, to not interfere with the new level
     for (Node n : nodeList) {
