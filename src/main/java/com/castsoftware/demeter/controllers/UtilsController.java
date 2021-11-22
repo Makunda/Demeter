@@ -137,6 +137,7 @@ public class UtilsController {
 
   /**
    * Get the actual value of the Workspace
+   *
    * @return
    * @throws FileNotFoundException
    */
@@ -217,7 +218,7 @@ public class UtilsController {
       }
     }
 
-    double total = (double) (valid + notValid);
+    double total = valid + notValid;
     double p = (double) (valid) / total;
     return String.format(
         "%s TagRequest nodes were checked. %d valid node(s) were discovered. %d nonfunctional node(s) were identified. Percentage of success : %.2f",
@@ -226,11 +227,13 @@ public class UtilsController {
 
   /**
    * Install the Demeter workspace and load the configuration
+   *
    * @param neo4jAL Neo4j Access Layer
    * @param workspacePath
    * @return
    */
-  public static List<String> install(Neo4jAL neo4jAL, String workspacePath) throws FileNotFoundException {
+  public static List<String> install(Neo4jAL neo4jAL, String workspacePath)
+      throws FileNotFoundException {
     // Set the workspace path
     List<String> returnList = new ArrayList<>();
     returnList.addAll(setWorkspace(workspacePath));
@@ -245,7 +248,8 @@ public class UtilsController {
         importer.load(initDataZip.toString());
         returnList.add("Initialisation was successful !");
       } catch (Exception | com.castsoftware.exporter.exceptions.ProcedureException e) {
-        returnList.add("The import of the data failed for the following reason: " + e.getLocalizedMessage());
+        returnList.add(
+            "The import of the data failed for the following reason: " + e.getLocalizedMessage());
       }
 
     } else {
@@ -254,6 +258,4 @@ public class UtilsController {
 
     return returnList;
   }
-
-
 }

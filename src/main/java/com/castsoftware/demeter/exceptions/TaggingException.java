@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
 public abstract class TaggingException extends Throwable {
 
   private static final long serialVersionUID = -8579984202435983804L;
-  private static Pattern errorCodeReg =
+  private static final Pattern errorCodeReg =
       Pattern.compile("^[\\w\\d]{3}_[\\w\\d]{2,3}_[\\w\\d]{8,10}$", Pattern.CASE_INSENSITIVE);
   protected String code;
 

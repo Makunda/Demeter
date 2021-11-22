@@ -87,7 +87,7 @@ public class BackupController {
       }
     }
 
-    // Get all  backup node
+    // Get all backup node
     List<BackupNode> backupNodeList =
         BackupNode.getApplicationBackupNode(neo4jAL, applicationContext, IMAGING_LEVEL_5_LABEL);
 

@@ -37,13 +37,14 @@ public class ModuleGroupController extends AGrouping {
 
   // Static Imaging nodes
 
-  private static final String HIDDEN_MODULE_LABEL = Configuration.get("demeter.module.hidden.label");
+  private static final String HIDDEN_MODULE_LABEL =
+      Configuration.get("demeter.module.hidden.label");
   // Static Imaging relationships
   private static final String IMAGING_CONTAINS =
-          Configuration.get("imaging.node.module.links.to_objects");
+      Configuration.get("imaging.node.module.links.to_objects");
   // Demeter Conf
   private static String GROUP_MODULE_TAG_IDENTIFIER =
-          Configuration.getBestOfALl("demeter.prefix.module_group");
+      Configuration.getBestOfALl("demeter.prefix.module_group");
 
   static {
     if (GROUP_MODULE_TAG_IDENTIFIER == null) {
@@ -51,46 +52,40 @@ public class ModuleGroupController extends AGrouping {
     }
   }
 
-  /**
-   * Refresh the links between the modules, and recreate the correct links
-   */
-  public void refreshModuleLinks()
-      throws Neo4jQueryException {
+  /** Refresh the links between the modules, and recreate the correct links */
+  public void refreshModuleLinks() throws Neo4jQueryException {
     String forgedToOtherModules =
-            String.format("MATCH (n:Module:`%1$s`)--(int)-->(int2)--(l:Module:`%1$s`) WHERE (int:Object OR int:SubObject) AND (int2:Object OR int2:SubObject) AND ID(n)<>ID(l) " +
-                    "MERGE (n)-[:References]->(l)", applicationContext);
-
+        String.format(
+            "MATCH (n:Module:`%1$s`)--(int)-->(int2)--(l:Module:`%1$s`) WHERE (int:Object OR int:SubObject) AND (int2:Object OR int2:SubObject) AND ID(n)<>ID(l) "
+                + "MERGE (n)-[:References]->(l)",
+            applicationContext);
 
     Result resTo = neo4jAL.executeQuery(forgedToOtherModules);
     while (resTo.hasNext()) {
-      neo4jAL.logInfo(String.format("Got a relation to %s", (String) resTo.next().get("distant")));
+      neo4jAL.logInfo(String.format("Got a relation to %s", resTo.next().get("distant")));
     }
   }
 
-  /**
-   * Refresh count for modules
-   */
+  /** Refresh count for modules */
   public void moduleRecount() throws Neo4jQueryException {
     // Update the old Level 5 and remove it is there no node linked to it
     String forgedNumConnected =
         String.format(
-            "MATCH (n:Module:`%1$s`)-[:Contains]->(o:Object) WITH n as module, COUNT(o) as links " +
-                    "SET module.Count=links ",
-                applicationContext);
+            "MATCH (n:Module:`%1$s`)-[:Contains]->(o:Object) WITH n as module, COUNT(o) as links "
+                + "SET module.Count=links ",
+            applicationContext);
 
-   neo4jAL.executeQuery(forgedNumConnected);
-   // remove modules without links anymore
+    neo4jAL.executeQuery(forgedNumConnected);
+    // remove modules without links anymore
     String removeEmpty =
-            String.format(
-                    "MATCH (n:Module:`%1$s`) WHERE n.Count=0 DETACH DELETE n",
-                    applicationContext);
+        String.format(
+            "MATCH (n:Module:`%1$s`) WHERE n.Count=0 DETACH DELETE n", applicationContext);
     neo4jAL.executeQuery(removeEmpty);
   }
 
-
   @Override
   public String getTagPrefix() {
-    return  Configuration.getBestOfALl("demeter.prefix.module_group");
+    return Configuration.getBestOfALl("demeter.prefix.module_group");
   }
 
   @Override
@@ -105,7 +100,8 @@ public class ModuleGroupController extends AGrouping {
   }
 
   @Override
-  public Node group(String groupName, List<Node> nodeList) throws Neo4jQueryException, Neo4jBadRequestException {
+  public Node group(String groupName, List<Node> nodeList)
+      throws Neo4jQueryException, Neo4jBadRequestException {
     RelationshipType containsRel = RelationshipType.withName(IMAGING_CONTAINS);
     Label moduleLabel = Label.label("Module");
 
@@ -114,7 +110,6 @@ public class ModuleGroupController extends AGrouping {
 
     // Assert the application name is not empty
     assert !applicationContext.isEmpty() : "The application name cannot be empty.";
-
 
     // Get other modules nodes
     for (Node n : nodeList) {
@@ -136,14 +131,19 @@ public class ModuleGroupController extends AGrouping {
     // Get num Object + Sub obj
 
     // Module Creation of the node (Merge existing nodes)
-    String reqModule = String.format("MERGE (m:Module:`%1$s` {Type:'module', Color:'rgb(34, 199, 214)', Name:$name }) " +
-            "SET m.AipId=$aipId SET m.AlternateDrilldown=true SET m.Count = CASE WHEN EXISTS(m.Count) THEN m.Count + $numItems ELSE $numItems END " +
-            "RETURN m as node", applicationContext);
-    Map<String, Object> params = Map.of("numItems", new Long(nodeList.size()), "aipId", maxId.toString(), "name", groupName);
+    String reqModule =
+        String.format(
+            "MERGE (m:Module:`%1$s` {Type:'module', Color:'rgb(34, 199, 214)', Name:$name }) "
+                + "SET m.AipId=$aipId SET m.AlternateDrilldown=true SET m.Count = CASE WHEN EXISTS(m.Count) THEN m.Count + $numItems ELSE $numItems END "
+                + "RETURN m as node",
+            applicationContext);
+    Map<String, Object> params =
+        Map.of("numItems", new Long(nodeList.size()), "aipId", maxId.toString(), "name", groupName);
     Result resModule = neo4jAL.executeQuery(reqModule, params);
     neo4jAL.logInfo("Debug request :" + reqModule);
-    if(!resModule.hasNext()) {
-      throw new Neo4jBadRequestException(String.format("The request %s did not produced any result", reqModule), "MODGxGROM1");
+    if (!resModule.hasNext()) {
+      throw new Neo4jBadRequestException(
+          String.format("The request %s did not produced any result", reqModule), "MODGxGROM1");
     }
 
     Node module = (Node) resModule.next().get("node");
@@ -154,25 +154,32 @@ public class ModuleGroupController extends AGrouping {
     Map<String, Object> paramsNode;
     for (Node rObject : nodeList) {
       // Link objects
-      paramsNode = Map.of("idObj", rObject.getId(), "idModule", module.getId(), "moduleName", groupName);
+      paramsNode =
+          Map.of("idObj", rObject.getId(), "idModule", module.getId(), "moduleName", groupName);
 
-      String reObj = String.format("MATCH (o:Object:`%s`) WHERE ID(o)=$idObj " +
-              "OPTIONAL MATCH (o)<-[r:Contains]-(oldModule:Module) " +
-              "OPTIONAL MATCH (o)<-[r:Contains]-(oldModule:`%2$s`) " +
-              "SET o.Module = CASE WHEN o.Module IS NULL THEN [$moduleName] ELSE [ x in o.Module WHERE NOT x=oldModule.Name ] + $moduleName END " +
-              "DELETE r " +
-              "WITH o as obj " +
-              "MATCH (newM:Module) WHERE ID(newM)=$idModule " +
-              "CREATE (newM)-[:Contains]->(obj) ", applicationContext, HIDDEN_MODULE_LABEL);
+      String reObj =
+          String.format(
+              "MATCH (o:Object:`%s`) WHERE ID(o)=$idObj "
+                  + "OPTIONAL MATCH (o)<-[r:Contains]-(oldModule:Module) "
+                  + "OPTIONAL MATCH (o)<-[r:Contains]-(oldModule:`%2$s`) "
+                  + "SET o.Module = CASE WHEN o.Module IS NULL THEN [$moduleName] ELSE [ x in o.Module WHERE NOT x=oldModule.Name ] + $moduleName END "
+                  + "DELETE r "
+                  + "WITH o as obj "
+                  + "MATCH (newM:Module) WHERE ID(newM)=$idModule "
+                  + "CREATE (newM)-[:Contains]->(obj) ",
+              applicationContext, HIDDEN_MODULE_LABEL);
 
-      String subObj = String.format("MATCH (o:Object:`%s`)<-[:BELONGTO]-(j:SubObject) WHERE ID(o)=$idObj " +
-              "WITH j " +
-              "OPTIONAL MATCH (m:Module)-[rd:Contains]->(j) " +
-              "OPTIONAL MATCH (m:`%2$s`)-[rd:Contains]->(j) " +
-              "SET j.Module = CASE WHEN j.Module IS NULL THEN [$moduleName] ELSE j.Module + $moduleName END " +
-              "DELETE rd " +
-              "WITH j " +
-              "MATCH (newM:Module) WHERE ID(newM)=$idModule CREATE (newM)-[:Contains]->(j)  ", applicationContext, HIDDEN_MODULE_LABEL);
+      String subObj =
+          String.format(
+              "MATCH (o:Object:`%s`)<-[:BELONGTO]-(j:SubObject) WHERE ID(o)=$idObj "
+                  + "WITH j "
+                  + "OPTIONAL MATCH (m:Module)-[rd:Contains]->(j) "
+                  + "OPTIONAL MATCH (m:`%2$s`)-[rd:Contains]->(j) "
+                  + "SET j.Module = CASE WHEN j.Module IS NULL THEN [$moduleName] ELSE j.Module + $moduleName END "
+                  + "DELETE rd "
+                  + "WITH j "
+                  + "MATCH (newM:Module) WHERE ID(newM)=$idModule CREATE (newM)-[:Contains]->(j)  ",
+              applicationContext, HIDDEN_MODULE_LABEL);
 
       neo4jAL.executeQuery(reObj, paramsNode);
       neo4jAL.executeQuery(subObj, paramsNode);
@@ -183,7 +190,5 @@ public class ModuleGroupController extends AGrouping {
 
   public ModuleGroupController(Neo4jAL neo4jAL, String applicationContext) {
     super(neo4jAL, applicationContext);
-
   }
-
 }

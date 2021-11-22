@@ -49,7 +49,7 @@ public class LevelGroupController {
 
   // Demeter Conf
   private static final String GENERATED_LEVEL_IDENTIFIER =
-          Configuration.get("demeter.prefix.generated_level_prefix");
+      Configuration.get("demeter.prefix.generated_level_prefix");
 
   // Class Conf
   private static final String ERROR_PREFIX = "GROCx";
@@ -68,8 +68,7 @@ public class LevelGroupController {
   }
 
   /**
-   * Group demeter levels in every applications
-   * Entry point of the Grouping action
+   * Group demeter levels in every applications Entry point of the Grouping action
    *
    * @return The list of level created
    * @throws Neo4jQueryException If the Neo4j query or its parameter are incorrect
@@ -77,8 +76,8 @@ public class LevelGroupController {
   public List<Node> groupInAllApplications() throws Neo4jQueryException {
     try {
       String applicationReq =
-              "MATCH (o:Object) WHERE EXISTS (o.Tags) AND any(x in o.Tags WHERE x CONTAINS $tagPrefix) "
-                      + "RETURN DISTINCT [ x in LABELS(o) WHERE NOT x='Object'][0] as application;";
+          "MATCH (o:Object) WHERE EXISTS (o.Tags) AND any(x in o.Tags WHERE x CONTAINS $tagPrefix) "
+              + "RETURN DISTINCT [ x in LABELS(o) WHERE NOT x='Object'][0] as application;";
       Map<String, Object> params = Map.of("tagPrefix", getLevelPrefix());
 
       Result res = neo4jAL.executeQuery(applicationReq, params);
@@ -95,10 +94,15 @@ public class LevelGroupController {
       // Print the status of the execution
       String applicationsAsString = String.join(", ", applicationProcessed);
       if (fullResults.isEmpty()) {
-        addStatus(String.format("No Object tagged with prefix '%s' was found in applications :  [%s].",
+        addStatus(
+            String.format(
+                "No Object tagged with prefix '%s' was found in applications :  [%s].",
                 getLevelPrefix(), applicationsAsString));
       } else {
-        addStatus(String.format("%d applications were processed. List: [%s]", applicationProcessed.size(), applicationsAsString));
+        addStatus(
+            String.format(
+                "%d applications were processed. List: [%s]",
+                applicationProcessed.size(), applicationsAsString));
       }
 
       return fullResults;
@@ -112,7 +116,6 @@ public class LevelGroupController {
     }
   }
 
-
   /**
    * Get the Demeter Tag identifier
    *
@@ -123,29 +126,29 @@ public class LevelGroupController {
   }
 
   /**
-   * Group all the level present in an application
-   * Entry point of the Grouping action
+   * Group all the level present in an application Entry point of the Grouping action
    *
    * @param applicationContext Name of the Application concerned by the merge
    * @return
    * @throws Neo4jQueryException
    */
-  public List<Node> groupAllLevels(String applicationContext)
-          throws Neo4jQueryException {
+  public List<Node> groupAllLevels(String applicationContext) throws Neo4jQueryException {
     Map<String, List<Node>> groupMap = new HashMap<>();
 
     try {
-      addStatus(String.format("Starting Demeter level 5 grouping in application '%s'", applicationContext));
+      addStatus(
+          String.format(
+              "Starting Demeter level 5 grouping in application '%s'", applicationContext));
 
       // Hot Fix Sanitize Application name
 
       // Get the list of nodes prefixed by dm_tag
       String forgedTagRequest =
-              String.format(
-                      "MATCH (o:%1$s:`%2$s`) WHERE any( x in o.%3$s WHERE x CONTAINS '%4$s')  "
-                              + "WITH o, [x in o.%3$s WHERE x CONTAINS '%4$s'][0] as g "
-                              + "RETURN o as node, g as group;",
-                      IMAGING_OBJECT_LABEL, applicationContext, IMAGING_OBJECT_TAGS, getLevelPrefix());
+          String.format(
+              "MATCH (o:%1$s:`%2$s`) WHERE any( x in o.%3$s WHERE x CONTAINS '%4$s')  "
+                  + "WITH o, [x in o.%3$s WHERE x CONTAINS '%4$s'][0] as g "
+                  + "RETURN o as node, g as group;",
+              IMAGING_OBJECT_LABEL, applicationContext, IMAGING_OBJECT_TAGS, getLevelPrefix());
 
       Result res = neo4jAL.executeQuery(forgedTagRequest);
 
@@ -162,7 +165,10 @@ public class LevelGroupController {
         groupMap.get(group).add(node);
       }
 
-      addStatus(String.format("Found %d distinct tags in the application '%s'", groupMap.size(), applicationContext));
+      addStatus(
+          String.format(
+              "Found %d distinct tags in the application '%s'",
+              groupMap.size(), applicationContext));
 
       List<Node> resNodes = new ArrayList<>();
       List<String> faultyTags = new ArrayList<>();
@@ -176,23 +182,29 @@ public class LevelGroupController {
         try {
           Node n = groupSingleTag(applicationContext, groupName, nodeList);
           resNodes.add(n);
-        } catch (Exception
-                | Neo4jNoResult err) {
+        } catch (Exception | Neo4jNoResult err) {
           neo4jAL.logError(
-                  "An error occurred trying to create Level 5 for nodes with tags : " + groupName, err);
+              "An error occurred trying to create Level 5 for nodes with tags : " + groupName, err);
           faultyTags.add(groupName);
         }
       }
 
       if (!faultyTags.isEmpty()) {
-        addStatus(String.format("[%s] produced an error when trying to group them. Check the logs.", String.join(", ", faultyTags)));
+        addStatus(
+            String.format(
+                "[%s] produced an error when trying to group them. Check the logs.",
+                String.join(", ", faultyTags)));
       }
 
-      addStatus(String.format("%d levels have been created in application '%s'.", resNodes.size(), applicationContext));
+      addStatus(
+          String.format(
+              "%d levels have been created in application '%s'.",
+              resNodes.size(), applicationContext));
 
       return resNodes;
     } catch (Exception | Neo4jQueryException err) {
-      neo4jAL.logError(String.format("Failed to group levels in application '%s'", applicationContext), err);
+      neo4jAL.logError(
+          String.format("Failed to group levels in application '%s'", applicationContext), err);
       addStatus("Process stopped due to an error.");
       throw err;
     } finally {
@@ -210,10 +222,7 @@ public class LevelGroupController {
     this.messageOutput.add(message);
   }
 
-  /**
-   * Print the list of message present in {messageOutput}.
-   * And flush the lst
-   */
+  /** Print the list of message present in {messageOutput}. And flush the lst */
   private void printStatus() {
     int it = 0;
     StringBuilder sb = new StringBuilder();
@@ -226,79 +235,19 @@ public class LevelGroupController {
   }
 
   /**
-   * Create backup node for each node in the list
-   * @param application Name of the application
-   * @param nodeList List of node to backup
-   */
-  private void createBackups(String application, List<Node> nodeList) {
-    // For each node get the Level 5
-    Map<Level5Node, List<Node>> toBackup = new HashMap<>();
-
-    int failed = 0;
-    int critical = 0;
-
-    String req = "MATCH (o:Object)<-[:Aggregates]-(l:Level5) WHERE ID(o)=$idNode AND NOT l.FullName CONTAINS $genPrefix " +
-            "RETURN DISTINCT l as level";
-    Map<String, Object> params;
-    Result res;
-    for (Node n : nodeList) {
-      try {
-        params = Map.of("idNode", n.getId(), "genPrefix", GENERATED_LEVEL_IDENTIFIER);
-        res = neo4jAL.executeQuery(req, params);
-
-        if(!res.hasNext()) continue;
-
-        Node levelNode = (Node) res.next().get("level");
-        Level5Node l5 = Level5Node.fromNode(neo4jAL, levelNode);
-
-        if(!toBackup.containsKey(l5)) toBackup.put(l5, new ArrayList<>());
-        toBackup.get(l5).add(n);
-
-      } catch (Exception | Neo4jQueryException | Neo4jBadNodeFormatException error) {
-        failed++;
-        neo4jAL.logError("Failed to backup ", error);
-      }
-    }
-
-    // Create Backup nodes
-    for (Map.Entry<Level5Node, List<Node>> en : toBackup.entrySet()) {
-      try {
-        Level5Node  ln = en.getKey();
-        List<Node> toBackupList = en.getValue();
-
-        ln.createLevel5Backup(application, toBackupList);
-      } catch (Exception | Neo4jBadRequestException | Neo4jNoResult | Neo4jQueryException err) {
-        critical++;
-        neo4jAL.logError(String.format("Failed to create a backup for level with name '%s'.", en.getKey().getName()), err);
-      }
-    }
-
-    addStatus(String.format("%d Objects are backup by %d backup nodes.", nodeList.size(), toBackup.size()));
-
-    if(failed != 0) {
-      addStatus(String.format("Failed to backup %d nodes due to bad node format. Not critical/important.", failed));
-    }
-
-    if(critical != 0) {
-      addStatus(String.format("Failed to create %d backup nodes. Critical error.", failed));
-    }
-  }
-
-  /**
    * Group a specific tag on the application
    *
    * @param applicationContext Name of the application
-   * @param groupName          Name of the group
-   * @param nodeList           List of node concerned by the grouping
+   * @param groupName Name of the group
+   * @param nodeList List of node concerned by the grouping
    * @return
    * @throws Neo4jNoResult
    * @throws Neo4jQueryException
    * @throws Neo4jBadNodeFormatException
    * @throws Neo4jBadRequestException
    */
-  public Node groupSingleTag(
-          String applicationContext, String groupName, List<Node> nodeList)
-          throws Neo4jNoResult, Neo4jQueryException {
+  public Node groupSingleTag(String applicationContext, String groupName, List<Node> nodeList)
+      throws Neo4jNoResult, Neo4jQueryException {
 
     RelationshipType aggregatesRel = RelationshipType.withName(IMAGING_AGGREGATES);
 
@@ -311,24 +260,31 @@ public class LevelGroupController {
     // Retrieve most encountered Level 5
     Node oldLevel5Node = getLevel5(nodeList);
 
-
     // Create backup for the levels
     createBackups(applicationContext, nodeList);
 
-
     if (oldLevel5Node == null) {
-      addStatus(String.format("Failed to find a Level 5 attached to Objects with tags '%s'.", groupName));
-      addStatus(String.format("Please run : 'MATCH (o:Object:`%s`)<-[:Aggregates]-(l:Level5) WHERE '%s' IN o.Tags  RETURN DISTINCT l' in the Neo4j console.", applicationContext, groupName));
-      throw new Neo4jNoResult("No Level 5 is attached to the selected nodes.", "Null parent Level5", ERROR_PREFIX + "GROT1");
+      addStatus(
+          String.format("Failed to find a Level 5 attached to Objects with tags '%s'.", groupName));
+      addStatus(
+          String.format(
+              "Please run : 'MATCH (o:Object:`%s`)<-[:Aggregates]-(l:Level5) WHERE '%s' IN o.Tags  RETURN DISTINCT l' in the Neo4j console.",
+              applicationContext, groupName));
+      throw new Neo4jNoResult(
+          "No Level 5 is attached to the selected nodes.",
+          "Null parent Level5",
+          ERROR_PREFIX + "GROT1");
     }
 
     finishTimer = Instant.now();
     neo4jAL.logInfo(
-            String.format(
-                    "Level 5 found, with Id : %d has been identified in %d Milliseconds.",
-                    oldLevel5Node.getId(), Duration.between(startTimer, finishTimer).toMillis()));
-    addStatus(String.format("Level 5 with name '%s' is used as a backup node in application '%s'.", (String) oldLevel5Node.getProperty("Name"), applicationContext));
-
+        String.format(
+            "Level 5 found, with Id : %d has been identified in %d Milliseconds.",
+            oldLevel5Node.getId(), Duration.between(startTimer, finishTimer).toMillis()));
+    addStatus(
+        String.format(
+            "Level 5 with name '%s' is used as a backup node in application '%s'.",
+            oldLevel5Node.getProperty("Name"), applicationContext));
 
     neo4jAL.logInfo("Creating new level 5 node ... ");
 
@@ -348,9 +304,7 @@ public class LevelGroupController {
 
     // Link new level to Level 4
     level4.createRelationshipTo(newLevel5, aggregatesRel);
-    ;
     addStatus("New Level5 and ancient level 4 were linked together");
-
 
     // Delete old relationships, to not interfere with the new level
     for (Node n : nodeList) {
@@ -365,11 +319,14 @@ public class LevelGroupController {
       n.setProperty(IMAGING_OBJECT_LEVEL, newLevelName);
     }
 
-    addStatus(String.format("%d object were detached from their previous level an re-attached to the group.", nodeList.size()));
+    addStatus(
+        String.format(
+            "%d object were detached from their previous level an re-attached to the group.",
+            nodeList.size()));
 
     neo4jAL.logInfo("Refreshing the new level relationships and recount elements.");
 
-    //LevelsUtils.refreshLevel5(neo4jAL, applicationContext, newLevel5); // refresh new level
+    // LevelsUtils.refreshLevel5(neo4jAL, applicationContext, newLevel5); // refresh new level
     LevelsUtils.refreshAllAbstractLevel(neo4jAL, applicationContext);
 
     addStatus("All the level in the application were refreshed.");
@@ -378,47 +335,6 @@ public class LevelGroupController {
     cleanTag(applicationContext, groupName);
 
     return newLevel5;
-  }
-
-
-  /**
-   * Clean the application from the Demeter tags
-   *
-   * @param applicationContext Name of the application
-   * @throws Neo4jQueryException
-   */
-  public void cleanAllTags(String applicationContext) throws Neo4jQueryException {
-    // Once the operation is done, remove Demeter tag prefix tags
-    String removeTagsQuery =
-            String.format(
-                    "MATCH (o:`%1$s`) WHERE EXISTS(o.%2$s)  SET o.%2$s = [ x IN o.%2$s WHERE NOT x CONTAINS '%3$s' ] RETURN COUNT(o) as removedTags;",
-                    applicationContext, IMAGING_OBJECT_TAGS, getLevelPrefix());
-    Result tagRemoveRes = neo4jAL.executeQuery(removeTagsQuery);
-
-    if (tagRemoveRes.hasNext()) {
-      Long nDel = (Long) tagRemoveRes.next().get("removedTags");
-      neo4jAL.logInfo("# " + nDel + " demeter 'group tags' were removed from the database.");
-    }
-  }
-
-  /**
-   * Clean a specific group in the application
-   * @param applicationContext Name of the application
-   * @throws Neo4jQueryException If the query produced an error
-   */
-  public void cleanTag(String applicationContext, String group) throws Neo4jQueryException {
-    // Once the operation is done, remove Demeter tag prefix tags
-    String removeTagsQuery =
-            String.format(
-                    "MATCH (o:`%1$s`) WHERE EXISTS(o.%2$s)  SET o.%2$s = [ x IN o.%2$s WHERE NOT x CONTAINS $tag ] RETURN COUNT(o) as removedTags;",
-                    applicationContext, IMAGING_OBJECT_TAGS);
-    Map<String, Object> params = Map.of("tag", group);
-    Result tagRemoveRes = neo4jAL.executeQuery(removeTagsQuery, params);
-
-    if (tagRemoveRes.hasNext()) {
-      Long nDel = (Long) tagRemoveRes.next().get("removedTags");
-      neo4jAL.logInfo("# " + nDel + " demeter tag ("+group+") were removed from the database.");
-    }
   }
 
   /**
@@ -430,20 +346,89 @@ public class LevelGroupController {
    * @return The map containing level5 nodes and their usage frequency as a Stream
    * @throws Neo4jNoResult If no Level 5 were detected
    */
-  private Node getLevel5(List<Node> nodeList)
-          throws Neo4jNoResult, Neo4jQueryException {
+  private Node getLevel5(List<Node> nodeList) throws Neo4jNoResult, Neo4jQueryException {
 
     // Search level 5 using Id list
     List<Long> idList = nodeList.stream().map(Node::getId).collect(Collectors.toList());
-    String req = "MATCH (o:Object)<-[:Aggregates]-(l:Level5) WHERE ID(o) IN $idList " +
-            "RETURN DISTINCT  COUNT(DISTINCT o), l as node ORDER BY COUNT(DISTINCT o) DESC";
+    String req =
+        "MATCH (o:Object)<-[:Aggregates]-(l:Level5) WHERE ID(o) IN $idList "
+            + "RETURN DISTINCT  COUNT(DISTINCT o), l as node ORDER BY COUNT(DISTINCT o) DESC";
     Map<String, Object> params = Map.of("idList", idList);
     Result res = neo4jAL.executeQuery(req, params);
 
     if (!res.hasNext())
-      throw new Neo4jNoResult("Failed to find a Level5 attached to the tagged objects.", req, ERROR_PREFIX + "GETL5");
+      throw new Neo4jNoResult(
+          "Failed to find a Level5 attached to the tagged objects.", req, ERROR_PREFIX + "GETL5");
 
     return (Node) res.next().get("node");
+  }
+
+  /**
+   * Create backup node for each node in the list
+   *
+   * @param application Name of the application
+   * @param nodeList List of node to backup
+   */
+  private void createBackups(String application, List<Node> nodeList) {
+    // For each node get the Level 5
+    Map<Level5Node, List<Node>> toBackup = new HashMap<>();
+
+    int failed = 0;
+    int critical = 0;
+
+    String req =
+        "MATCH (o:Object)<-[:Aggregates]-(l:Level5) WHERE ID(o)=$idNode AND NOT l.FullName CONTAINS $genPrefix "
+            + "RETURN DISTINCT l as level";
+    Map<String, Object> params;
+    Result res;
+    for (Node n : nodeList) {
+      try {
+        params = Map.of("idNode", n.getId(), "genPrefix", GENERATED_LEVEL_IDENTIFIER);
+        res = neo4jAL.executeQuery(req, params);
+
+        if (!res.hasNext()) continue;
+
+        Node levelNode = (Node) res.next().get("level");
+        Level5Node l5 = Level5Node.fromNode(neo4jAL, levelNode);
+
+        if (!toBackup.containsKey(l5)) toBackup.put(l5, new ArrayList<>());
+        toBackup.get(l5).add(n);
+
+      } catch (Exception | Neo4jQueryException | Neo4jBadNodeFormatException error) {
+        failed++;
+        neo4jAL.logError("Failed to backup ", error);
+      }
+    }
+
+    // Create Backup nodes
+    for (Map.Entry<Level5Node, List<Node>> en : toBackup.entrySet()) {
+      try {
+        Level5Node ln = en.getKey();
+        List<Node> toBackupList = en.getValue();
+
+        ln.createLevel5Backup(application, toBackupList);
+      } catch (Exception | Neo4jBadRequestException | Neo4jNoResult | Neo4jQueryException err) {
+        critical++;
+        neo4jAL.logError(
+            String.format(
+                "Failed to create a backup for level with name '%s'.", en.getKey().getName()),
+            err);
+      }
+    }
+
+    addStatus(
+        String.format(
+            "%d Objects are backup by %d backup nodes.", nodeList.size(), toBackup.size()));
+
+    if (failed != 0) {
+      addStatus(
+          String.format(
+              "Failed to backup %d nodes due to bad node format. Not critical/important.", failed));
+    }
+
+    if (critical != 0) {
+      addStatus(String.format("Failed to create %d backup nodes. Critical error.", failed));
+    }
   }
 
   /**
@@ -454,17 +439,21 @@ public class LevelGroupController {
    */
   private Node findLevel4(Long idLevel5) throws Neo4jQueryException {
     // Get associated Level 4 full name and create the level 5 nodes
-    String reqLevel4 = "MATCH (l:Level5) WHERE ID(l)=$idLevel " +
-            "WITH l " +
-            "MATCH (l)<-[:Aggregates]-(l4:Level4) " +
-            "RETURN l4 as node LIMIT 1";
+    String reqLevel4 =
+        "MATCH (l:Level5) WHERE ID(l)=$idLevel "
+            + "WITH l "
+            + "MATCH (l)<-[:Aggregates]-(l4:Level4) "
+            + "RETURN l4 as node LIMIT 1";
     Map<String, Object> paramsLevel4 = Map.of("idLevel", idLevel5);
     Result resultLevel4 = neo4jAL.executeQuery(reqLevel4, paramsLevel4);
 
     if (!resultLevel4.hasNext()) {
-      addStatus(String.format("Failed to find a level 4 attached to Level 5 with id '%d'.",
+      addStatus(
+          String.format("Failed to find a level 4 attached to Level 5 with id '%d'.", idLevel5));
+      addStatus(
+          String.format(
+              "Please run : 'MATCH (l5:Level5)<-[:Aggregates]-(l4:Level4) WHERE ID(l5)=%d  RETURN DISTINCT l4' in the Neo4j console.",
               idLevel5));
-      addStatus(String.format("Please run : 'MATCH (l5:Level5)<-[:Aggregates]-(l4:Level4) WHERE ID(l5)=%d  RETURN DISTINCT l4' in the Neo4j console.", idLevel5));
     }
 
     return (Node) resultLevel4.next().get("node");
@@ -474,18 +463,19 @@ public class LevelGroupController {
    * Get an existing level 5 or create a new Node
    *
    * @param applicationContext Name of the application
-   * @param levelName          Name of the level
-   * @param level4FullName     FullName of the level 4 attached (used to build the fullName )
+   * @param levelName Name of the level
+   * @param level4FullName FullName of the level 4 attached (used to build the fullName )
    * @return The node found or created
    * @throws Neo4jQueryException If the Query or its parameters are incorrect
-   * @throws Neo4jNoResult       If the query returned no result
+   * @throws Neo4jNoResult If the query returned no result
    */
-  private Node getOrCreateLevel5(String applicationContext, String levelName, String level4FullName) throws Neo4jQueryException, Neo4jNoResult {
+  private Node getOrCreateLevel5(String applicationContext, String levelName, String level4FullName)
+      throws Neo4jQueryException, Neo4jNoResult {
     String forgedLabel = Level5Node.getLabel() + ":`" + applicationContext + "`";
     String forgedFindLevel =
-            String.format(
-                    "MATCH (o:%1$s) WHERE o.%2$s='%3$s' RETURN o as node;",
-                    forgedLabel, Level5Node.getNameProperty(), levelName);
+        String.format(
+            "MATCH (o:%1$s) WHERE o.%2$s='%3$s' RETURN o as node;",
+            forgedLabel, Level5Node.getNameProperty(), levelName);
 
     Node node = null;
     Result result = neo4jAL.executeQuery(forgedFindLevel);
@@ -501,14 +491,58 @@ public class LevelGroupController {
       String fullName = level4FullName + "##" + GENERATED_LEVEL_IDENTIFIER + levelName;
 
       Level5Node newLevel =
-              new Level5Node(neo4jAL, levelName, false, true, fullName, rCol, 5L, 0L, rCol);
+          new Level5Node(neo4jAL, levelName, false, true, fullName, rCol, 5L, 0L, rCol);
       node = newLevel.createNode();
       node.addLabel(applicationLabel); // Add the label of the application to the node
 
-      addStatus(String.format("A new Level 5 was created since no other level have the same level name '%s'", levelName));
+      addStatus(
+          String.format(
+              "A new Level 5 was created since no other level have the same level name '%s'",
+              levelName));
     }
 
     return node;
+  }
+
+  /**
+   * Clean a specific group in the application
+   *
+   * @param applicationContext Name of the application
+   * @throws Neo4jQueryException If the query produced an error
+   */
+  public void cleanTag(String applicationContext, String group) throws Neo4jQueryException {
+    // Once the operation is done, remove Demeter tag prefix tags
+    String removeTagsQuery =
+        String.format(
+            "MATCH (o:`%1$s`) WHERE EXISTS(o.%2$s)  SET o.%2$s = [ x IN o.%2$s WHERE NOT x CONTAINS $tag ] RETURN COUNT(o) as removedTags;",
+            applicationContext, IMAGING_OBJECT_TAGS);
+    Map<String, Object> params = Map.of("tag", group);
+    Result tagRemoveRes = neo4jAL.executeQuery(removeTagsQuery, params);
+
+    if (tagRemoveRes.hasNext()) {
+      Long nDel = (Long) tagRemoveRes.next().get("removedTags");
+      neo4jAL.logInfo("# " + nDel + " demeter tag (" + group + ") were removed from the database.");
+    }
+  }
+
+  /**
+   * Clean the application from the Demeter tags
+   *
+   * @param applicationContext Name of the application
+   * @throws Neo4jQueryException
+   */
+  public void cleanAllTags(String applicationContext) throws Neo4jQueryException {
+    // Once the operation is done, remove Demeter tag prefix tags
+    String removeTagsQuery =
+        String.format(
+            "MATCH (o:`%1$s`) WHERE EXISTS(o.%2$s)  SET o.%2$s = [ x IN o.%2$s WHERE NOT x CONTAINS '%3$s' ] RETURN COUNT(o) as removedTags;",
+            applicationContext, IMAGING_OBJECT_TAGS, getLevelPrefix());
+    Result tagRemoveRes = neo4jAL.executeQuery(removeTagsQuery);
+
+    if (tagRemoveRes.hasNext()) {
+      Long nDel = (Long) tagRemoveRes.next().get("removedTags");
+      neo4jAL.logInfo("# " + nDel + " demeter 'group tags' were removed from the database.");
+    }
   }
 
   /**

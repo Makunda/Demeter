@@ -44,9 +44,9 @@ public class Level5Node extends Neo4jObject {
   private static final String NAME_PROPERTY = Configuration.get("imaging.node.level5.name");
   private static final String CONCEPT_PROPERTY = Configuration.get("imaging.node.level5.concept");
   private static final String DRILL_DOWN_PROPERTY =
-          Configuration.get("imaging.node.level5.alternateDrilldown");
+      Configuration.get("imaging.node.level5.alternateDrilldown");
   private static final String FULL_NAME_PROPERTY =
-          Configuration.get("imaging.node.level5.fullName");
+      Configuration.get("imaging.node.level5.fullName");
   private static final String COLOR_PROPERTY = Configuration.get("imaging.node.level5.color");
   private static final String LEVEL_PROPERTY = Configuration.get("imaging.node.level5.level");
   private static final String COUNT_PROPERTY = Configuration.get("imaging.node.level5.count");
@@ -57,14 +57,14 @@ public class Level5Node extends Neo4jObject {
   private static final String ERROR_PREFIX = "LEV5Nx";
 
   // Properties
-  private String name;
-  private Boolean concept;
-  private Boolean drillDown;
-  private String fullName;
-  private String color;
-  private Long level;
-  private Long count;
-  private String shade;
+  private final String name;
+  private final Boolean concept;
+  private final Boolean drillDown;
+  private final String fullName;
+  private final String color;
+  private final Long level;
+  private final Long count;
+  private final String shade;
 
   public Level5Node(
       Neo4jAL neo4jAL,
@@ -139,10 +139,10 @@ public class Level5Node extends Neo4jObject {
 
     if (!(node.hasLabel(level5Label))) {
       throw new Neo4jBadNodeFormatException(
-              String.format(
-                      "The node with Id '%d' does not contain the correct label. Expected to have : %s ",
-                      node.getId(), LABEL),
-              ERROR_PREFIX + "FROMN1");
+          String.format(
+              "The node with Id '%d' does not contain the correct label. Expected to have : %s ",
+              node.getId(), LABEL),
+          ERROR_PREFIX + "FROMN1");
     }
 
     try {

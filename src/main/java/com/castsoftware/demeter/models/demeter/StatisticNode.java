@@ -47,10 +47,10 @@ public class StatisticNode extends Neo4jObject {
   private static final String STAT_RETURN_STRING =
       Configuration.get("tag.anchors.statistics.return_as_string_val");
 
-  private String name;
-  private String request;
-  private Boolean active;
-  private String description;
+  private final String name;
+  private final String request;
+  private final Boolean active;
+  private final String description;
 
   public StatisticNode(
       Neo4jAL neo4jAL, String name, String request, Boolean active, String description) {

@@ -42,8 +42,8 @@ public class PreStatisticsLogger implements AutoCloseable {
   private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd_HHmmss");
   private static final SimpleDateFormat cdf = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
 
-  private String applicationContext;
-  private FileWriter file;
+  private final String applicationContext;
+  private final FileWriter file;
 
   private StringBuilder buffer = new StringBuilder();
 

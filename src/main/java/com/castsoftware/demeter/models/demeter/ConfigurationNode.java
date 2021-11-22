@@ -43,7 +43,7 @@ public class ConfigurationNode extends Neo4jObject {
       Configuration.get("neo4j.nodes.t_configuration.error_prefix");
 
   // Node properties
-  private String name;
+  private final String name;
 
   public ConfigurationNode(Neo4jAL nal, String name) {
     super(nal);

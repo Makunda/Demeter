@@ -43,9 +43,9 @@ public class SaveNode extends Neo4jObject {
       Configuration.get("save.operation.node.links.to_save");
   private static final String ERROR_PREFIX = Configuration.get("save.node.error_prefix");
 
-  private String name;
-  private String application;
-  private String creation;
+  private final String name;
+  private final String application;
+  private final String creation;
 
   /***
    * Constructor

@@ -30,7 +30,7 @@ import java.util.Properties;
 /** Singleton in charge of the communication with the configuration file */
 public class Configuration {
 
-  private static Properties properties = loadConfiguration();
+  private static final Properties properties = loadConfiguration();
 
   private static Properties loadConfiguration() {
     try (InputStream input =
@@ -101,11 +101,12 @@ public class Configuration {
 
   /**
    * Get the best match between User in put or Configuration
+   *
    * @param key
    * @return
    */
   public static String getBestOfALl(String key) {
-    if(UserConfiguration.isKey(key) && !UserConfiguration.get(key).isBlank()){
+    if (UserConfiguration.isKey(key) && !UserConfiguration.get(key).isBlank()) {
       return UserConfiguration.get(key);
     } else {
       return get(key);
@@ -114,12 +115,14 @@ public class Configuration {
 
   /**
    * Set a value in all the configuration
+   *
    * @param key
    * @param value
    * @throws MissingFileException
    * @throws FileNotFoundException
    */
-  public static String setEverywhere(String key, String value) throws MissingFileException, FileNotFoundException {
+  public static String setEverywhere(String key, String value)
+      throws MissingFileException, FileNotFoundException {
     UserConfiguration.set(key, value);
     UserConfiguration.saveAndReload();
 

@@ -53,11 +53,11 @@ public class ModuleNode extends Neo4jObject {
   private static final String ERROR_PREFIX = "MODNx";
 
   // Properties
-  private String aipID;
-  private String color;
-  private Long count;
-  private String name;
-  private String type;
+  private final String aipID;
+  private final String color;
+  private final Long count;
+  private final String name;
+  private final String type;
 
   public ModuleNode(
       Neo4jAL neo4jAL, String aipID, String color, Long count, String name, String type) {

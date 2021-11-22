@@ -49,9 +49,9 @@ public class UseCaseNode extends Neo4jObject {
       Configuration.get("neo4j.nodes.t_use_case.error_prefix");
 
   // Node properties
-  private String name;
-  private Boolean active;
-  private Boolean selected;
+  private final String name;
+  private final Boolean active;
+  private final Boolean selected;
 
   public UseCaseNode(Neo4jAL nal, String name, Boolean active, Boolean selected) {
     super(nal);
@@ -129,7 +129,7 @@ public class UseCaseNode extends Neo4jObject {
 
       while (resIt.hasNext()) {
         try {
-          Node node = (Node) resIt.next();
+          Node node = resIt.next();
 
           // Initialize the node
           UseCaseNode cn = UseCaseNode.fromNode(neo4jAL, node);

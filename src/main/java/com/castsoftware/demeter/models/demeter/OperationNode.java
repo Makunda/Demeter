@@ -48,8 +48,8 @@ public class OperationNode extends Neo4jObject {
       Configuration.get("save.operation.node.links.to_save");
   private static final String ERROR_PREFIX = Configuration.get("save.operation.node.error_prefix");
 
-  private String groupName;
-  private List<String> toGroup;
+  private final String groupName;
+  private final List<String> toGroup;
 
   public OperationNode(Neo4jAL neo4jAL, String groupName, List<String> toGroup) {
     super(neo4jAL);

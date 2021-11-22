@@ -55,12 +55,12 @@ public class TagNode extends Neo4jObject {
   private static final String TAG_PREFIX = Configuration.get("demeter.prefix.tags");
 
   // Node properties
-  private String tag;
-  private String request;
-  private Boolean active;
-  private String description;
+  private final String tag;
+  private final String request;
+  private final Boolean active;
+  private final String description;
   private String categories;
-  private Boolean ignorePrefix;
+  private final Boolean ignorePrefix;
 
   public TagNode(Neo4jAL nal, String tag, Boolean active, String request, String description) {
     super(nal);

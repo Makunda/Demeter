@@ -56,11 +56,11 @@ public class DocumentNode extends Neo4jObject {
       Configuration.get("tag.anchors.countReturn.return_val");
 
   // Variables
-  private String title;
-  private String request;
-  private Boolean active;
-  private String description;
-  private String documentDescription;
+  private final String title;
+  private final String request;
+  private final Boolean active;
+  private final String description;
+  private final String documentDescription;
 
   public DocumentNode(
       Neo4jAL neo4jAL,
