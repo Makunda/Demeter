@@ -22,8 +22,10 @@ package com.castsoftware.demeter.procedures.backup;
 import com.castsoftware.demeter.controllers.backup.NewBackupController;
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.ProcedureException;
+import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.demeter.models.backup.MasterSaveNode;
 import com.castsoftware.demeter.results.OutputMessage;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -43,25 +45,32 @@ public class NewBackupProcedure {
 
   @Procedure(value = "demeter.backup.application", mode = Mode.WRITE)
   @Description(
-      "demeter.backup.application(String application, String name) - Save the actual state of the application")
+      "demeter.backup.application(String application, String name, String description, Long timestamp, String picture) - Save the actual state of the application")
   public Stream<OutputMessage> backupApplication(
-      @Name(value = "Application", defaultValue = "") String application,
-      @Name(value = "Save", defaultValue = "") String save)
+      @Name(value = "Application") String application,
+      @Name(value = "Name") String name,
+      @Name(value = "Description", defaultValue = "") String description,
+      @Name(value = "Timestamp", defaultValue = "") Long timestamp,
+      @Name(value = "Picture", defaultValue = "") String picture
+  )
       throws ProcedureException {
     try {
       // Check arguments
-      if (save == null || save.isBlank())
-        throw new Exception("The 'save' parameter must not be empty.");
+      if (name == null || name.isBlank())
+        throw new Exception("The 'Name' parameter must not be empty.");
+
+      if (application == null || application.isBlank())
+        throw new Exception("The 'Application' parameter must not be empty.");
 
       Neo4jAL neo4jAL = new Neo4jAL(db, transaction, log);
 
       // Backup
       NewBackupController controller = new NewBackupController(neo4jAL, application);
-      controller.saveState(save);
+      controller.saveState(name, description, timestamp, picture);
 
       // Send message to user
       return Stream.of(new OutputMessage(String.format("The application '%s' has been saved. Check the logs for more information.", application)));
-    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+    } catch (Exception | Neo4jConnectionError | Neo4jBadNodeFormatException e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("Failed to save the application...", e);
       throw ex;
@@ -70,21 +79,21 @@ public class NewBackupProcedure {
 
   @Procedure(value = "demeter.backup.rollback", mode = Mode.WRITE)
   @Description(
-      "demeter.backup.rollback(String application, String name) - Save the actual state of the application")
+      "demeter.backup.rollback(String application, Long id) - Rollback the application to another save state")
   public Stream<OutputMessage> backupRollback(
-      @Name(value = "Application", defaultValue = "") String application,
-      @Name(value = "Save", defaultValue = "") String save)
+      @Name(value = "Application") String application,
+      @Name(value = "Id") Long id)
       throws ProcedureException {
     try {
       // Check arguments
-      if (save == null || save.isBlank())
-        throw new Exception("The 'save' parameter must not be empty.");
+      if (application == null || application.isBlank())
+        throw new Exception("The 'Application' parameter must not be empty.");
 
       Neo4jAL neo4jAL = new Neo4jAL(db, transaction, log);
 
       // Rollback to previous state
       NewBackupController controller = new NewBackupController(neo4jAL, application);
-      controller.rollBackToSave(save);
+      controller.rollBackToSave(id);
 
       // Stream the results
       return Stream.of(new OutputMessage(String.format("The application '%s' has been rollbacked. Check the logs for more information.", application)));
@@ -99,15 +108,15 @@ public class NewBackupProcedure {
   @Procedure(value = "demeter.backup.get.list", mode = Mode.WRITE)
   @Description(
       "demeter.backup.get.list(String application) - Get the list of all saves in one application")
-  public Stream<OutputMessage> getSaves(
+  public Stream<MasterSaveNode> getSaves(
       @Name(value = "Application", defaultValue = "") String application)
       throws ProcedureException {
     try {
       Neo4jAL neo4jAL = new Neo4jAL(db, transaction, log);
 
       NewBackupController controller = new NewBackupController(neo4jAL, application);
-      List<String> saves = controller.getListSave();
-      return saves.stream().map(OutputMessage::new);
+      List<MasterSaveNode> saves = controller.getListSave();
+      return saves.stream();
     } catch (Exception | Neo4jConnectionError e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("Failed to get the list of application's saves...", e);
@@ -117,22 +126,22 @@ public class NewBackupProcedure {
 
   @Procedure(value = "demeter.backup.delete", mode = Mode.WRITE)
   @Description(
-      "demeter.backup.delete(String application, String name) - Save the actual state of the application")
+      "demeter.backup.delete(String application, Long id) - Delete a backup from the database")
   public Stream<OutputMessage> deleteSave(
-      @Name(value = "Application", defaultValue = "") String application,
-      @Name(value = "Save", defaultValue = "") String save)
+      @Name(value = "Application") String application,
+      @Name(value = "Id") Long id)
       throws ProcedureException {
     try {
       // Check arguments
-      if (save == null || save.isBlank())
-        throw new Exception("The 'save' parameter must not be empty.");
+      if (application == null || application.isBlank())
+        throw new Exception("The 'Application' parameter must not be empty.");
 
       Neo4jAL neo4jAL = new Neo4jAL(db, transaction, log);
 
       NewBackupController controller = new NewBackupController(neo4jAL, application);
-      controller.deleteSave(save);
+      controller.deleteSave(id);
       return Stream.of(
-          new OutputMessage(String.format("Save '%s' has been successfully deleted in application '%s'.", save, application)));
+          new OutputMessage(String.format("Backup with id '%d' has been successfully deleted in application '%s'.", id, application)));
     } catch (Exception | Neo4jConnectionError e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("Failed to delete a save in the application...", e);

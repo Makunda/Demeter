@@ -22,12 +22,15 @@ package com.castsoftware.demeter.controllers.backup;
 import com.castsoftware.demeter.config.Configuration;
 import com.castsoftware.demeter.controllers.grouping.levels.AdvancedLevelGrouping;
 import com.castsoftware.demeter.database.Neo4jAL;
+import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadNodeFormatException;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jNoResult;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
+import com.castsoftware.demeter.models.backup.MasterSaveNode;
+import com.castsoftware.demeter.services.backup.BackupService;
+import com.castsoftware.demeter.services.backup.MasterSaveNodeService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 
-import javax.swing.text.html.Option;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -69,16 +72,17 @@ public class NewBackupController {
   /**
    * Rollack to a previous state in the application
    *
-   * @param name Name of the save
+   * @param id Name of the save
    */
-  public void rollBackToSave(String name) throws Exception {
+  public void rollBackToSave(Long id) throws Exception {
     Map<String, List<Long>> levelMap = new HashMap<>(); // Init Level map
-    String saveProperty = getSaveProperty(name); // Declare property
+
+    String saveProperty = getSaveProperty(id); // Declare property
 
     AdvancedLevelGrouping advancedG = new AdvancedLevelGrouping(this.neo4jAL);
 
     // Get groups of nodes to reassign
-    levelMap = MasterSaveNode.getDifferences(this.neo4jAL, this.application, saveProperty);
+    levelMap = MasterSaveNodeService.getDifferences(this.neo4jAL, this.application, saveProperty);
 
     int count = 0; // Count
     String taxonomy;
@@ -127,11 +131,11 @@ public class NewBackupController {
   /**
    * Format correctly the save property to be applied / retreived from a node
    *
-   * @param name Name of the save
+   * @param id Name of the save
    * @return The formatted save prop
    */
-  private String getSaveProperty(String name) {
-    return String.format("%s%s", this.savePrefix, name);
+  private String getSaveProperty(Long id) {
+    return String.format("%s%s", this.savePrefix, id);
   }
 
   /**
@@ -139,11 +143,11 @@ public class NewBackupController {
    *
    * @return The list of save detected
    */
-  public List<String> getListSave() throws Exception {
+  public List<MasterSaveNode> getListSave() throws Exception {
     try {
 
       // Return the distinct list
-      return MasterSaveNode.getListMasterSave(neo4jAL, application);
+      return MasterSaveNodeService.getListMasterSave(neo4jAL, application);
     } catch (Exception e) {
       // Failed to execute the original query
       neo4jAL.logError(
@@ -155,20 +159,21 @@ public class NewBackupController {
   /**
    * Get the list of all saves in the application
    *
-   * @param name Name of the save to remove
+   * @param id Name of the save to remove
    */
-  public void deleteSave(String name) throws Exception {
+  public void deleteSave(Long id) throws Exception {
     try {
       // Delete save node
-      MasterSaveNode.deleteMasterSave(neo4jAL, application, name);
+      MasterSaveNodeService.deleteMasterSave(neo4jAL, id);
       neo4jAL.logInfo(
           String.format(
-              "The save '%s' has been removed from application '%s'.", name, application));
+              "The save with id '%d' has been removed.", id));
+      
     } catch (Exception e) {
       neo4jAL.logError(
           String.format(
-              "Failed to remove the save with name '%s' in the application '%s'.",
-              name, application));
+              "Failed to remove the save with id '%d'.",
+              id));
       throw new Exception("Failed to remove the save in the application.");
     }
   }
@@ -178,15 +183,28 @@ public class NewBackupController {
    *
    * @param name Name of the save
    */
-  public void saveState(String name) throws Exception, Neo4jQueryException {
+  public void saveState(String name, String description, Long timestamp, String picture) throws Exception, Neo4jBadNodeFormatException {
     Map<Long, String> levelMap = new HashMap<>(); // Init Level map
+
+    // Create a backup node
+    try {
+      Node node = MasterSaveNodeService.findOrCreateMasterSaveNode(neo4jAL, application, name);
+      MasterSaveNode masterSaveNode = new MasterSaveNode(node);
+      masterSaveNode.setPicture(picture);
+      masterSaveNode.setTimestamp(timestamp);
+      masterSaveNode.setDescription(description);
+    } catch (Exception e) {
+      neo4jAL.logError(
+              "Failed to  create a backup node.", e);
+      throw new Exception("Failed to create a backup node. Check the logs");
+    }
 
     // Get the taxonomy map in the application
     try {
-      levelMap = BackupUtils.getLevel5Taxonomy(this.neo4jAL, this.application);
+      levelMap = BackupService.getLevel5Taxonomy(this.neo4jAL, this.application);
     } catch (Neo4jQueryException e) {
       neo4jAL.logError(
-          String.format("Failed to save the state of the application '%s'.", this.application));
+          String.format("Failed to save the state of the application '%s'.", this.application), e);
       throw new Exception("Failed to save application's state. Check the logs");
     }
 
@@ -221,8 +239,9 @@ public class NewBackupController {
         }
 
         // Save the node list
-        MasterSaveNode.saveObjects(neo4jAL, application, name, taxonomy, nodeIdList);
-      } catch (Neo4jQueryException err) {
+        MasterSaveNodeService.saveObjects(neo4jAL, application, name, taxonomy, nodeIdList);
+
+      } catch (Neo4jQueryException | Neo4jBadNodeFormatException err) {
         neo4jAL.logError(
             String.format(
                 "Failed to retrieve the list of node under level '%s' ( id : [%d] ).",

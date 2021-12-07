@@ -17,20 +17,19 @@
  *
  */
 
-package com.castsoftware.demeter.controllers.backup;
+package com.castsoftware.demeter.services.backup;
 
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
-import com.castsoftware.demeter.procedures.utils.Pair;
+import com.castsoftware.demeter.services.backup.MasterSaveNodeService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class SaveNode {
+public class SaveNodeService {
 
 	private static final String LABEL = "DemeterSave";
 	private static final String BACKUP_RELATIONSHIP = "BACKED_BY";
@@ -52,8 +51,8 @@ public class SaveNode {
 	 */
 	public static Node findOrCreate(Neo4jAL neo4jAL, Long masterId, String taxonomy) throws Exception {
 		// Get external properties
-		String masterLabel = MasterSaveNode.getLabelAsString();
-		String relationship = MasterSaveNode.getRelationshipToSaveNode();
+		String masterLabel = MasterSaveNodeService.getLabelAsString();
+		String relationship = MasterSaveNodeService.getRelationshipToSaveNode();
 
 		// Declare requests
 		String req = String.format("MATCH (mast:`%s`)-[:%s]->(o:`%s`) WHERE ID(mast)=$idMast AND o.Taxonomy=$taxonomy RETURN o as node",
@@ -123,8 +122,8 @@ public class SaveNode {
 	 */
 	public static void deleteAttached(Neo4jAL neo4jAL, Long masterId) {
 		// Get external properties
-		String masterLabel = MasterSaveNode.getLabelAsString();
-		String relationship = MasterSaveNode.getRelationshipToSaveNode();
+		String masterLabel = MasterSaveNodeService.getLabelAsString();
+		String relationship = MasterSaveNodeService.getRelationshipToSaveNode();
 
 		String request = String.format("MATCH (o:`%s`)-[:%s]->(s:`%s`) " +
 						"WHERE ID(o)=$idNode " +
@@ -147,8 +146,8 @@ public class SaveNode {
 	 */
 	public static List<Node> getAttached(Neo4jAL neo4jAL, Long masterId) throws Exception {
 		// Get external properties
-		String masterLabel = MasterSaveNode.getLabelAsString();
-		String relationship = MasterSaveNode.getRelationshipToSaveNode();
+		String masterLabel = MasterSaveNodeService.getLabelAsString();
+		String relationship = MasterSaveNodeService.getRelationshipToSaveNode();
 
 		String request = String.format("MATCH (o:`%s`)-[:%s]->(s:`%s`) " +
 				"WHERE ID(o)=$idNode " +

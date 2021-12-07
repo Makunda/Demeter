@@ -17,7 +17,7 @@
  *
  */
 
-package com.castsoftware.demeter.controllers.backup;
+package com.castsoftware.demeter.services.backup;
 
 import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
@@ -28,7 +28,7 @@ import org.neo4j.graphdb.Result;
 import javax.swing.text.html.Option;
 import java.util.*;
 
-public class BackupUtils {
+public class BackupService {
 
 
 
