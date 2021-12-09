@@ -29,10 +29,12 @@ import org.neo4j.graphdb.Result;
 
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 public class MasterSaveNodeService {
 
-	private static final String MASTERSAVE_NODE_LABEL = "DemeterMasterSave";
+
 	private static final String TO_SAVE_NODE = "DECLARES";
 
 	/**
@@ -40,7 +42,7 @@ public class MasterSaveNodeService {
 	 * @return The label as string
 	 */
 	public static String getLabelAsString() {
-		return MASTERSAVE_NODE_LABEL;
+		return MasterSaveNode.MASTERSAVE_NODE_LABEL;
 	}
 
 	/**
@@ -48,7 +50,7 @@ public class MasterSaveNodeService {
 	 * @return The label as label
 	 */
 	public static Label getLabel() {
-		return Label.label(MASTERSAVE_NODE_LABEL);
+		return Label.label(MasterSaveNode.MASTERSAVE_NODE_LABEL);
 	}
 
 	/**
@@ -113,25 +115,8 @@ public class MasterSaveNodeService {
 	 * @return Optional of the node found
 	 */
 	public static Node createMasterSaveNode(Neo4jAL neo4jAL, String application, String name) throws Exception {
-
-		// Create request
-		String request  = String.format("CREATE (o:`%s`:`%s`) " +
-				"SET o.Name=$name " +
-				"RETURN o as node;", application, getLabelAsString());
-		Map<String, Object> params = Map.of("name", name);
-
-		try {
-			// Create a new node in the database and throw an error if it doesn't exist
-			Node n;
-			Result res = neo4jAL.executeQuery(request,params);
-			if(res.hasNext()) n = (Node) res.next().get("node");
-			else throw  new Exception("Failed to create the save node. No results.");
-
-			return n;
-		} catch (Neo4jQueryException | Exception err) {
-			neo4jAL.logError(String.format("Failed to create the save node. Request : '%s'.", request), err);
-			throw  new Exception(String.format("Failed to create the node with name '%s' in application '%s'.", application, name));
-		}
+		MasterSaveNode ms = new MasterSaveNode(name);
+		return ms.createNode(neo4jAL, application);
 	}
 
 	/**
@@ -158,14 +143,14 @@ public class MasterSaveNodeService {
 	 */
 	public static List<MasterSaveNode> getListMasterSave(Neo4jAL neo4jAL, String application) throws Exception {
 		String req = String.format("MATCH (s:`%s`:`%s`) " +
-						"RETURN s as node", application, getLabelAsString());
+						"RETURN DISTINCT s as node", application, getLabelAsString());
 
 		try {
 			List<MasterSaveNode> returnList = new ArrayList<>();
 			Result res = neo4jAL.executeQuery(req);
 
-			Node n = (Node) res.next().get("node");
 			while (res.hasNext()) {
+				Node n = (Node) res.next().get("node");
 				try {
 					returnList.add(new MasterSaveNode(n));
 				} catch (Neo4jBadNodeFormatException e) {
@@ -232,21 +217,20 @@ public class MasterSaveNodeService {
 	 * Get the list of nodes in the application
 	 * @param neo4jAL Neo4j Access Layer
 	 * @param application Name of the application
-	 * @param save Name of the save
+	 * @param idBackup Id of the backup
 	 * @return A mapping between the taxonomy and the list of nodes to move
 	 * @throws Exception
 	 */
-	public static Map<String, List<Long>> getDifferences(Neo4jAL neo4jAL, String application, String save) throws Exception {
+	public static Map<String, List<Long>> getDifferences(Neo4jAL neo4jAL, String application, Long idBackup) throws Exception {
 		try {
 			// Find node
-			Optional<Node> masterSave = findMasterSaveNodeByName(neo4jAL, application, save);
-			if(masterSave.isEmpty()) throw new Exception("The save specified doesn't exist");
+			Optional<Node> masterSave = findMasterSaveNodeById(neo4jAL, idBackup);
+			if(masterSave.isEmpty()) throw new Exception(String.format("The backup with id [%d] doesn't exist", idBackup));
 
 			// Get the node
 			Node n = masterSave.get();
 
 			// Get all save nodes
-			List<Node> saveNodes = SaveNodeService.getAttached(neo4jAL, n.getId());
 			Map<String, List<Long>> taxonomyMap = new HashMap<>();
 
 			// Get the list of difference for each nodes
@@ -255,6 +239,14 @@ public class MasterSaveNodeService {
 				taxonomy = SaveNodeService.getNodeTaxonomyById(neo4jAL, node.getId());
 				taxonomyMap.put(taxonomy, SaveNodeService.getDifferences(neo4jAL, application, node.getId()));
 			}
+
+			// Stats and filter
+			int count = taxonomyMap.size();
+			neo4jAL.logInfo(String.format("%d Groups have been identified.", count));
+			taxonomyMap = taxonomyMap.entrySet().stream().filter(x -> x.getValue().size() > 0)
+					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+			neo4jAL.logInfo(String.format("%d Groups contains nodes to reassign ( Difference %d ).",
+					taxonomyMap.size(), count - taxonomyMap.size()));
 
 			return taxonomyMap;
 		} catch (Exception e) {

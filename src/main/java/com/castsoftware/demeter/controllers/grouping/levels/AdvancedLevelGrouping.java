@@ -34,10 +34,6 @@ import java.util.Optional;
 
 public class AdvancedLevelGrouping {
 
-  // Demeter Conf
-  private static final String GENERATED_LEVEL_IDENTIFIER =
-      Configuration.get("demeter.prefix.generated_level_prefix");
-
   // Class Conf
   private static final String ERROR_PREFIX = "GROCx";
 

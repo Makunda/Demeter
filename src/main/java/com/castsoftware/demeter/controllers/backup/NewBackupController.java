@@ -31,6 +31,9 @@ import com.castsoftware.demeter.services.backup.MasterSaveNodeService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -38,8 +41,6 @@ public class NewBackupController {
 
   private final Neo4jAL neo4jAL;
   private final String application;
-  private final String savePrefix;
-
 
 
 
@@ -52,22 +53,8 @@ public class NewBackupController {
   public NewBackupController(Neo4jAL neo4jAL, String application) {
     this.neo4jAL = neo4jAL;
     this.application = application;
-    this.savePrefix = Configuration.get("backup.node.property_prefix");
   }
 
-  /**
-   * Export a Save
-   *
-   * @param name Name of the save to export
-   * @param location Location to export the save file
-   */
-  public void exportState(String name, String location) {
-    // TODO
-  }
-
-  public void importSave(Neo4jAL neo4jAL, String location) {
-    // TODO
-  }
 
   /**
    * Rollack to a previous state in the application
@@ -76,13 +63,10 @@ public class NewBackupController {
    */
   public void rollBackToSave(Long id) throws Exception {
     Map<String, List<Long>> levelMap = new HashMap<>(); // Init Level map
-
-    String saveProperty = getSaveProperty(id); // Declare property
-
     AdvancedLevelGrouping advancedG = new AdvancedLevelGrouping(this.neo4jAL);
 
     // Get groups of nodes to reassign
-    levelMap = MasterSaveNodeService.getDifferences(this.neo4jAL, this.application, saveProperty);
+    levelMap = MasterSaveNodeService.getDifferences(this.neo4jAL, this.application, id);
 
     int count = 0; // Count
     String taxonomy;
@@ -129,16 +113,6 @@ public class NewBackupController {
   }
 
   /**
-   * Format correctly the save property to be applied / retreived from a node
-   *
-   * @param id Name of the save
-   * @return The formatted save prop
-   */
-  private String getSaveProperty(Long id) {
-    return String.format("%s%s", this.savePrefix, id);
-  }
-
-  /**
    * Get the list of all saves in the application
    *
    * @return The list of save detected
@@ -151,7 +125,7 @@ public class NewBackupController {
     } catch (Exception e) {
       // Failed to execute the original query
       neo4jAL.logError(
-          String.format("Failed to load the list of Save in the application '%s'.", application));
+          String.format("Failed to load the list of Save in the application '%s'.", application), e);
       throw new Exception("Failed to get the list of save.");
     }
   }

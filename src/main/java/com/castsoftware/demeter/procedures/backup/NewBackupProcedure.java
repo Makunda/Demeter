@@ -27,11 +27,13 @@ import com.castsoftware.demeter.exceptions.neo4j.Neo4jConnectionError;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.models.backup.MasterSaveNode;
 import com.castsoftware.demeter.results.OutputMessage;
+import com.castsoftware.demeter.results.backup.MasterSaveResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.*;
 
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -50,7 +52,7 @@ public class NewBackupProcedure {
       @Name(value = "Application") String application,
       @Name(value = "Name") String name,
       @Name(value = "Description", defaultValue = "") String description,
-      @Name(value = "Timestamp", defaultValue = "") Long timestamp,
+      @Name(value = "Timestamp", defaultValue = "0") Long timestamp,
       @Name(value = "Picture", defaultValue = "") String picture
   )
       throws ProcedureException {
@@ -61,6 +63,10 @@ public class NewBackupProcedure {
 
       if (application == null || application.isBlank())
         throw new Exception("The 'Application' parameter must not be empty.");
+
+      if(timestamp >= 0L) {
+        timestamp = new Date().getTime();
+      }
 
       Neo4jAL neo4jAL = new Neo4jAL(db, transaction, log);
 
@@ -108,7 +114,7 @@ public class NewBackupProcedure {
   @Procedure(value = "demeter.backup.get.list", mode = Mode.WRITE)
   @Description(
       "demeter.backup.get.list(String application) - Get the list of all saves in one application")
-  public Stream<MasterSaveNode> getSaves(
+  public Stream<MasterSaveResult> getSaves(
       @Name(value = "Application", defaultValue = "") String application)
       throws ProcedureException {
     try {
@@ -116,7 +122,7 @@ public class NewBackupProcedure {
 
       NewBackupController controller = new NewBackupController(neo4jAL, application);
       List<MasterSaveNode> saves = controller.getListSave();
-      return saves.stream();
+      return saves.stream().map(MasterSaveResult::new);
     } catch (Exception | Neo4jConnectionError e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("Failed to get the list of application's saves...", e);
@@ -142,6 +148,31 @@ public class NewBackupProcedure {
       controller.deleteSave(id);
       return Stream.of(
           new OutputMessage(String.format("Backup with id '%d' has been successfully deleted in application '%s'.", id, application)));
+    } catch (Exception | Neo4jConnectionError e) {
+      ProcedureException ex = new ProcedureException(e);
+      log.error("Failed to delete a save in the application...", e);
+      throw ex;
+    }
+  }
+
+  @Procedure(value = "demeter.backup.download", mode = Mode.WRITE)
+  @Description(
+          "demeter.backup.download(String application, String path) - Download the complete schema of an application")
+  public Stream<OutputMessage> download(
+          @Name(value = "Application") String application,
+          @Name(value = "Path") String path)
+          throws ProcedureException {
+    try {
+      // Check arguments
+      if (application == null || application.isBlank())
+        throw new Exception("The 'Application' parameter must not be empty.");
+
+      Neo4jAL neo4jAL = new Neo4jAL(db, transaction, log);
+
+      NewBackupController controller = new NewBackupController(neo4jAL, application);
+
+      return Stream.of(
+              new OutputMessage(String.format("Application '%s' has been exported to '%s' .", application,  path)));
     } catch (Exception | Neo4jConnectionError e) {
       ProcedureException ex = new ProcedureException(e);
       log.error("Failed to delete a save in the application...", e);

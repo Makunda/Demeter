@@ -44,12 +44,7 @@ public class LevelGroupController {
   private static final String IMAGING_OBJECT_LEVEL = Configuration.get("imaging.node.object.level");
   private static final String IMAGING_AGGREGATES =
       Configuration.get("imaging.node.level_nodes.links");
-  private static final String IMAGING_LEVEL4_LABEL = Configuration.get("imaging.node.level4.label");
-  private static final String IMAGING_LEVEL5_LABEL = Configuration.get("imaging.node.level5.label");
 
-  // Demeter Conf
-  private static final String GENERATED_LEVEL_IDENTIFIER =
-      Configuration.get("demeter.prefix.generated_level_prefix");
 
   // Class Conf
   private static final String ERROR_PREFIX = "GROCx";
@@ -261,7 +256,6 @@ public class LevelGroupController {
     Node oldLevel5Node = getLevel5(nodeList);
 
     // Create backup for the levels
-    createBackups(applicationContext, nodeList);
 
     if (oldLevel5Node == null) {
       addStatus(
@@ -363,73 +357,6 @@ public class LevelGroupController {
     return (Node) res.next().get("node");
   }
 
-  /**
-   * Create backup node for each node in the list
-   *
-   * @param application Name of the application
-   * @param nodeList List of node to backup
-   */
-  private void createBackups(String application, List<Node> nodeList) {
-    // For each node get the Level 5
-    Map<Level5Node, List<Node>> toBackup = new HashMap<>();
-
-    int failed = 0;
-    int critical = 0;
-
-    String req =
-        "MATCH (o:Object)<-[:Aggregates]-(l:Level5) WHERE ID(o)=$idNode AND NOT l.FullName CONTAINS $genPrefix "
-            + "RETURN DISTINCT l as level";
-    Map<String, Object> params;
-    Result res;
-    for (Node n : nodeList) {
-      try {
-        params = Map.of("idNode", n.getId(), "genPrefix", GENERATED_LEVEL_IDENTIFIER);
-        res = neo4jAL.executeQuery(req, params);
-
-        if (!res.hasNext()) continue;
-
-        Node levelNode = (Node) res.next().get("level");
-        Level5Node l5 = Level5Node.fromNode(neo4jAL, levelNode);
-
-        if (!toBackup.containsKey(l5)) toBackup.put(l5, new ArrayList<>());
-        toBackup.get(l5).add(n);
-
-      } catch (Exception | Neo4jQueryException | Neo4jBadNodeFormatException error) {
-        failed++;
-        neo4jAL.logError("Failed to backup ", error);
-      }
-    }
-
-    // Create Backup nodes
-    for (Map.Entry<Level5Node, List<Node>> en : toBackup.entrySet()) {
-      try {
-        Level5Node ln = en.getKey();
-        List<Node> toBackupList = en.getValue();
-
-        ln.createLevel5Backup(application, toBackupList);
-      } catch (Exception | Neo4jBadRequestException | Neo4jNoResult | Neo4jQueryException err) {
-        critical++;
-        neo4jAL.logError(
-            String.format(
-                "Failed to create a backup for level with name '%s'.", en.getKey().getName()),
-            err);
-      }
-    }
-
-    addStatus(
-        String.format(
-            "%d Objects are backup by %d backup nodes.", nodeList.size(), toBackup.size()));
-
-    if (failed != 0) {
-      addStatus(
-          String.format(
-              "Failed to backup %d nodes due to bad node format. Not critical/important.", failed));
-    }
-
-    if (critical != 0) {
-      addStatus(String.format("Failed to create %d backup nodes. Critical error.", failed));
-    }
-  }
 
   /**
    * Find the Level4 node attached to the Level 5 with the specified ID
@@ -488,7 +415,7 @@ public class LevelGroupController {
       Label applicationLabel = Label.label(applicationContext);
       // Forge properties
       String rCol = getRandomColor();
-      String fullName = level4FullName + "##" + GENERATED_LEVEL_IDENTIFIER + levelName;
+      String fullName = level4FullName + "##" + levelName;
 
       Level5Node newLevel =
           new Level5Node(neo4jAL, levelName, false, true, fullName, rCol, 5L, 0L, rCol);

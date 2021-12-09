@@ -19,19 +19,30 @@
 
 package com.castsoftware.demeter.models.backup;
 
+import com.castsoftware.demeter.database.Neo4jAL;
 import com.castsoftware.demeter.exceptions.neo4j.Neo4jBadNodeFormatException;
+import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Result;
+
+import java.util.Date;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Master save node
  * The member are public by choice ( to be returned as a Neo4j value)
  */
 public class MasterSaveNode {
-	public Long id;
-	public String name;
-	public String description;
-	public Long timestamp;
-	public String picture;
+
+	public static final String MASTERSAVE_NODE_LABEL = "DemeterMasterSave";
+
+	private Long id;
+	private String name;
+	private String description;
+	private Long timestamp;
+	private String picture;
 
 	private Node node;
 
@@ -92,6 +103,10 @@ public class MasterSaveNode {
 		if(node != null) node.setProperty("Timestamp", timestamp);
 	}
 
+	public Optional<Node> getNode() {
+		return Optional.ofNullable(this.node);
+	}
+
 	/**
 	 * Master Save Constructor
 	 * @param name Name of the backup
@@ -109,6 +124,67 @@ public class MasterSaveNode {
 	}
 
 	/**
+	 * Master Save Constructor
+	 * @param name Name of the backup
+	 */
+	public MasterSaveNode(String name) {
+		this.node = null;
+		this.id= -1L;
+		this.name = name;
+		this.description = "";
+		this.timestamp = new Date().getTime();
+		this.picture = "";
+	}
+
+	/**
+	 * Create the node for a specific application
+	 * @param neo4jAL Neo4j Access Layer
+	 * @param application Name of the application
+	 * @return The create node
+	 * @throws Exception
+	 */
+	public Node createNode(Neo4jAL neo4jAL, String application) throws Exception {
+		// Create request
+		String request  = String.format("CREATE (o:`%s`:`%s`) " +
+				"SET o.Name=$name " +
+				"SET o.Description=$description " +
+				"SET o.Timestamp=$timestamp " +
+				"SET o.Picture=$picture " +
+				"RETURN o as node;", application, MASTERSAVE_NODE_LABEL);
+		Map<String, Object> params = Map.of(
+				"name", this.name,
+				"description", this.description,
+				"timestamp", this.timestamp,
+				"picture", this.picture
+				);
+
+		try {
+			// Create a new node in the database and throw an error if it doesn't exist
+			Node n;
+			Result res = neo4jAL.executeQuery(request,params);
+			if(res.hasNext()) n = (Node) res.next().get("node");
+			else throw  new Exception("Failed to create the Master Save node. No results.");
+
+			return n;
+		} catch (Neo4jQueryException | Exception err) {
+			neo4jAL.logError(String.format("Failed to create the Master Save. Request : '%s'.", request), err);
+			throw  new Exception(String.format("Failed to create the node with name '%s' in application '%s'.", application, name));
+		}
+	}
+
+	/**
+	 * Create the node and attach it to the object
+	 * @param neo4jAL Neo4j Access layer
+	 * @param application Name of the application
+	 * @return
+	 * @throws Exception
+	 */
+	public MasterSaveNode create(Neo4jAL neo4jAL, String application) throws Exception {
+		this.node = this.createNode(neo4jAL, application);
+		return this;
+	}
+
+	/**
 	 * Constructor from a node
 	 * @param node Node to treat
 	 * @throws Neo4jBadNodeFormatException
@@ -118,10 +194,13 @@ public class MasterSaveNode {
 			this.node = node;
 			this.id = (Long) node.getId();
 			this.name = (String) node.getProperty("Name");
-			this.description =  (String) node.getProperty("Description");
-			this.timestamp =  (Long) node.getProperty("Timestamp");
-			this.picture =  (String) node.getProperty("Picture");
+			this.description =  node.hasProperty("Description") ? (String) node.getProperty("Description") : "";
+			this.timestamp = node.hasProperty("Timestamp") ? (Long) node.getProperty("Timestamp") : 0L;
+			this.picture =   node.hasProperty("Picture") ? (String) node.getProperty("Picture") : "";
 		} catch (Exception e) {
+			// Detach delete the node
+			node.getRelationships().forEach(Relationship::delete); // Detach
+			node.delete(); // Delete
 			throw new Neo4jBadNodeFormatException(String.format("The MasterSaveNode with id [%d] is not in a correct format", node.getId()), "MASTxCONS01");
 		}
 	}

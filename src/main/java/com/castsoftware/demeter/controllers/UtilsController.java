@@ -30,9 +30,6 @@ import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.models.BackupNode;
 import com.castsoftware.demeter.models.demeter.*;
 import com.castsoftware.demeter.utils.Workspace;
-import com.castsoftware.exporter.io.Exporter;
-import com.castsoftware.exporter.io.Importer;
-import com.castsoftware.exporter.results.OutputMessage;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
@@ -146,40 +143,6 @@ public class UtilsController {
   }
 
   /**
-   * Save All nodes related to the configuration, in the specific directory
-   *
-   * @param neo4jAL Neo4J Access layer
-   * @param path Path where the file will be created
-   * @param filename Name of the file
-   * @return
-   * @throws ProcedureException
-   */
-  public static Stream<OutputMessage> exportConfiguration(
-      Neo4jAL neo4jAL, String path, String filename)
-      throws com.castsoftware.exporter.exceptions.ProcedureException {
-    Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-
-    String forgedFilename = filename + "_" + sdf.format(timestamp);
-
-    Exporter exporter = new Exporter(neo4jAL.getDb(), neo4jAL.getLogger());
-    return exporter.save(ALL_LABELS, path, forgedFilename, true, false);
-  }
-
-  /**
-   * Load a previously saved configuration. Can load any "hfexporter" formatted zip file.
-   *
-   * @param neo4jAL Neo4J Access layer
-   * @param path Path where the configuration is saved
-   * @return
-   * @throws ProcedureException
-   */
-  public static Stream<OutputMessage> importConfiguration(Neo4jAL neo4jAL, String path)
-      throws com.castsoftware.exporter.exceptions.ProcedureException {
-    Importer importer = new Importer(neo4jAL.getDb(), neo4jAL.getLogger());
-    return importer.load(path);
-  }
-
-  /**
    * Check all TagRequest present in the database. And return a report as a <code>String</code>
    * indicating the percentage of working Queries.
    *
@@ -223,39 +186,5 @@ public class UtilsController {
     return String.format(
         "%s TagRequest nodes were checked. %d valid node(s) were discovered. %d nonfunctional node(s) were identified. Percentage of success : %.2f",
         total, valid, notValid, p);
-  }
-
-  /**
-   * Install the Demeter workspace and load the configuration
-   *
-   * @param neo4jAL Neo4j Access Layer
-   * @param workspacePath
-   * @return
-   */
-  public static List<String> install(Neo4jAL neo4jAL, String workspacePath)
-      throws FileNotFoundException {
-    // Set the workspace path
-    List<String> returnList = new ArrayList<>();
-    returnList.addAll(setWorkspace(workspacePath));
-
-    Path initDataZip = Workspace.getInitDataZip();
-
-    // Import list of frameworks
-    if (Files.exists(initDataZip)) {
-      try {
-        returnList.add("Initialisation data were discovered.");
-        Importer importer = new Importer(neo4jAL.getDb(), neo4jAL.getLogger());
-        importer.load(initDataZip.toString());
-        returnList.add("Initialisation was successful !");
-      } catch (Exception | com.castsoftware.exporter.exceptions.ProcedureException e) {
-        returnList.add(
-            "The import of the data failed for the following reason: " + e.getLocalizedMessage());
-      }
-
-    } else {
-      returnList.add("The Initialisation was skipped due to missing files");
-    }
-
-    return returnList;
   }
 }

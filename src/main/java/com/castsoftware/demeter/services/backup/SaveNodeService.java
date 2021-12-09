@@ -178,7 +178,7 @@ public class SaveNodeService {
 	 */
 	public static String getNodeTaxonomyById(Neo4jAL neo4jAL, Long idNode) throws Exception {
 		try {
-			String getName = String.format("MATCH (s:`%1$s`:`%2$s`) WHERE ID(s)=$idNode RETURN s.Taxonomy as name");
+			String getName = String.format("MATCH (s:`%1$s`) WHERE ID(s)=$idNode RETURN s.Taxonomy as name", getLabelAsString());
 			Map<String, Object> params = Map.of("idNode", idNode);
 			Result res = neo4jAL.executeQuery(getName, params);
 
@@ -200,9 +200,9 @@ public class SaveNodeService {
 	 */
 	public static List<Long> getDifferences(Neo4jAL neo4jAL, String application, Long idNode) throws Exception {
 		// Declare the request
-		String request = String.format("MATCH (s:`%1$s`:`%2$s`)-[:%3$s]->(o:Object)<-[:Aggregates]-(l:Level5) WHERE ID(s)=$idNode " +
+		String request = String.format("MATCH (s:`%1$s`)-[:%2$s]->(o:Object)<-[:Aggregates]-(l:Level5) WHERE ID(s)=$idNode " +
 						"AND s.Taxonomy<>l.FullName " +
-						"RETURN DISTINCT ID(o) as idObj", application, getLabelAsString(), BACKUP_RELATIONSHIP);
+						"RETURN DISTINCT ID(o) as idObj", getLabelAsString(), BACKUP_RELATIONSHIP);
 		Map<String, Object> params = Map.of("idNode", idNode);
 
 
