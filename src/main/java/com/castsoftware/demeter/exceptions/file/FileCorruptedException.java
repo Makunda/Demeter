@@ -27,23 +27,23 @@ import com.castsoftware.demeter.exceptions.TaggingException;
  */
 public class FileCorruptedException extends TaggingException {
 
-  private static final long serialVersionUID = 5538686331898382119L;
-  private static final String MESSAGE_PREFIX =
-      "Error, file corrupted and can't be processed by Moirai : ";
-  private static final String CODE_PREFIX = "FIL_CR_";
+    private static final long serialVersionUID = 5538686331898382119L;
+    private static final String MESSAGE_PREFIX =
+            "Error, file corrupted and can't be processed by Moirai : ";
+    private static final String CODE_PREFIX = "FIL_CR_";
 
-  public FileCorruptedException(String message, String path, Throwable cause, String code) {
-    super(
-        MESSAGE_PREFIX.concat(message).concat(". Path : ").concat(path),
-        cause,
-        CODE_PREFIX.concat(code));
-  }
+    public FileCorruptedException(String message, String path, Throwable cause, String code) {
+        super(
+                MESSAGE_PREFIX.concat(message).concat(". Path : ").concat(path),
+                cause,
+                CODE_PREFIX.concat(code));
+    }
 
-  public FileCorruptedException(String message, String code) {
-    super(MESSAGE_PREFIX.concat(message), CODE_PREFIX.concat(code));
-  }
+    public FileCorruptedException(String message, String code) {
+        super(MESSAGE_PREFIX.concat(message), CODE_PREFIX.concat(code));
+    }
 
-  public FileCorruptedException(String path, Throwable cause, String code) {
-    super(MESSAGE_PREFIX.concat(path), cause, CODE_PREFIX.concat(code));
-  }
+    public FileCorruptedException(String path, Throwable cause, String code) {
+        super(MESSAGE_PREFIX.concat(path), cause, CODE_PREFIX.concat(code));
+    }
 }

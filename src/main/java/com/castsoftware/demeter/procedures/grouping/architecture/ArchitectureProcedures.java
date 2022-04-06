@@ -41,246 +41,266 @@ import java.util.stream.Stream;
 
 public class ArchitectureProcedures {
 
-	@Context public GraphDatabaseService db;
+    @Context
+    public GraphDatabaseService db;
 
-	@Context public Transaction transaction;
+    @Context
+    public Transaction transaction;
 
-	@Context public Log log;
-
-
-	@Procedure(value = "demeter.group.architectures", mode = Mode.WRITE)
-	@Description(
-			"demeter.group.architectures(String applicationName) - Group the architectures following Demeter tags applied")
-	public Stream<NodeResult> groupArchitectures(@Name(value = "ApplicationName") String applicationName)
-			throws ProcedureException {
-
-		try {
-			Neo4jAL nal = new Neo4jAL(db, transaction, log);
-			ArchitectureGroupController ag = new ArchitectureGroupController(nal, applicationName);
-			List<Node> nodes = ag.launch();
-
-			return nodes.stream().map(NodeResult::new);
-
-		} catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure", e);
-			throw ex;
-		}
-	}
-
-	@Procedure(value = "demeter.create.architecture", mode = Mode.WRITE)
-	@Description(
-			"demeter.create.architecture(String applicationName, String architectureName, List<Long> IdList) " +
-					"- Group the list of tags provided as new an architecture")
-	public Stream<NodeResult> manualArchitectureGroup(@Name(value = "ApplicationName") String applicationName,
-													  @Name(value = "ArchitectureName") String architectureName,
-													  @Name(value = "IdList") List<Long> idList)
-			throws ProcedureException {
-
-		try {
-			Neo4jAL nal = new Neo4jAL(db, transaction, log);
-			ArchitectureGroupController ag = new ArchitectureGroupController(nal, applicationName);
-			Node node = ag.manualLaunch(architectureName, idList);
-
-			return Stream.of(new NodeResult(node)); // return the architecture created
-
-		} catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure", e);
-			throw ex;
-		}
-	}
-
-	@Procedure(value = "demeter.delete.architecture.subset", mode = Mode.WRITE)
-	@Description(
-			"demeter.delete.architectures.subset(String applicationName, Long SubsetId) - Delete a subset in a view")
-	public Stream<LongResult> deleteSubSet(@Name(value = "ApplicationName") String applicationName,
-										   @Name(value = "SubsetID") Long subsetId)
-			throws ProcedureException {
-
-		try {
-			Neo4jAL nal = new Neo4jAL(db, transaction, log);
-			ArchitectureGroupController ag = new ArchitectureGroupController(nal, applicationName);
-			Long numObj = ag.deleteSubModel(subsetId);
-
-			return Stream.of(new LongResult(numObj));
-
-		} catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure", e);
-			throw ex;
-		}
-	}
-
-	@Procedure(value = "demeter.delete.architecture.view", mode = Mode.WRITE)
-	@Description(
-			"demeter.delete.architectures.view(String applicationName, Long architectureId) - Delete a architects view b")
-	public void deleteArchitecture(@Name(value = "ApplicationName") String applicationName,
-										   @Name(value = "ArchitectureId") Long architectureId)
-			throws ProcedureException {
-
-		try {
-			Neo4jAL nal = new Neo4jAL(db, transaction, log);
-			ArchitectureGroupController ag = new ArchitectureGroupController(nal, applicationName);
-			ag.deleteArchi(architectureId);
-
-		} catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure", e);
-			throw ex;
-		}
-	}
-
-	@Procedure(value = "demeter.get.architecture.hidden.label", mode = Mode.WRITE)
-	@Description(
-			"demeter.get.architecture.hidden.label() - Get the hidden label of the architectures")
-	public Stream<OutputMessage> getHiddenLabelArchitectures()
-			throws ProcedureException {
-
-		try {
-			String label = ArchitectureController.getHiddenArchimodelPrefix();
-			return Stream.of(new OutputMessage(label));
-		} catch (Exception  e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure", e);
-			throw ex;
-		}
-	}
-
-	@Procedure(value = "demeter.get.subset.hidden.label", mode = Mode.WRITE)
-	@Description(
-			"demeter.get.subset.subset.label() - Get the hidden label of the subsets")
-	public Stream<OutputMessage> getHiddenLabelSubset()
-			throws ProcedureException {
-
-		try {
-			String label = ArchitectureController.getHiddenSubsetPrefix();
-			return Stream.of(new OutputMessage(label));
-		} catch (Exception  e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure", e);
-			throw ex;
-		}
-	}
-
-	@Procedure(value = "demeter.architecture.hide.byId", mode = Mode.WRITE)
-	@Description(
-			"demeter.architecture.hide.byId(Long id) - Hide an architecture by its Id")
-	public void hideArchitectureById( @Name(value = "ArchitectureId") Long architectureId)
-			throws ProcedureException {
-		try {
-			Neo4jAL nal = new Neo4jAL(db, transaction, log);
-			ArchitectureController ag = new ArchitectureController(nal);
-			ag.hideArchitectureById(architectureId);
-		} catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure", e);
-			throw ex;
-		}
-	}
-
-	@Procedure(value = "demeter.subset.hide.byId", mode = Mode.WRITE)
-	@Description(
-			"demeter.subset.hide.byId(Long id) - Hide an architecture by its Id")
-	public void hideSubsetById( @Name(value = "SubsetId") Long SubsetId)
-			throws ProcedureException {
-		try {
-			Neo4jAL nal = new Neo4jAL(db, transaction, log);
-			ArchitectureController ag = new ArchitectureController(nal);
-			ag.hideSubsetById(SubsetId);
-		} catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure", e);
-			throw ex;
-		}
-	}
-
-	@Procedure(value = "demeter.architecture.display.byId", mode = Mode.WRITE)
-	@Description(
-			"demeter.architecture.display.byId(Long id) - Hide an architecture by its Id")
-	public void displayArchitectureById( @Name(value = "ArchitectureId") Long architectureId)
-			throws ProcedureException {
-		try {
-			Neo4jAL nal = new Neo4jAL(db, transaction, log);
-			ArchitectureController ag = new ArchitectureController(nal);
-			ag.displayArchitectureById(architectureId);
-		} catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure", e);
-			throw ex;
-		}
-	}
-
-	@Procedure(value = "demeter.architecture.display.children.byId", mode = Mode.WRITE)
-	@Description(
-			"demeter.architecture.display.children.byId(Long id) - Display an architecture with its children by its Id")
-	public void displayArchitectureWithChildrenById( @Name(value = "ArchitectureId") Long architectureId)
-			throws ProcedureException {
-		try {
-			Neo4jAL nal = new Neo4jAL(db, transaction, log);
-			ArchitectureController ag = new ArchitectureController(nal);
-			ag.displayArchitectureWithChildrenById(architectureId);
-		} catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure", e);
-			throw ex;
-		}
-	}
-
-	@Procedure(value = "demeter.subset.display.byId", mode = Mode.WRITE)
-	@Description(
-			"demeter.subset.hide.display(Long id) - Hide an architecture by its Id")
-	public void displaySubsetById( @Name(value = "SubsetId") Long SubsetId)
-			throws ProcedureException {
-		try {
-			Neo4jAL nal = new Neo4jAL(db, transaction, log);
-			ArchitectureController ag = new ArchitectureController(nal);
-			ag.displaySubsetById(SubsetId);
-		} catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure", e);
-			throw ex;
-		}
-	}
+    @Context
+    public Log log;
 
 
+    @Procedure(value = "demeter.group.architectures", mode = Mode.WRITE)
+    @Description(
+            "demeter.group.architectures(String applicationName) - Group the architectures following Demeter tags applied")
+    public Stream<NodeResult> groupArchitectures(@Name(value = "ApplicationName") String applicationName)
+            throws ProcedureException {
 
-	@Procedure(value = "demeter.api.group.architectures.views.all", mode = Mode.WRITE)
-	@Description(
-			"demeter.api.group.architectures.views.all() - Group all the architectures view")
-	public Stream<NodeResult> groupInAllApplications()
-			throws ProcedureException {
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            ArchitectureGroupController ag = new ArchitectureGroupController(nal, applicationName);
+            List<Node> nodes = ag.launch();
 
-		try {
-			Neo4jAL nal = new Neo4jAL(db, transaction, log);
-			List<Node> nodeList = GroupingUtilsController.groupAllArchitecture(nal);
+            return nodes.stream().map(NodeResult::new);
 
-			return nodeList.stream().map(NodeResult::new);
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
 
-		} catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure", e);
-			throw ex;
-		}
-	}
+    @Procedure(value = "demeter.create.architecture", mode = Mode.WRITE)
+    @Description(
+            "demeter.create.architecture(String applicationName, String architectureName, List<Long> IdList) " +
+                    "- Group the list of tags provided as new an architecture")
+    public Stream<NodeResult> manualArchitectureGroup(@Name(value = "ApplicationName") String applicationName,
+                                                      @Name(value = "ArchitectureName") String architectureName,
+                                                      @Name(value = "IdList") List<Long> idList)
+            throws ProcedureException {
 
-	@Procedure(value = "demeter.api.refresh.architecture", mode = Mode.WRITE)
-	@Description(
-			"demeter.api.refresh.architecture(String application, String architecture) - Refresh and recalculate the link of one architecture.")
-	public void refreshArchitectureView(@Name(value = "ApplicationName") String applicationName,
-							@Name(value = "architecture") String architectureName)
-			throws ProcedureException {
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            ArchitectureGroupController ag = new ArchitectureGroupController(nal, applicationName);
+            Node node = ag.manualLaunch(architectureName, idList);
 
-		try {
-			Neo4jAL nal = new Neo4jAL(db, transaction, log);
-			GroupingUtilsController.refreshArchitecture(nal, applicationName, architectureName);
+            return Stream.of(new NodeResult(node)); // return the architecture created
 
-		} catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure", e);
-			throw ex;
-		}
-	}
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
+
+    @Procedure(value = "demeter.delete.architecture.subset", mode = Mode.WRITE)
+    @Description(
+            "demeter.delete.architectures.subset(String applicationName, Long SubsetId) - Delete a subset in a view")
+    public Stream<LongResult> deleteSubSet(@Name(value = "ApplicationName") String applicationName,
+                                           @Name(value = "SubsetID") Long subsetId)
+            throws ProcedureException {
+
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            ArchitectureGroupController ag = new ArchitectureGroupController(nal, applicationName);
+            Long numObj = ag.deleteSubModel(subsetId);
+
+            return Stream.of(new LongResult(numObj));
+
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
+
+    @Procedure(value = "demeter.delete.architecture.view", mode = Mode.WRITE)
+    @Description(
+            "demeter.delete.architectures.view(String applicationName, Long architectureId) - Delete a architects view b")
+    public void deleteArchitecture(@Name(value = "ApplicationName") String applicationName,
+                                   @Name(value = "ArchitectureId") Long architectureId)
+            throws ProcedureException {
+
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            ArchitectureGroupController ag = new ArchitectureGroupController(nal, applicationName);
+            ag.deleteArchi(architectureId);
+
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
+
+    @Procedure(value = "demeter.get.architecture.hidden.label", mode = Mode.WRITE)
+    @Description(
+            "demeter.get.architecture.hidden.label() - Get the hidden label of the architectures")
+    public Stream<OutputMessage> getHiddenLabelArchitectures()
+            throws ProcedureException {
+
+        try {
+            String label = ArchitectureController.getHiddenArchimodelPrefix();
+            return Stream.of(new OutputMessage(label));
+        } catch (Exception e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
+
+    @Procedure(value = "demeter.get.subset.hidden.label", mode = Mode.WRITE)
+    @Description(
+            "demeter.get.subset.subset.label() - Get the hidden label of the subsets")
+    public Stream<OutputMessage> getHiddenLabelSubset()
+            throws ProcedureException {
+
+        try {
+            String label = ArchitectureController.getHiddenSubsetPrefix();
+            return Stream.of(new OutputMessage(label));
+        } catch (Exception e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
+
+    @Procedure(value = "demeter.architecture.hide.byId", mode = Mode.WRITE)
+    @Description(
+            "demeter.architecture.hide.byId(Long id) - Hide an architecture by its Id")
+    public void hideArchitectureById(@Name(value = "ArchitectureId") Long architectureId)
+            throws ProcedureException {
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            ArchitectureController ag = new ArchitectureController(nal);
+            ag.hideArchitectureById(architectureId);
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
+
+    @Procedure(value = "demeter.subset.hide.byId", mode = Mode.WRITE)
+    @Description(
+            "demeter.subset.hide.byId(Long id) - Hide an architecture by its Id")
+    public void hideSubsetById(@Name(value = "SubsetId") Long SubsetId)
+            throws ProcedureException {
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            ArchitectureController ag = new ArchitectureController(nal);
+            ag.hideSubsetById(SubsetId);
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
+
+    @Procedure(value = "demeter.architecture.display.byId", mode = Mode.WRITE)
+    @Description(
+            "demeter.architecture.display.byId(Long id) - Hide an architecture by its Id")
+    public void displayArchitectureById(@Name(value = "ArchitectureId") Long architectureId)
+            throws ProcedureException {
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            ArchitectureController ag = new ArchitectureController(nal);
+            ag.displayArchitectureById(architectureId);
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
+
+    @Procedure(value = "demeter.architecture.display.children.byId", mode = Mode.WRITE)
+    @Description(
+            "demeter.architecture.display.children.byId(Long id) - Display an architecture with its children by its Id")
+    public void displayArchitectureWithChildrenById(@Name(value = "ArchitectureId") Long architectureId)
+            throws ProcedureException {
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            ArchitectureController ag = new ArchitectureController(nal);
+            ag.displayArchitectureWithChildrenById(architectureId);
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
+
+    @Procedure(value = "demeter.subset.display.byId", mode = Mode.WRITE)
+    @Description(
+            "demeter.subset.hide.display(Long id) - Hide an architecture by its Id")
+    public void displaySubsetById(@Name(value = "SubsetId") Long SubsetId)
+            throws ProcedureException {
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            ArchitectureController ag = new ArchitectureController(nal);
+            ag.displaySubsetById(SubsetId);
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
+
+    @Procedure(value = "demeter.api.group.architectures.selected.applications", mode = Mode.WRITE)
+    @Description(
+            "demeter.api.group.architectures.selected.applications(String[] applications) - " +
+                    "Group all the architectures view in selected application")
+    public Stream<NodeResult> groupInSelectedApplications(@Name(value = "Applications")List<String> applications)
+            throws ProcedureException {
+
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            List<Node> nodeList = GroupingUtilsController.groupArchitectureSelectedApplication(nal, applications);
+
+            return nodeList.stream().map(NodeResult::new);
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
+
+    @Procedure(value = "demeter.api.group.architectures.views.all", mode = Mode.WRITE)
+    @Description(
+            "demeter.api.group.architectures.views.all() - Group all the architectures view")
+    public Stream<NodeResult> groupInAllApplications()
+            throws ProcedureException {
+
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            List<Node> nodeList = GroupingUtilsController.groupAllArchitecture(nal);
+
+            return nodeList.stream().map(NodeResult::new);
+
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
+
+    @Procedure(value = "demeter.api.refresh.architecture", mode = Mode.WRITE)
+    @Description(
+            "demeter.api.refresh.architecture(String application, String architecture) - Refresh and recalculate the link of one architecture.")
+    public void refreshArchitectureView(@Name(value = "ApplicationName") String applicationName,
+                                        @Name(value = "architecture") String architectureName)
+            throws ProcedureException {
+
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            GroupingUtilsController.refreshArchitecture(nal, applicationName, architectureName);
+
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
 
 
 }

@@ -25,24 +25,24 @@ import com.castsoftware.demeter.exceptions.neo4j.Neo4jQueryException;
 import com.castsoftware.demeter.models.demeter.UseCaseNode;
 
 public class UseCasesMessage {
-  public String name;
-  public String parentName;
-  public Boolean active;
-  public Long id;
+    public String name;
+    public String parentName;
+    public Boolean active;
+    public Long id;
 
-  public UseCasesMessage(String name, Boolean active, Long id) {
-    super();
-    this.name = name;
-    this.active = active;
-    this.id = id;
-  }
+    public UseCasesMessage(String name, Boolean active, Long id) {
+        super();
+        this.name = name;
+        this.active = active;
+        this.id = id;
+    }
 
-  public UseCasesMessage(UseCaseNode n)
-      throws Neo4jBadRequestException, Neo4jNoResult, Neo4jQueryException {
-    super();
-    this.name = n.getName();
-    this.active = n.getActive();
-    this.id = n.getNodeId();
-    this.parentName = n.getParentUseCase();
-  }
+    public UseCasesMessage(UseCaseNode n)
+            throws Neo4jBadRequestException, Neo4jNoResult, Neo4jQueryException {
+        super();
+        this.name = n.getName();
+        this.active = n.getActive();
+        this.id = n.getNodeId();
+        this.parentName = n.getParentUseCase();
+    }
 }

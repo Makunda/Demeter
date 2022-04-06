@@ -20,28 +20,28 @@
 package com.castsoftware.demeter.results.demeter;
 
 public class BackupDifferenceResult {
-  // Sources options
-  public String sourceState;
-  public String sourceLevel;
-  public Long sourceObject;
+    // Sources options
+    public String sourceState;
+    public String sourceLevel;
+    public Long sourceObject;
 
-  // Destination options
-  public String destinationState;
-  public String destinationLevel;
-  public Long destinationObject;
+    // Destination options
+    public String destinationState;
+    public String destinationLevel;
+    public Long destinationObject;
 
-  public BackupDifferenceResult(
-      String sourceState,
-      String sourceLevel,
-      Long sourceObject,
-      String destinationState,
-      String destinationLevel,
-      Long destinationObject) {
-    this.sourceState = sourceState;
-    this.sourceLevel = sourceLevel;
-    this.sourceObject = sourceObject;
-    this.destinationState = destinationState;
-    this.destinationLevel = destinationLevel;
-    this.destinationObject = destinationObject;
-  }
+    public BackupDifferenceResult(
+            String sourceState,
+            String sourceLevel,
+            Long sourceObject,
+            String destinationState,
+            String destinationLevel,
+            Long destinationObject) {
+        this.sourceState = sourceState;
+        this.sourceLevel = sourceLevel;
+        this.sourceObject = sourceObject;
+        this.destinationState = destinationState;
+        this.destinationLevel = destinationLevel;
+        this.destinationObject = destinationObject;
+    }
 }

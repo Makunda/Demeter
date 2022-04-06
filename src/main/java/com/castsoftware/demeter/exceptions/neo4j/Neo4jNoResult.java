@@ -27,24 +27,24 @@ import com.castsoftware.demeter.exceptions.TaggingException;
  */
 public class Neo4jNoResult extends TaggingException {
 
-  private static final long serialVersionUID = 8218353918930322258L;
-  private static final String MESSAGE_PREFIX = "Error, the query returned no results : ";
-  private static final String CODE_PREFIX = "NEO_NR_";
+    private static final long serialVersionUID = 8218353918930322258L;
+    private static final String MESSAGE_PREFIX = "Error, the query returned no results : ";
+    private static final String CODE_PREFIX = "NEO_NR_";
 
-  public Neo4jNoResult(String message, Throwable cause, String code) {
-    super(MESSAGE_PREFIX.concat(message), cause, CODE_PREFIX.concat(code));
-  }
+    public Neo4jNoResult(String message, Throwable cause, String code) {
+        super(MESSAGE_PREFIX.concat(message), cause, CODE_PREFIX.concat(code));
+    }
 
-  public Neo4jNoResult(String message, String query, String code) {
-    super(
-        MESSAGE_PREFIX.concat(message).concat(" . Query : ").concat(query),
-        CODE_PREFIX.concat(code));
-  }
+    public Neo4jNoResult(String message, String query, String code) {
+        super(
+                MESSAGE_PREFIX.concat(message).concat(" . Query : ").concat(query),
+                CODE_PREFIX.concat(code));
+    }
 
-  public Neo4jNoResult(String message, String query, Throwable cause, String code) {
-    super(
-        MESSAGE_PREFIX.concat(message).concat(" . Query : ").concat(query),
-        cause,
-        CODE_PREFIX.concat(code));
-  }
+    public Neo4jNoResult(String message, String query, Throwable cause, String code) {
+        super(
+                MESSAGE_PREFIX.concat(message).concat(" . Query : ").concat(query),
+                cause,
+                CODE_PREFIX.concat(code));
+    }
 }

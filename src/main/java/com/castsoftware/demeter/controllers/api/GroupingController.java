@@ -38,6 +38,7 @@ public class GroupingController {
 
     /**
      * Get the tag prefix for the level 5
+     *
      * @return
      */
     public static String getLevelGroupPrefix() {
@@ -47,6 +48,7 @@ public class GroupingController {
 
     /**
      * Set the tag prefix for the level 5
+     *
      * @param prefix New prefix for the level 5 grouping
      * @return The new prefix
      * @throws MissingFileException
@@ -60,6 +62,7 @@ public class GroupingController {
 
     /**
      * Get the tag prefix for the modules
+     *
      * @return
      */
     public static String getModuleGroupPrefix() {
@@ -68,6 +71,7 @@ public class GroupingController {
 
     /**
      * Set the tag prefix for the module grouping
+     *
      * @param prefix New prefix for the module 5 grouping
      * @return
      * @throws MissingFileException
@@ -80,6 +84,7 @@ public class GroupingController {
 
     /**
      * Get the tag prefix for the view grouping
+     *
      * @return
      */
     public static String getViewGroupPrefix() {
@@ -88,6 +93,7 @@ public class GroupingController {
 
     /**
      * Set the tag  prefix for the view grouping
+     *
      * @param prefix New prefix for the grouping
      * @return
      */
@@ -99,6 +105,7 @@ public class GroupingController {
 
     /**
      * Get the tag prefix for the architecture grouping
+     *
      * @return
      */
     public static String getArchitectureGroupPrefix() {
@@ -107,6 +114,7 @@ public class GroupingController {
 
     /**
      * Set the tag prefix for the architecture grouping
+     *
      * @param prefix New prefix for the grouping
      * @return
      */
@@ -117,7 +125,8 @@ public class GroupingController {
 
     /**
      * Get the number of application concerned by a prefixed tag in the database
-     * @param neo4jAL Neo4j Access Layer
+     *
+     * @param neo4jAL   Neo4j Access Layer
      * @param tagPrefix Name of the prefix to look for
      * @return A list of match as a list of GroupingResult
      * @throws Neo4jQueryException
@@ -135,7 +144,7 @@ public class GroupingController {
         Map<String, Object> parameters = Map.of("tagPrefix", tagPrefix);
         Result res = neo4jAL.executeQuery(request, parameters);
 
-        while(res.hasNext()) {
+        while (res.hasNext()) {
             Map<String, Object> result = res.next();
             String applicationName = (String) result.get("application");
             String[] tags = (String[]) result.get("tags");
@@ -149,7 +158,8 @@ public class GroupingController {
 
     /**
      * Get the number of application concerned by a tag in the database
-     * @param neo4jAL Neo4j Access Layer
+     *
+     * @param neo4jAL   Neo4j Access Layer
      * @param tagPrefix Name of the prefix to look for
      * @return A list of match as a list of GroupingResult
      * @throws Neo4jQueryException
@@ -167,7 +177,7 @@ public class GroupingController {
         Map<String, Object> parameters = Map.of("tagPrefix", tagPrefix, "appName", application);
         Result res = neo4jAL.executeQuery(request, parameters);
 
-        while(res.hasNext()) {
+        while (res.hasNext()) {
             Map<String, Object> result = res.next();
             String applicationName = (String) result.get("application");
             String[] tags = (String[]) result.get("tags");
@@ -181,7 +191,8 @@ public class GroupingController {
 
     /**
      * Get a list of the group with the specified prefix
-     * @param neo4jAL Neo4j Access Layer
+     *
+     * @param neo4jAL     Neo4j Access Layer
      * @param application Name of the application
      * @param groupPrefix Prefix of the groups
      * @return
@@ -193,7 +204,7 @@ public class GroupingController {
         String request = String.format("MATCH (l:Level5:`%s`)-[:Aggregates]->(o:Object) WHERE l.FullName=~'.*##%s(.*)' RETURN ID(l) as id, l.Name as groupName, COUNT(o) as numObjects ;", application, groupPrefix);
         Result res = neo4jAL.executeQuery(request);
 
-        while(res.hasNext()) {
+        while (res.hasNext()) {
             Map<String, Object> result = res.next();
             Long id = (Long) result.get("id");
             String groupName = (String) result.get("groupName");
@@ -207,10 +218,9 @@ public class GroupingController {
     }
 
 
-
-
     /**
      * Get the candidates application for the Level Grouping
+     *
      * @param neo4jAL Neo4j access Layer
      * @return
      * @throws Neo4jQueryException
@@ -225,6 +235,7 @@ public class GroupingController {
 
     /**
      * Get the candidates application for the Module Grouping
+     *
      * @param neo4jAL Neo4j access Layer
      * @return
      * @throws Neo4jQueryException
@@ -239,7 +250,8 @@ public class GroupingController {
 
     /**
      * Get the demeter levels in an application
-     * @param neo4jAL Neo4j Access Layer
+     *
+     * @param neo4jAL     Neo4j Access Layer
      * @param application
      * @return
      * @throws Neo4jQueryException
@@ -251,7 +263,8 @@ public class GroupingController {
 
     /**
      * Get the demeter modules in an application
-     * @param neo4jAL Neo4j Access Layer
+     *
+     * @param neo4jAL     Neo4j Access Layer
      * @param application
      * @return
      * @throws Neo4jQueryException

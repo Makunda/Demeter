@@ -38,45 +38,48 @@ import java.util.stream.Stream;
 
 public class DocumentProcedure {
 
-  @Context public GraphDatabaseService db;
+    @Context
+    public GraphDatabaseService db;
 
-  @Context public Transaction transaction;
+    @Context
+    public Transaction transaction;
 
-  @Context public Log log;
+    @Context
+    public Log log;
 
-  @Procedure(value = "demeter.document.add", mode = Mode.WRITE)
-  @Description(
-      "demeter.document.add(String Tag, String AssociatedRequest, Boolean Activation, String Description, Long ParentId) - Add a tag node and link it to a use case node.")
-  public Stream<NodeResult> addTagNode(
-      @Name(value = "Title") String title,
-      @Name(value = "Request") String request,
-      @Name(value = "Activation") Boolean activation,
-      @Name(value = "Description") String description,
-      @Name(value = "DocumentDescription") String documentDescription,
-      @Name(value = "ParentId") Long parentId)
-      throws ProcedureException {
+    @Procedure(value = "demeter.document.add", mode = Mode.WRITE)
+    @Description(
+            "demeter.document.add(String Tag, String AssociatedRequest, Boolean Activation, String Description, Long ParentId) - Add a tag node and link it to a use case node.")
+    public Stream<NodeResult> addTagNode(
+            @Name(value = "Title") String title,
+            @Name(value = "Request") String request,
+            @Name(value = "Activation") Boolean activation,
+            @Name(value = "Description") String description,
+            @Name(value = "DocumentDescription") String documentDescription,
+            @Name(value = "ParentId") Long parentId)
+            throws ProcedureException {
 
-    try {
-      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
-      String message =
-          String.format(
-              "Adding a %s node with parameters { 'Title' : '%s', 'Activation' : %s, 'Request' : '%s', 'Description' : '%s', 'DocumentDescription' : '%s' }.",
-              TagNode.getLabel(), title, activation, request, description, documentDescription);
-      nal.logInfo(message);
+            String message =
+                    String.format(
+                            "Adding a %s node with parameters { 'Title' : '%s', 'Activation' : %s, 'Request' : '%s', 'Description' : '%s', 'DocumentDescription' : '%s' }.",
+                            TagNode.getLabel(), title, activation, request, description, documentDescription);
+            nal.logInfo(message);
 
-      Node n =
-          DocumentController.addDocumentNode(
-              nal, title, request, activation, description, documentDescription, parentId);
-      return Stream.of(new NodeResult(n));
-    } catch (Exception
-        | Neo4jConnectionError
-        | Neo4jQueryException
-        | Neo4jBadRequestException
-        | Neo4jNoResult e) {
-      ProcedureException ex = new ProcedureException(e);
-      log.error("An error occurred while executing the procedure", e);
-      throw ex;
+            Node n =
+                    DocumentController.addDocumentNode(
+                            nal, title, request, activation, description, documentDescription, parentId);
+            return Stream.of(new NodeResult(n));
+        } catch (Exception
+                | Neo4jConnectionError
+                | Neo4jQueryException
+                | Neo4jBadRequestException
+                | Neo4jNoResult e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
     }
-  }
 }

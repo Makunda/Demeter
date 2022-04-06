@@ -38,104 +38,106 @@ import java.util.stream.Stream;
 
 public class AggregationProcedures {
 
-	@Context
-	public GraphDatabaseService db;
+    @Context
+    public GraphDatabaseService db;
 
-	@Context public Transaction transaction;
+    @Context
+    public Transaction transaction;
 
-	@Context public Log log;
+    @Context
+    public Log log;
 
-	@Procedure(value = "demeter.api.create.customNode", mode = Mode.WRITE)
-	@Description(
-			"demeter.api.create.customNode(String applicationName, Long aggregationID, String customName, List<Long> idNodes) " +
-					"- Create a custom node in the application and link it to the aggregation model ")
-	public Stream<NodeResult> createCustomNode(@Name(value = "ApplicationName") String applicationName,
-											   @Name(value = "AggregationID") Long aggregationID,
-												@Name(value = "CustomName") String customName,
-												@Name(value = "IdNodes") List<Long> idNodes
-	)
-			throws ProcedureException {
+    @Procedure(value = "demeter.api.create.customNode", mode = Mode.WRITE)
+    @Description(
+            "demeter.api.create.customNode(String applicationName, Long aggregationID, String customName, List<Long> idNodes) " +
+                    "- Create a custom node in the application and link it to the aggregation model ")
+    public Stream<NodeResult> createCustomNode(@Name(value = "ApplicationName") String applicationName,
+                                               @Name(value = "AggregationID") Long aggregationID,
+                                               @Name(value = "CustomName") String customName,
+                                               @Name(value = "IdNodes") List<Long> idNodes
+    )
+            throws ProcedureException {
 
-		try {
-			Neo4jAL nal = new Neo4jAL(db, transaction, log);
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
-			AggregationController agc = new AggregationController(nal, applicationName);
-			Node node = agc.createCustom(aggregationID, customName, idNodes);
-			NodeResult res = new NodeResult(node);
+            AggregationController agc = new AggregationController(nal, applicationName);
+            Node node = agc.createCustom(aggregationID, customName, idNodes);
+            NodeResult res = new NodeResult(node);
 
-			return Stream.of(res);
+            return Stream.of(res);
 
-		} catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jNoResult e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure 'demeter.api.create.customNode'.", e);
-			throw ex;
-		}
-	}
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jNoResult e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure 'demeter.api.create.customNode'.", e);
+            throw ex;
+        }
+    }
 
-	@Procedure(value = "demeter.api.create.aggregation", mode = Mode.WRITE)
-	@Description(
-			"demeter.api.create.aggregation(String applicationName, String aggregationName) " +
-					"- Create a new aggregation view or merge it in the application ")
-	public Stream<NodeResult> createAggregation(@Name(value = "ApplicationName") String applicationName,
-												@Name(value = "AggregationName") String aggregationName)
-			throws ProcedureException {
+    @Procedure(value = "demeter.api.create.aggregation", mode = Mode.WRITE)
+    @Description(
+            "demeter.api.create.aggregation(String applicationName, String aggregationName) " +
+                    "- Create a new aggregation view or merge it in the application ")
+    public Stream<NodeResult> createAggregation(@Name(value = "ApplicationName") String applicationName,
+                                                @Name(value = "AggregationName") String aggregationName)
+            throws ProcedureException {
 
-		try {
-			Neo4jAL nal = new Neo4jAL(db, transaction, log);
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
-			AggregationController agc = new AggregationController(nal, applicationName);
-			Node node = agc.createAggregation(aggregationName);
-			NodeResult res = new NodeResult(node);
+            AggregationController agc = new AggregationController(nal, applicationName);
+            Node node = agc.createAggregation(aggregationName);
+            NodeResult res = new NodeResult(node);
 
-			return Stream.of(res);
+            return Stream.of(res);
 
-		} catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jNoResult e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure 'demeter.api.create.aggregation'.", e);
-			throw ex;
-		}
-	}
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jNoResult e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure 'demeter.api.create.aggregation'.", e);
+            throw ex;
+        }
+    }
 
-	@Procedure(value = "demeter.api.refresh.aggregation", mode = Mode.WRITE)
-	@Description(
-			"demeter.api.refresh.aggregation(String applicationName, Long AggregationId) " +
-					"- Refresh an aggregation view in the application ")
-	public void refreshAggregation(@Name(value = "ApplicationName") String applicationName,
-												@Name(value = "AggregationId") Long aggregationId)
-			throws ProcedureException {
+    @Procedure(value = "demeter.api.refresh.aggregation", mode = Mode.WRITE)
+    @Description(
+            "demeter.api.refresh.aggregation(String applicationName, Long AggregationId) " +
+                    "- Refresh an aggregation view in the application ")
+    public void refreshAggregation(@Name(value = "ApplicationName") String applicationName,
+                                   @Name(value = "AggregationId") Long aggregationId)
+            throws ProcedureException {
 
-		try {
-			Neo4jAL nal = new Neo4jAL(db, transaction, log);
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
-			AggregationController agc = new AggregationController(nal, applicationName);
-			agc.refreshAggregation(aggregationId);
+            AggregationController agc = new AggregationController(nal, applicationName);
+            agc.refreshAggregation(aggregationId);
 
-		} catch (Exception | Neo4jConnectionError | Neo4jQueryException  e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure 'demeter.api.refresh.aggregation'.", e);
-			throw ex;
-		}
-	}
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure 'demeter.api.refresh.aggregation'.", e);
+            throw ex;
+        }
+    }
 
-	@Procedure(value = "demeter.api.delete.aggregation", mode = Mode.WRITE)
-	@Description(
-			"demeter.api.delete.aggregation(String applicationName, String aggregationName, List<Long> idNodes) " +
-					"- Create a new aggregation view in the application ")
-	public void deleteAggregation(@Name(value = "ApplicationName") String applicationName,
-												@Name(value = "AggregationName") String aggregationName
-	)
-			throws ProcedureException {
+    @Procedure(value = "demeter.api.delete.aggregation", mode = Mode.WRITE)
+    @Description(
+            "demeter.api.delete.aggregation(String applicationName, String aggregationName, List<Long> idNodes) " +
+                    "- Create a new aggregation view in the application ")
+    public void deleteAggregation(@Name(value = "ApplicationName") String applicationName,
+                                  @Name(value = "AggregationName") String aggregationName
+    )
+            throws ProcedureException {
 
-		try {
-			Neo4jAL nal = new Neo4jAL(db, transaction, log);
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
-			AggregationController agc = new AggregationController(nal, applicationName);
-			agc.deleteAggregationByName(aggregationName);
+            AggregationController agc = new AggregationController(nal, applicationName);
+            agc.deleteAggregationByName(aggregationName);
 
-		} catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure 'demeter.api.delete.aggregation'.", e);
-			throw ex;
-		}
-	}
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure 'demeter.api.delete.aggregation'.", e);
+            throw ex;
+        }
+    }
 }

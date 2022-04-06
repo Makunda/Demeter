@@ -27,18 +27,18 @@ import com.castsoftware.demeter.exceptions.TaggingException;
  */
 public class Neo4jQueryException extends TaggingException {
 
-  private static final long serialVersionUID = 8087192855448474860L;
-  private static final String MESSAGE_PREFIX = "Error during Neo4j query : ";
-  private static final String CODE_PREFIX = "NEO_BR_";
+    private static final long serialVersionUID = 8087192855448474860L;
+    private static final String MESSAGE_PREFIX = "Error during Neo4j query : ";
+    private static final String CODE_PREFIX = "NEO_BR_";
 
-  public Neo4jQueryException(String request, Throwable cause, String code) {
-    super(MESSAGE_PREFIX.concat(request), cause, CODE_PREFIX.concat(code));
-  }
+    public Neo4jQueryException(String request, Throwable cause, String code) {
+        super(MESSAGE_PREFIX.concat(request), cause, CODE_PREFIX.concat(code));
+    }
 
-  public Neo4jQueryException(String request, String query, Throwable cause, String code) {
-    super(
-        MESSAGE_PREFIX.concat(request).concat(" . Query : ").concat(query),
-        cause,
-        CODE_PREFIX.concat(code));
-  }
+    public Neo4jQueryException(String request, String query, Throwable cause, String code) {
+        super(
+                MESSAGE_PREFIX.concat(request).concat(" . Query : ").concat(query),
+                cause,
+                CODE_PREFIX.concat(code));
+    }
 }

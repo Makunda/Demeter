@@ -43,9 +43,11 @@ public class GroupingProcedures {
     @Context
     public GraphDatabaseService db;
 
-    @Context public Transaction transaction;
+    @Context
+    public Transaction transaction;
 
-    @Context public Log log;
+    @Context
+    public Log log;
 
     @Procedure(value = "demeter.api.get.prefix.level", mode = Mode.WRITE)
     @Description(
@@ -110,7 +112,7 @@ public class GroupingProcedures {
         try {
             String prefix = ArchitectureGroupController.getPrefix();
             return Stream.of(new OutputMessage(prefix));
-        } catch (Exception  e) {
+        } catch (Exception e) {
             ProcedureException ex = new ProcedureException(e);
             log.error("An error occurred while executing the procedure", e);
             throw ex;
@@ -132,15 +134,14 @@ public class GroupingProcedures {
     }
 
 
-
     @Procedure(value = "demeter.api.get.candidate.modules", mode = Mode.WRITE)
     @Description(
             "demeter.api.get.candidate.modules(Optional String application) - Get the candidates for the module grouping")
-    public Stream<CandidateFindingResult> getCandidateModuleGrouping(@Name(value="Application", defaultValue = "") String application) throws ProcedureException {
+    public Stream<CandidateFindingResult> getCandidateModuleGrouping(@Name(value = "Application", defaultValue = "") String application) throws ProcedureException {
         try {
             Neo4jAL neo4jAL = new Neo4jAL(db, transaction, log);
             List<CandidateFindingResult> candidates;
-            if(application.isEmpty()) {
+            if (application.isEmpty()) {
                 candidates = GroupingController.getCandidateApplicationsModuleGroup(neo4jAL);
             } else {
                 candidates = GroupingController.getCandidateApplicationsModuleGroup(neo4jAL, application);
@@ -154,12 +155,10 @@ public class GroupingProcedures {
     }
 
 
-
-
     @Procedure(value = "demeter.api.get.demeter.modules", mode = Mode.WRITE)
     @Description(
             "demeter.api.get.demeter.modules(String application) - Get the levels grouped by demeter in one application")
-    public Stream<DemeterGroupResult> getDemeterModules(@Name(value="Application") String application) throws ProcedureException {
+    public Stream<DemeterGroupResult> getDemeterModules(@Name(value = "Application") String application) throws ProcedureException {
         try {
             Neo4jAL neo4jAL = new Neo4jAL(db, transaction, log);
             List<DemeterGroupResult> levels = GroupingController.getDemeterModules(neo4jAL, application);

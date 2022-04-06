@@ -17,7 +17,33 @@
  *
  */
 
-package com.castsoftware.demeter.controllers.configuration;
+package com.castsoftware.demeter.utils.configuration;
 
-public class PropertyController {
+import com.castsoftware.demeter.config.Configuration;
+import org.neo4j.graphdb.Label;
+
+public class ObjectConfiguration {
+
+	/**
+	 * Get the label of the object
+	 * @return The label of the object
+	 */
+	public static Label getObjectLabel() {
+		String labelAsString = Configuration.get("imaging.node.object.label");
+		return Label.label(labelAsString);
+	}
+
+	public static Label getOriginalLevelName() {
+		String labelAsString = Configuration.get("imaging.node.object.label");
+		return Label.label(labelAsString);
+	}
+
+	/**
+	 * Get level property of the object
+	 * @return The level property
+	 */
+	public static String getLevelProperty() {
+		return Configuration.get("imaging.node.object.level");
+	}
+
 }

@@ -42,87 +42,90 @@ import java.util.stream.Stream;
 
 public class ConfigurationProcedure {
 
-  @Context public GraphDatabaseService db;
+    @Context
+    public GraphDatabaseService db;
 
-  @Context public Transaction transaction;
+    @Context
+    public Transaction transaction;
 
-  @Context public Log log;
+    @Context
+    public Log log;
 
-  @Procedure(value = "demeter.createConfiguration", mode = Mode.WRITE)
-  @Description("demeter.createConfiguration(String name) - Create a configuration node")
-  public Stream<NodeResult> createConfiguration(@Name(value = "Name") String name)
-      throws ProcedureException {
+    @Procedure(value = "demeter.createConfiguration", mode = Mode.WRITE)
+    @Description("demeter.createConfiguration(String name) - Create a configuration node")
+    public Stream<NodeResult> createConfiguration(@Name(value = "Name") String name)
+            throws ProcedureException {
 
-    try {
-      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
-      Node n = ConfigurationController.createConfiguration(nal, name);
+            Node n = ConfigurationController.createConfiguration(nal, name);
 
-      return Stream.of(new NodeResult(n));
-    } catch (Neo4jBadRequestException | Neo4jNoResult | Exception | Neo4jConnectionError e) {
-      ProcedureException ex = new ProcedureException(e);
-      log.error("An error occurred while executing the procedure", e);
-      throw ex;
+            return Stream.of(new NodeResult(n));
+        } catch (Neo4jBadRequestException | Neo4jNoResult | Exception | Neo4jConnectionError e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
     }
-  }
 
-  @Procedure(value = "demeter.forecast", mode = Mode.WRITE)
-  @Description("demeter.forecast() - Get the number of request that will be executed")
-  public Stream<OutputMessage> forecast(@Name(value = "Configuration") String configurationName)
-      throws ProcedureException {
-    List<Node> nodeList = new ArrayList<>();
+    @Procedure(value = "demeter.forecast", mode = Mode.WRITE)
+    @Description("demeter.forecast() - Get the number of request that will be executed")
+    public Stream<OutputMessage> forecast(@Name(value = "Configuration") String configurationName)
+            throws ProcedureException {
+        List<Node> nodeList = new ArrayList<>();
 
-    try {
-      log.info("Launching forecast Procedure ..");
-      Neo4jAL nal = new Neo4jAL(db, transaction, log);
+        try {
+            log.info("Launching forecast Procedure ..");
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
 
-      List<TagNode> lNode = TagController.getSelectedTags(nal, configurationName);
+            List<TagNode> lNode = TagController.getSelectedTags(nal, configurationName);
 
-      int numReq = lNode.size();
+            int numReq = lNode.size();
 
-      String message =
-          String.format("In this configuration %d request(s) will be executed.", numReq);
-      return Stream.of(new OutputMessage(message));
+            String message =
+                    String.format("In this configuration %d request(s) will be executed.", numReq);
+            return Stream.of(new OutputMessage(message));
 
-    } catch (Neo4jConnectionError
-        | Neo4jQueryException
-        | Neo4jNoResult
-        | Neo4jBadRequestException
-        | Exception e) {
-      ProcedureException ex = new ProcedureException(e);
-      log.error("An error occurred while executing the procedure", e);
-      throw ex;
+        } catch (Neo4jConnectionError
+                | Neo4jQueryException
+                | Neo4jNoResult
+                | Neo4jBadRequestException
+                | Exception e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
     }
-  }
 
-  @Procedure(value = "demeter.execute", mode = Mode.WRITE)
-  @Description(
-      "demeter.execute( String ConfigurationName, String Application ) - Execute a configuration node")
-  public Stream<OutputMessage> executeConfiguration(
-      @Name(value = "Configuration") String configurationName,
-      @Name(value = "Application") String applicationLabel)
-      throws ProcedureException {
-    try {
-      Neo4jAL nal = new Neo4jAL(db, transaction, log);
-      long start = System.currentTimeMillis();
+    @Procedure(value = "demeter.execute", mode = Mode.WRITE)
+    @Description(
+            "demeter.execute( String ConfigurationName, String Application ) - Execute a configuration node")
+    public Stream<OutputMessage> executeConfiguration(
+            @Name(value = "Configuration") String configurationName,
+            @Name(value = "Application") String applicationLabel)
+            throws ProcedureException {
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            long start = System.currentTimeMillis();
 
-      int numExec =
-          ConfigurationController.executeConfiguration(nal, configurationName, applicationLabel);
+            int numExec =
+                    ConfigurationController.executeConfiguration(nal, configurationName, applicationLabel);
 
-      long end = System.currentTimeMillis();
-      long elapsedTime = end - start;
+            long end = System.currentTimeMillis();
+            long elapsedTime = end - start;
 
-      String message =
-          String.format("%d demeter requests were executed in %d ms.", numExec, elapsedTime);
-      return Stream.of(new OutputMessage(message));
-    } catch (Neo4jBadRequestException
-        | Neo4jNoResult
-        | RuntimeException
-        | Neo4jConnectionError
-        | Neo4jQueryException e) {
-      ProcedureException ex = new ProcedureException(e);
-      log.error("An error occurred while executing the procedure", e);
-      throw ex;
+            String message =
+                    String.format("%d demeter requests were executed in %d ms.", numExec, elapsedTime);
+            return Stream.of(new OutputMessage(message));
+        } catch (Neo4jBadRequestException
+                | Neo4jNoResult
+                | RuntimeException
+                | Neo4jConnectionError
+                | Neo4jQueryException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
     }
-  }
 }

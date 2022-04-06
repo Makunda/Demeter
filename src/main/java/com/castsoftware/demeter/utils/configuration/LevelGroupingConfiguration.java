@@ -17,7 +17,28 @@
  *
  */
 
-package com.castsoftware.demeter.controllers.configuration;
+package com.castsoftware.demeter.utils.configuration;
 
-public class PropertyController {
+import com.castsoftware.demeter.config.Configuration;
+
+/**
+ * Level Configuration
+ */
+public class LevelGroupingConfiguration {
+
+	/**
+	 * Get the extension level identifier property to apply on levels
+	 * @return Property
+	 */
+	public static String getExtensionLevelIdentifier() {
+		return Configuration.get("demeter.property.generated_level");
+	}
+
+	/**
+	 * Get the Original leve identifier to be applied on objects moved
+	 * @return Property
+	 */
+	public static String getExtensionOriginalLevelIdentifier() {
+		return Configuration.get("demeter.property.original_group");
+	}
 }

@@ -20,10 +20,10 @@
 package com.castsoftware.demeter.results;
 
 public class OutputMessage {
-  public String output;
+    public String output;
 
-  public OutputMessage(String message) {
-    super();
-    this.output = message;
-  }
+    public OutputMessage(String message) {
+        super();
+        this.output = message;
+    }
 }

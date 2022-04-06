@@ -39,191 +39,190 @@ import java.util.stream.Collectors;
 
 public class NewBackupController {
 
-  private final Neo4jAL neo4jAL;
-  private final String application;
+    private final Neo4jAL neo4jAL;
+    private final String application;
 
 
-
-  /**
-   * Constructor
-   *
-   * @param neo4jAL Neo4j Access Layer
-   * @param application Name of the application
-   */
-  public NewBackupController(Neo4jAL neo4jAL, String application) {
-    this.neo4jAL = neo4jAL;
-    this.application = application;
-  }
-
-
-  /**
-   * Rollack to a previous state in the application
-   *
-   * @param id Name of the save
-   */
-  public void rollBackToSave(Long id) throws Exception {
-    Map<String, List<Long>> levelMap = new HashMap<>(); // Init Level map
-    AdvancedLevelGrouping advancedG = new AdvancedLevelGrouping(this.neo4jAL);
-
-    // Get groups of nodes to reassign
-    levelMap = MasterSaveNodeService.getDifferences(this.neo4jAL, this.application, id);
-
-    int count = 0; // Count
-    String taxonomy;
-    String[] splitTax;
-
-    // Parse entry in the map
-    for (Map.Entry<String, List<Long>> record : levelMap.entrySet()) {
-      try {
-        taxonomy = record.getKey();
-        splitTax = taxonomy.split("##");
-        advancedG.groupWithTaxonomy(
-            this.application,
-            splitTax[0],
-            splitTax[1],
-            splitTax[2],
-            splitTax[3],
-            splitTax[4],
-            record.getValue());
-
-        // Add count to list
-        count += record.getValue().size();
-
-      } catch (Neo4jQueryException | Neo4jNoResult e) {
-        // Get example of nodes that throw the error
-        String nodesExample =
-            record.getValue().stream()
-                .limit(5)
-                .map(Objects::toString)
-                .collect(Collectors.joining(", "));
-
-        // Log error
-        neo4jAL.logError(
-            String.format(
-                "Failed to reassign nodes to their category."
-                    + "Taxonomy detected [%s], Example of nodes nodes : [%s].",
-                record.getKey(), nodesExample));
-
-        // Continue
-      }
+    /**
+     * Constructor
+     *
+     * @param neo4jAL     Neo4j Access Layer
+     * @param application Name of the application
+     */
+    public NewBackupController(Neo4jAL neo4jAL, String application) {
+        this.neo4jAL = neo4jAL;
+        this.application = application;
     }
 
-    // end of the process
-    neo4jAL.logInfo(String.format("%d nodes have been saved during this procedure.", count));
-  }
 
-  /**
-   * Get the list of all saves in the application
-   *
-   * @return The list of save detected
-   */
-  public List<MasterSaveNode> getListSave() throws Exception {
-    try {
+    /**
+     * Rollack to a previous state in the application
+     *
+     * @param id Name of the save
+     */
+    public void rollBackToSave(Long id) throws Exception {
+        Map<String, List<Long>> levelMap = new HashMap<>(); // Init Level map
+        AdvancedLevelGrouping advancedG = new AdvancedLevelGrouping(this.neo4jAL);
 
-      // Return the distinct list
-      return MasterSaveNodeService.getListMasterSave(neo4jAL, application);
-    } catch (Exception e) {
-      // Failed to execute the original query
-      neo4jAL.logError(
-          String.format("Failed to load the list of Save in the application '%s'.", application), e);
-      throw new Exception("Failed to get the list of save.");
-    }
-  }
+        // Get groups of nodes to reassign
+        levelMap = MasterSaveNodeService.getDifferences(this.neo4jAL, this.application, id);
 
-  /**
-   * Get the list of all saves in the application
-   *
-   * @param id Name of the save to remove
-   */
-  public void deleteSave(Long id) throws Exception {
-    try {
-      // Delete save node
-      MasterSaveNodeService.deleteMasterSave(neo4jAL, id);
-      neo4jAL.logInfo(
-          String.format(
-              "The save with id '%d' has been removed.", id));
-      
-    } catch (Exception e) {
-      neo4jAL.logError(
-          String.format(
-              "Failed to remove the save with id '%d'.",
-              id));
-      throw new Exception("Failed to remove the save in the application.");
-    }
-  }
+        int count = 0; // Count
+        String taxonomy;
+        String[] splitTax;
 
-  /**
-   * Save application state
-   *
-   * @param name Name of the save
-   */
-  public void saveState(String name, String description, Long timestamp, String picture) throws Exception, Neo4jBadNodeFormatException {
-    Map<Long, String> levelMap = new HashMap<>(); // Init Level map
+        // Parse entry in the map
+        for (Map.Entry<String, List<Long>> record : levelMap.entrySet()) {
+            try {
+                taxonomy = record.getKey();
+                splitTax = taxonomy.split("##");
+                advancedG.groupWithTaxonomy(
+                        this.application,
+                        splitTax[0],
+                        splitTax[1],
+                        splitTax[2],
+                        splitTax[3],
+                        splitTax[4],
+                        record.getValue());
 
-    // Create a backup node
-    try {
-      Node node = MasterSaveNodeService.findOrCreateMasterSaveNode(neo4jAL, application, name);
-      MasterSaveNode masterSaveNode = new MasterSaveNode(node);
-      masterSaveNode.setPicture(picture);
-      masterSaveNode.setTimestamp(timestamp);
-      masterSaveNode.setDescription(description);
-    } catch (Exception e) {
-      neo4jAL.logError(
-              "Failed to  create a backup node.", e);
-      throw new Exception("Failed to create a backup node. Check the logs");
-    }
+                // Add count to list
+                count += record.getValue().size();
 
-    // Get the taxonomy map in the application
-    try {
-      levelMap = BackupService.getLevel5Taxonomy(this.neo4jAL, this.application);
-    } catch (Neo4jQueryException e) {
-      neo4jAL.logError(
-          String.format("Failed to save the state of the application '%s'.", this.application), e);
-      throw new Exception("Failed to save application's state. Check the logs");
-    }
+            } catch (Neo4jQueryException | Neo4jNoResult e) {
+                // Get example of nodes that throw the error
+                String nodesExample =
+                        record.getValue().stream()
+                                .limit(5)
+                                .map(Objects::toString)
+                                .collect(Collectors.joining(", "));
 
-    // Log backup
-    neo4jAL.logInfo(String.format("%d levels will be backup for save with name '%s'.", levelMap.size(), name));
+                // Log error
+                neo4jAL.logError(
+                        String.format(
+                                "Failed to reassign nodes to their category."
+                                        + "Taxonomy detected [%s], Example of nodes nodes : [%s].",
+                                record.getKey(), nodesExample));
 
-    // Apply on each node a save property with its taxonomy
-    String match =
-        String.format(
-            "MATCH (l:Level5:`%1$s`)-[:Aggregates]->(o:Object:`%1$s`) WHERE ID(l)=$idLevel "
-                + "RETURN DISTINCT ID(o) as nodeId;",
-            this.application);
-
-    // Loop parameters
-    int count = 0;
-
-    // For all level / object in the application apply a property with the taxonomy
-    Result res;
-    String taxonomy;
-    List<Long> nodeIdList;
-    for (Map.Entry<Long, String> en : levelMap.entrySet()) { // Iterate over the taxonomies
-      // Init variables
-      nodeIdList = new ArrayList<>();
-      taxonomy = en.getValue();
-
-      try {
-        // Get the list of nodes to flag for each level 5
-        res = neo4jAL.executeQuery(match, Map.of("idLevel", en.getKey()));
-        while (res.hasNext()) {
-          nodeIdList.add((Long) res.next().get("nodeId")); // Get node and set property
-          count++;
+                // Continue
+            }
         }
 
-        // Save the node list
-        MasterSaveNodeService.saveObjects(neo4jAL, application, name, taxonomy, nodeIdList);
-
-      } catch (Neo4jQueryException | Neo4jBadNodeFormatException err) {
-        neo4jAL.logError(
-            String.format(
-                "Failed to retrieve the list of node under level '%s' ( id : [%d] ).",
-                this.application, en.getKey()));
-      }
+        // end of the process
+        neo4jAL.logInfo(String.format("%d nodes have been saved during this procedure.", count));
     }
 
-    // end of the process
-    neo4jAL.logInfo(String.format("%d nodes have been saved during this procedure.", count));
-  }
+    /**
+     * Get the list of all saves in the application
+     *
+     * @return The list of save detected
+     */
+    public List<MasterSaveNode> getListSave() throws Exception {
+        try {
+
+            // Return the distinct list
+            return MasterSaveNodeService.getListMasterSave(neo4jAL, application);
+        } catch (Exception e) {
+            // Failed to execute the original query
+            neo4jAL.logError(
+                    String.format("Failed to load the list of Save in the application '%s'.", application), e);
+            throw new Exception("Failed to get the list of save.");
+        }
+    }
+
+    /**
+     * Get the list of all saves in the application
+     *
+     * @param id Name of the save to remove
+     */
+    public void deleteSave(Long id) throws Exception {
+        try {
+            // Delete save node
+            MasterSaveNodeService.deleteMasterSave(neo4jAL, id);
+            neo4jAL.logInfo(
+                    String.format(
+                            "The save with id '%d' has been removed.", id));
+
+        } catch (Exception e) {
+            neo4jAL.logError(
+                    String.format(
+                            "Failed to remove the save with id '%d'.",
+                            id));
+            throw new Exception("Failed to remove the save in the application.");
+        }
+    }
+
+    /**
+     * Save application state
+     *
+     * @param name Name of the save
+     */
+    public void saveState(String name, String description, Long timestamp, String picture) throws Exception, Neo4jBadNodeFormatException {
+        Map<Long, String> levelMap = new HashMap<>(); // Init Level map
+
+        // Create a backup node
+        try {
+            Node node = MasterSaveNodeService.findOrCreateMasterSaveNode(neo4jAL, application, name);
+            MasterSaveNode masterSaveNode = new MasterSaveNode(node);
+            masterSaveNode.setPicture(picture);
+            masterSaveNode.setTimestamp(timestamp);
+            masterSaveNode.setDescription(description);
+        } catch (Exception e) {
+            neo4jAL.logError(
+                    "Failed to  create a backup node.", e);
+            throw new Exception("Failed to create a backup node. Check the logs");
+        }
+
+        // Get the taxonomy map in the application
+        try {
+            levelMap = BackupService.getLevel5Taxonomy(this.neo4jAL, this.application);
+        } catch (Neo4jQueryException e) {
+            neo4jAL.logError(
+                    String.format("Failed to save the state of the application '%s'.", this.application), e);
+            throw new Exception("Failed to save application's state. Check the logs");
+        }
+
+        // Log backup
+        neo4jAL.logInfo(String.format("%d levels will be backup for save with name '%s'.", levelMap.size(), name));
+
+        // Apply on each node a save property with its taxonomy
+        String match =
+                String.format(
+                        "MATCH (l:Level5:`%1$s`)-[:Aggregates]->(o:Object:`%1$s`) WHERE ID(l)=$idLevel "
+                                + "RETURN DISTINCT ID(o) as nodeId;",
+                        this.application);
+
+        // Loop parameters
+        int count = 0;
+
+        // For all level / object in the application apply a property with the taxonomy
+        Result res;
+        String taxonomy;
+        List<Long> nodeIdList;
+        for (Map.Entry<Long, String> en : levelMap.entrySet()) { // Iterate over the taxonomies
+            // Init variables
+            nodeIdList = new ArrayList<>();
+            taxonomy = en.getValue();
+
+            try {
+                // Get the list of nodes to flag for each level 5
+                res = neo4jAL.executeQuery(match, Map.of("idLevel", en.getKey()));
+                while (res.hasNext()) {
+                    nodeIdList.add((Long) res.next().get("nodeId")); // Get node and set property
+                    count++;
+                }
+
+                // Save the node list
+                MasterSaveNodeService.saveObjects(neo4jAL, application, name, taxonomy, nodeIdList);
+
+            } catch (Neo4jQueryException | Neo4jBadNodeFormatException err) {
+                neo4jAL.logError(
+                        String.format(
+                                "Failed to retrieve the list of node under level '%s' ( id : [%d] ).",
+                                this.application, en.getKey()));
+            }
+        }
+
+        // end of the process
+        neo4jAL.logInfo(String.format("%d nodes have been saved during this procedure.", count));
+    }
 }

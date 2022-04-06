@@ -20,18 +20,18 @@
 package com.castsoftware.demeter.statistics.Highlights;
 
 public enum HighlightCategory {
-  NOT_RELEVANT("Not relevant use cases"),
-  QUICK_WINS("Quick wins"),
-  MID_TERM("Mid Term bets"),
-  LONG_TERM("Long term bets");
+    NOT_RELEVANT("Not relevant use cases"),
+    QUICK_WINS("Quick wins"),
+    MID_TERM("Mid Term bets"),
+    LONG_TERM("Long term bets");
 
-  String text;
+    String text;
 
-  HighlightCategory(String text) {
-    this.text = text;
-  }
+    HighlightCategory(String text) {
+        this.text = text;
+    }
 
-  public String getText() {
-    return this.text;
-  }
+    public String getText() {
+        return this.text;
+    }
 }

@@ -39,63 +39,65 @@ import java.util.stream.Stream;
 public class AdvancedLevelProcedures {
 
 
-	@Context
-	public GraphDatabaseService db;
+    @Context
+    public GraphDatabaseService db;
 
-	@Context public Transaction transaction;
+    @Context
+    public Transaction transaction;
 
-	@Context public Log log;
+    @Context
+    public Log log;
 
-	@Procedure(value = "demeter.group.with.category", mode = Mode.WRITE)
-	@Description(
-			"demeter.group.with.category(String applicationName, String category, String name, List<Long> idList) - Group with a level 3 category")
-	public Stream<NodeResult> groupLevels(@Name(value = "Application") String application,
-										  @Name(value = "Category") String category,
-										  @Name(value = "Name") String name,
-										  @Name(value = "IdList") List<Long> idList)
-			throws ProcedureException {
+    @Procedure(value = "demeter.group.with.category", mode = Mode.WRITE)
+    @Description(
+            "demeter.group.with.category(String applicationName, String category, String name, List<Long> idList) - Group with a level 3 category")
+    public Stream<NodeResult> groupLevels(@Name(value = "Application") String application,
+                                          @Name(value = "Category") String category,
+                                          @Name(value = "Name") String name,
+                                          @Name(value = "IdList") List<Long> idList)
+            throws ProcedureException {
 
-		try {
-			Neo4jAL nal = new Neo4jAL(db, transaction, log);
-			AdvancedLevelGrouping alg = new AdvancedLevelGrouping(nal);
-			List<Node> nodes = alg.groupWithCategory(application, category, name, idList);
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            AdvancedLevelGrouping alg = new AdvancedLevelGrouping(nal);
+            List<Node> nodes = alg.groupWithCategory(application, category, name, idList);
 
-			return nodes.stream().map(NodeResult::new);
+            return nodes.stream().map(NodeResult::new);
 
-		} catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jNoResult e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure", e);
-			throw ex;
-		}
-	}
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jNoResult e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
 
-	@Procedure(value = "demeter.group.with.taxonomy", mode = Mode.WRITE)
-	@Description(
-			"demeter.group.with.taxonomy(String applicationName, String level1,  String level2, " +
-					"String level3,  String level4,  String level5, List<Long> idList) " +
-					"- Group with the full cast taxonomy")
-	public Stream<NodeResult> groupLevels(@Name(value = "Application") String application,
-										  @Name(value = "Level1") String level1,
-										  @Name(value = "Level2") String level2,
-										  @Name(value = "Level3") String level3,
-										  @Name(value = "Level4") String level4,
-										  @Name(value = "Level5") String level5,
-										  @Name(value = "IdList") List<Long> idList)
-			throws ProcedureException {
+    @Procedure(value = "demeter.group.with.taxonomy", mode = Mode.WRITE)
+    @Description(
+            "demeter.group.with.taxonomy(String applicationName, String level1,  String level2, " +
+                    "String level3,  String level4,  String level5, List<Long> idList) " +
+                    "- Group with the full cast taxonomy")
+    public Stream<NodeResult> groupLevels(@Name(value = "Application") String application,
+                                          @Name(value = "Level1") String level1,
+                                          @Name(value = "Level2") String level2,
+                                          @Name(value = "Level3") String level3,
+                                          @Name(value = "Level4") String level4,
+                                          @Name(value = "Level5") String level5,
+                                          @Name(value = "IdList") List<Long> idList)
+            throws ProcedureException {
 
-		try {
-			Neo4jAL nal = new Neo4jAL(db, transaction, log);
-			AdvancedLevelGrouping alg = new AdvancedLevelGrouping(nal);
-			List<Node> nodes = alg.groupWithTaxonomy(application, level1, level2, level3, level4, level5, idList);
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            AdvancedLevelGrouping alg = new AdvancedLevelGrouping(nal);
+            List<Node> nodes = alg.groupWithTaxonomy(application, level1, level2, level3, level4, level5, idList);
 
-			return nodes.stream().map(NodeResult::new);
+            return nodes.stream().map(NodeResult::new);
 
-		} catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jNoResult e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure", e);
-			throw ex;
-		}
-	}
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jNoResult e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
 
 
 }

@@ -33,135 +33,138 @@ import java.util.*;
 
 public abstract class AGrouping {
 
-	protected Neo4jAL neo4jAL;
-	protected String applicationContext;
+    protected Neo4jAL neo4jAL;
+    protected String applicationContext;
 
-	public abstract String getTagPrefix();
-	public abstract void setTagPrefix(String value) throws FileNotFoundException, MissingFileException;
+    public AGrouping(Neo4jAL neo4jAL, String applicationContext) {
+        this.neo4jAL = neo4jAL;
+        this.applicationContext = applicationContext;
 
-	public abstract void refresh() throws Neo4jQueryException;
-	public abstract Node group(String groupName, List<Node> nodeList) throws Neo4jQueryException, Neo4jBadRequestException;
+    }
 
-	public List<Node> launch() throws Neo4jQueryException, Neo4jBadRequestException {
-		List<Node> nodes = new ArrayList<>();
-		Map<String, List<Node>> mapNode = getGroupList();
+    public abstract String getTagPrefix();
 
-		for (Map.Entry<String, List<Node>> entry : mapNode.entrySet()) {
-			Node n = group(entry.getKey(), entry.getValue());
-			nodes.add(n);
-		}
+    public abstract void setTagPrefix(String value) throws FileNotFoundException, MissingFileException;
 
-		// Refresh
-		neo4jAL.logInfo("Start refreshing views...");
-		refresh();
+    public abstract void refresh() throws Neo4jQueryException;
 
-		// Clean tags
-		neo4jAL.logInfo("Cleaning tags...");
-		cleanTags();
-		return nodes;
-	}
+    public abstract Node group(String groupName, List<Node> nodeList) throws Neo4jQueryException, Neo4jBadRequestException;
 
-	/***
-	 * Launch manually the grouping of a controller
-	 * @param groupName Name of the group to create
-	 * @param idList List of nodes IDs to merge
-	 * @return The list node created
-	 * @throws Neo4jQueryException
-	 * @throws Neo4jBadRequestException
-	 */
-	public Node manualLaunch(String groupName, List<Long> idList) throws Neo4jQueryException, Neo4jBadRequestException {
-		List<Node> nodeList = new ArrayList<>();
+    public List<Node> launch() throws Neo4jQueryException, Neo4jBadRequestException {
+        List<Node> nodes = new ArrayList<>();
+        Map<String, List<Node>> mapNode = getGroupList();
 
-		Optional<Node> optNode;
-		for(Long id : idList) { // find the ID list of the nodes
-			optNode = neo4jAL.findNodeById(id);
-			optNode.ifPresent(nodeList::add);
-		}
+        for (Map.Entry<String, List<Node>> entry : mapNode.entrySet()) {
+            Node n = group(entry.getKey(), entry.getValue());
+            nodes.add(n);
+        }
 
-		// Group the nodes
-		neo4jAL.logInfo(String.format("Grouping Controller : Found %d nodes to merge.", nodeList.size()));
-		Node n = group(groupName, nodeList);
+        // Refresh
+        neo4jAL.logInfo("Start refreshing views...");
+        refresh();
 
-		neo4jAL.logInfo(String.format("Grouping Controller : Successfully grouped %s community.", groupName));
-		return n;
-	}
+        // Clean tags
+        neo4jAL.logInfo("Cleaning tags...");
+        cleanTags();
+        return nodes;
+    }
 
-	public List<Node> launchWithoutClean() throws Neo4jQueryException, Neo4jBadRequestException {
-		List<Node> nodes = new ArrayList<>();
-		Map<String, List<Node>> mapNode = getGroupList();
+    /***
+     * Launch manually the grouping of a controller
+     * @param groupName Name of the group to create
+     * @param idList List of nodes IDs to merge
+     * @return The list node created
+     * @throws Neo4jQueryException
+     * @throws Neo4jBadRequestException
+     */
+    public Node manualLaunch(String groupName, List<Long> idList) throws Neo4jQueryException, Neo4jBadRequestException {
+        List<Node> nodeList = new ArrayList<>();
 
-		for (Map.Entry<String, List<Node>> entry : mapNode.entrySet()) {
-			Node n = group(entry.getKey(), entry.getValue());
-			nodes.add(n);
-		}
+        Optional<Node> optNode;
+        for (Long id : idList) { // find the ID list of the nodes
+            optNode = neo4jAL.findNodeById(id);
+            optNode.ifPresent(nodeList::add);
+        }
 
-		// Refresh
-		refresh();
-		return nodes;
-	}
+        // Group the nodes
+        neo4jAL.logInfo(String.format("Grouping Controller : Found %d nodes to merge.", nodeList.size()));
+        Node n = group(groupName, nodeList);
 
-	/**
-	 * Get the list of groups
-	 * @return
-	 * @throws Neo4jQueryException
-	 */
-	public Map<String, List<Node>> getGroupList() throws Neo4jQueryException {
-		// Get the list of nodes prefixed by dm_tag
-		String forgedTagRequest =
-				String.format(
-						"MATCH (o:`%1$s`:Object) WHERE any( x in o.Tags WHERE x STARTS WITH $tagPrefix)  "
-								+ "WITH o, [x in o.Tags WHERE x STARTS WITH $tagPrefix][0] as g "
-								+ "RETURN DISTINCT o as node, g as group;",
-						applicationContext);
-		Map<String, Object> params = Map.of("tagPrefix", getTagPrefix());
+        neo4jAL.logInfo(String.format("Grouping Controller : Successfully grouped %s community.", groupName));
+        return n;
+    }
 
-		Map<String, List<Node>> groupMap = new HashMap<>();
-		Result res = neo4jAL.executeQuery(forgedTagRequest, params);
-		// Build the map for each group as <Tag, Node list>
-		while (res.hasNext()) {
-			try {
-				Map<String, Object> resMap = res.next();
-				String group = (String) resMap.get("group");
-				Node node = (Node) resMap.get("node");
+    public List<Node> launchWithoutClean() throws Neo4jQueryException, Neo4jBadRequestException {
+        List<Node> nodes = new ArrayList<>();
+        Map<String, List<Node>> mapNode = getGroupList();
 
-				// Add to  the specific group
-				if (!groupMap.containsKey(group)) {
-					groupMap.put(group, new ArrayList<>());
-				}
+        for (Map.Entry<String, List<Node>> entry : mapNode.entrySet()) {
+            Node n = group(entry.getKey(), entry.getValue());
+            nodes.add(n);
+        }
 
-				groupMap.get(group).add(node);
-			} catch (Exception ignored) {
-				// Ignore poorly formatted nodes
-			}
-		}
+        // Refresh
+        refresh();
+        return nodes;
+    }
 
-		neo4jAL.logInfo(String.format("%d module groups (Prefix: %s) were identified.", groupMap.size(), getTagPrefix()));
-		for (String l : groupMap.keySet()) {
-			neo4jAL.logInfo(String.format("Group name : %s and size : %d", l, groupMap.get(l).size()));
-		}
+    /**
+     * Get the list of groups
+     *
+     * @return
+     * @throws Neo4jQueryException
+     */
+    public Map<String, List<Node>> getGroupList() throws Neo4jQueryException {
+        // Get the list of nodes prefixed by dm_tag
+        String forgedTagRequest =
+                String.format(
+                        "MATCH (o:`%1$s`:Object) WHERE any( x in o.Tags WHERE x STARTS WITH $tagPrefix)  "
+                                + "WITH o, [x in o.Tags WHERE x STARTS WITH $tagPrefix][0] as g "
+                                + "RETURN DISTINCT o as node, g as group;",
+                        applicationContext);
+        Map<String, Object> params = Map.of("tagPrefix", getTagPrefix());
 
-    	return groupMap;
-	}
+        Map<String, List<Node>> groupMap = new HashMap<>();
+        Result res = neo4jAL.executeQuery(forgedTagRequest, params);
+        // Build the map for each group as <Tag, Node list>
+        while (res.hasNext()) {
+            try {
+                Map<String, Object> resMap = res.next();
+                String group = (String) resMap.get("group");
+                Node node = (Node) resMap.get("node");
 
-	/**
-	 * Clean the residual tags in the database
-	 */
-	public void cleanTags() throws Neo4jQueryException {
-		// Once the operation is done, remove Demeter tag prefix tags
-		String removeTagsQuery =
-				String.format(
-						"MATCH (o:`%1$s`) WHERE EXISTS(o.Tags)  SET o.Tags = [ x IN o.Tags WHERE NOT x CONTAINS $tagPrefix ] RETURN COUNT(o) as removedTags;",
-						applicationContext);
-		Map<String, Object> params = Map.of("tagPrefix", getTagPrefix());
-		Result tagRemoveRes = neo4jAL.executeQuery(removeTagsQuery, params);
-		neo4jAL.logInfo("Cleaning Done !");
-	}
+                // Add to  the specific group
+                if (!groupMap.containsKey(group)) {
+                    groupMap.put(group, new ArrayList<>());
+                }
 
-	public AGrouping(Neo4jAL neo4jAL, String applicationContext) {
-		this.neo4jAL = neo4jAL;
-		this.applicationContext = applicationContext;
+                groupMap.get(group).add(node);
+            } catch (Exception ignored) {
+                // Ignore poorly formatted nodes
+            }
+        }
 
-	}
+        neo4jAL.logInfo(String.format("%d module groups (Prefix: %s) were identified.", groupMap.size(), getTagPrefix()));
+        for (String l : groupMap.keySet()) {
+            neo4jAL.logInfo(String.format("Group name : %s and size : %d", l, groupMap.get(l).size()));
+        }
+
+        return groupMap;
+    }
+
+    /**
+     * Clean the residual tags in the database
+     */
+    public void cleanTags() throws Neo4jQueryException {
+        // Once the operation is done, remove Demeter tag prefix tags
+        String removeTagsQuery =
+                String.format(
+                        "MATCH (o:`%1$s`) WHERE EXISTS(o.Tags)  SET o.Tags = [ x IN o.Tags WHERE NOT x CONTAINS $tagPrefix ] RETURN COUNT(o) as removedTags;",
+                        applicationContext);
+        Map<String, Object> params = Map.of("tagPrefix", getTagPrefix());
+        Result tagRemoveRes = neo4jAL.executeQuery(removeTagsQuery, params);
+        neo4jAL.logInfo("Cleaning Done !");
+    }
 
 
 }

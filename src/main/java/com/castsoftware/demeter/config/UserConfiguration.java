@@ -29,13 +29,14 @@ public class UserConfiguration {
     /**
      * Get the corresponding value for the specified key as a String
      * If the configuration file doesn't exist, returns Null
+     *
      * @param key
-     * @see this.getAsObject to get the value as an object
      * @return <code>String</code> value for the key as a String
+     * @see this.getAsObject to get the value as an object
      */
     public static String get(String key) {
         try {
-            if(PROPERTIES == null){
+            if (PROPERTIES == null) {
                 PROPERTIES = loadConfiguration();
             }
 
@@ -47,13 +48,14 @@ public class UserConfiguration {
 
     /**
      * Set the value of a specific key in the configuration
-     * @param key Name of the key
+     *
+     * @param key   Name of the key
      * @param value Value of the key
      * @return
      * @throws MissingFileException
      */
     public static String set(String key, String value) throws MissingFileException {
-        if(PROPERTIES == null){
+        if (PROPERTIES == null) {
             PROPERTIES = loadConfiguration();
         }
 
@@ -64,11 +66,12 @@ public class UserConfiguration {
 
     /**
      * Save the configuration and reload it
+     *
      * @throws FileNotFoundException
      */
     public static void saveAndReload() throws MissingFileException {
         // If the properties are empty, do not save
-        if(PROPERTIES == null) return;
+        if (PROPERTIES == null) return;
 
         Path configurationPath = Workspace.getUserConfigPath();
 
@@ -89,17 +92,17 @@ public class UserConfiguration {
 
                 String[] currentId = propertyName.split("\\.");
                 // Add space between categories
-                if(lastIdentifier != null && currentId.length > 0) {
-                    if(!lastIdentifier.equals(currentId[0])) {
+                if (lastIdentifier != null && currentId.length > 0) {
+                    if (!lastIdentifier.equals(currentId[0])) {
                         file.write(System.lineSeparator().getBytes());
                     }
                 }
 
-                if(currentId.length > 0) {
+                if (currentId.length > 0) {
                     lastIdentifier = currentId[0];
                 }
 
-                prop = propertyName + "=" + propertyValue+ System.lineSeparator();
+                prop = propertyName + "=" + propertyValue + System.lineSeparator();
                 file.write(prop.getBytes());
             }
 
@@ -112,11 +115,12 @@ public class UserConfiguration {
     /**
      * Get the corresponding value for the specified key as an object.
      * If the configuration file doesn't exist, returns Null
+     *
      * @param key
      * @return <Object>String</code> value for the key as a string
      */
     public static Object getAsObject(String key) {
-        if(PROPERTIES == null){
+        if (PROPERTIES == null) {
             PROPERTIES = loadConfiguration();
         }
 
@@ -125,6 +129,7 @@ public class UserConfiguration {
 
     /**
      * Check if the properties file if valid
+     *
      * @return
      */
     public static Boolean isLoaded() {
@@ -137,17 +142,19 @@ public class UserConfiguration {
 
     /**
      * Check the presence of a key
+     *
      * @param key
      * @return
      */
     public static boolean isKey(String key) {
         PROPERTIES = loadConfiguration();
-        if(PROPERTIES == null) return false;
+        if (PROPERTIES == null) return false;
         return PROPERTIES.containsKey(key);
     }
 
     /**
      * Reload the configuration from the file
+     *
      * @return
      */
     public static Properties reload() {
@@ -157,17 +164,18 @@ public class UserConfiguration {
 
     /**
      * Load the user configuration file
+     *
      * @return The list properties found in the configuration file.
      */
     private static Properties loadConfiguration() {
         Path configurationPath = Workspace.getUserConfigPath();
 
         if (!Files.exists(configurationPath)) {
-            System.err.printf("No configuration file found at path : %s%n",  configurationPath.toString());
+            System.err.printf("No configuration file found at path : %s%n", configurationPath.toString());
             return null;
         }
 
-      try (InputStream input = new FileInputStream(configurationPath.toFile())) {
+        try (InputStream input = new FileInputStream(configurationPath.toFile())) {
             Properties prop = new Properties();
 
             if (input == null) {

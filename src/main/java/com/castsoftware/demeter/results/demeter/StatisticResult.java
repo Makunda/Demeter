@@ -20,13 +20,13 @@
 package com.castsoftware.demeter.results.demeter;
 
 public class StatisticResult {
-  public String title;
-  public String description;
-  public String result;
+    public String title;
+    public String description;
+    public String result;
 
-  public StatisticResult(String title, String description, String result) {
-    this.title = title;
-    this.description = description;
-    this.result = result;
-  }
+    public StatisticResult(String title, String description, String result) {
+        this.title = title;
+        this.description = description;
+        this.result = result;
+    }
 }

@@ -19,7 +19,9 @@
 
 package com.castsoftware.demeter.results.demeter;
 
-/** id: number; name: string; application: string; numObjects: number; */
+/**
+ * id: number; name: string; application: string; numObjects: number;
+ */
 public class DemeterGroupResult {
     public Long id;
     public String name;

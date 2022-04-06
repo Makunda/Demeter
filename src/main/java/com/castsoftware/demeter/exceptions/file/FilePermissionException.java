@@ -27,18 +27,18 @@ import com.castsoftware.demeter.exceptions.TaggingException;
  */
 public class FilePermissionException extends TaggingException {
 
-  private static final long serialVersionUID = -729600314448876926L;
-  private static final String MESSAGE_PREFIX = "Error, not enough permission to access the file : ";
-  private static final String CODE_PREFIX = "FIL_PE_";
+    private static final long serialVersionUID = -729600314448876926L;
+    private static final String MESSAGE_PREFIX = "Error, not enough permission to access the file : ";
+    private static final String CODE_PREFIX = "FIL_PE_";
 
-  public FilePermissionException(String path, Throwable cause, String code) {
-    super(MESSAGE_PREFIX.concat(path), cause, CODE_PREFIX.concat(code));
-  }
+    public FilePermissionException(String path, Throwable cause, String code) {
+        super(MESSAGE_PREFIX.concat(path), cause, CODE_PREFIX.concat(code));
+    }
 
-  public FilePermissionException(String message, String path, Throwable cause, String code) {
-    super(
-        MESSAGE_PREFIX.concat(message).concat(". Path : ").concat(path),
-        cause,
-        CODE_PREFIX.concat(code));
-  }
+    public FilePermissionException(String message, String path, Throwable cause, String code) {
+        super(
+                MESSAGE_PREFIX.concat(message).concat(". Path : ").concat(path),
+                cause,
+                CODE_PREFIX.concat(code));
+    }
 }

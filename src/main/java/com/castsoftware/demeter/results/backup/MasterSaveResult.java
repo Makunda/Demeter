@@ -22,18 +22,18 @@ package com.castsoftware.demeter.results.backup;
 import com.castsoftware.demeter.models.backup.MasterSaveNode;
 
 public class MasterSaveResult {
-	public Long id;
-	public String name;
-	public String description;
-	public Long timestamp;
-	public String picture;
+    public Long id;
+    public String name;
+    public String description;
+    public Long timestamp;
+    public String picture;
 
-	public MasterSaveResult(MasterSaveNode node) {
-		this.id = node.getId();
-		this.name = node.getName();
-		this.description = node.getDescription();
-		this.timestamp = node.getTimestamp();
-		this.picture = node.getPicture();
-	}
+    public MasterSaveResult(MasterSaveNode node) {
+        this.id = node.getId();
+        this.name = node.getName();
+        this.description = node.getDescription();
+        this.timestamp = node.getTimestamp();
+        this.picture = node.getPicture();
+    }
 
 }

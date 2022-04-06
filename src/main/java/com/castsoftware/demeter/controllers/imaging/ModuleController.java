@@ -27,64 +27,68 @@ import java.util.Map;
 
 public class ModuleController {
 
-	private final Neo4jAL neo4jAL;
+    private final Neo4jAL neo4jAL;
 
-	/**
-	 * Get the hidden prefix of Module
-	 * @return The prefix of the Hidden module
-	 */
-	public static String getHiddenPrefix() {
-		return Configuration.get("demeter.module.hidden.label");
-	}
+    /**
+     * Constructor
+     *
+     * @param neo4jAL Neo4j Access Layer
+     */
+    public ModuleController(Neo4jAL neo4jAL) {
+        this.neo4jAL = neo4jAL;
+    }
 
-	/**
-	 * Hide a module in the application
-	 * @param id Id of the module to hide
-	 */
-	public void hideModuleById(Long id) throws Neo4jQueryException {
-		String req = String.format("MATCH (m:Module) WHERE ID(m)=$IdNode " +
-				"REMOVE m:Module SET m:`%1$s` " +
-				"RETURN m as node", getHiddenPrefix());
-		Map<String, Object> params = Map.of("IdNode", id);
-		this.neo4jAL.executeQuery(req, params);
-	}
+    /**
+     * Get the hidden prefix of Module
+     *
+     * @return The prefix of the Hidden module
+     */
+    public static String getHiddenPrefix() {
+        return Configuration.get("demeter.module.hidden.label");
+    }
 
-	/**
-	 * Display a module in the application
-	 * @param id Id of the module to hide
-	 */
-	public void displayModuleById(Long id) throws Neo4jQueryException {
-		String req = String.format("MATCH (m:`%1$s`) WHERE ID(m)=$IdNode " +
-				"REMOVE m:`%1$s` SET m:Module " +
-				"RETURN m as node", getHiddenPrefix());
-		Map<String, Object> params = Map.of("IdNode", id);
-		this.neo4jAL.executeQuery(req, params);
-	}
+    /**
+     * Hide a module in the application
+     *
+     * @param id Id of the module to hide
+     */
+    public void hideModuleById(Long id) throws Neo4jQueryException {
+        String req = String.format("MATCH (m:Module) WHERE ID(m)=$IdNode " +
+                "REMOVE m:Module SET m:`%1$s` " +
+                "RETURN m as node", getHiddenPrefix());
+        Map<String, Object> params = Map.of("IdNode", id);
+        this.neo4jAL.executeQuery(req, params);
+    }
 
-	/**
-	 * Delete a module
-	 * @param id Id of the module to hide
-	 */
-	public void deleteModule(Long id) throws Neo4jQueryException {
-		Map<String, Object> params = Map.of("IdNode", id);
+    /**
+     * Display a module in the application
+     *
+     * @param id Id of the module to hide
+     */
+    public void displayModuleById(Long id) throws Neo4jQueryException {
+        String req = String.format("MATCH (m:`%1$s`) WHERE ID(m)=$IdNode " +
+                "REMOVE m:`%1$s` SET m:Module " +
+                "RETURN m as node", getHiddenPrefix());
+        Map<String, Object> params = Map.of("IdNode", id);
+        this.neo4jAL.executeQuery(req, params);
+    }
 
-    	String req =
-        	"MATCH (m:Module) WHERE ID(m)=$IdNode "
-            + "OPTIONAL MATCH (m)-[r:Contains]->(o) WHERE o:Object OR o:SubObject "
-            + "SET o.Module = CASE WHEN o.Module IS NULL THEN [] ELSE [ x in o.Module WHERE NOT x=m.Name ] END  ";
-		this.neo4jAL.executeQuery(req, params);
+    /**
+     * Delete a module
+     *
+     * @param id Id of the module to hide
+     */
+    public void deleteModule(Long id) throws Neo4jQueryException {
+        Map<String, Object> params = Map.of("IdNode", id);
 
-		String reqDelete = "MATCH (m:Module) WHERE ID(m)=$IdNode DETACH DELETE m";
-		this.neo4jAL.executeQuery(reqDelete, params);
-	}
+        String req =
+                "MATCH (m:Module) WHERE ID(m)=$IdNode "
+                        + "OPTIONAL MATCH (m)-[r:Contains]->(o) WHERE o:Object OR o:SubObject "
+                        + "SET o.Module = CASE WHEN o.Module IS NULL THEN [] ELSE [ x in o.Module WHERE NOT x=m.Name ] END  ";
+        this.neo4jAL.executeQuery(req, params);
 
-
-	/**
-	 * Constructor
-	 * @param neo4jAL Neo4j Access Layer
-	 */
-	public ModuleController(Neo4jAL neo4jAL) {
-		this.neo4jAL = neo4jAL;
-	}
+        String reqDelete = "MATCH (m:Module) WHERE ID(m)=$IdNode DETACH DELETE m";
+        this.neo4jAL.executeQuery(reqDelete, params);
+    }
 
 }

@@ -27,16 +27,16 @@ import com.castsoftware.demeter.exceptions.TaggingException;
  */
 public class FileNotFoundException extends TaggingException {
 
-  private static final long serialVersionUID = 1676506597566629385L;
-  private static final String MESSAGE_PREFIX = "Error, file not found : ";
-  private static final String CODE_PREFIX = "FIL_NF_";
+    private static final long serialVersionUID = 1676506597566629385L;
+    private static final String MESSAGE_PREFIX = "Error, file not found : ";
+    private static final String CODE_PREFIX = "FIL_NF_";
 
-  public FileNotFoundException(String path, Throwable cause, String code) {
-    super(MESSAGE_PREFIX.concat(path), cause, CODE_PREFIX.concat(code));
-  }
+    public FileNotFoundException(String path, Throwable cause, String code) {
+        super(MESSAGE_PREFIX.concat(path), cause, CODE_PREFIX.concat(code));
+    }
 
-  public FileNotFoundException(String message, String path, String code) {
-    super(
-        MESSAGE_PREFIX.concat(message).concat(". Path : ").concat(path), CODE_PREFIX.concat(code));
-  }
+    public FileNotFoundException(String message, String path, String code) {
+        super(
+                MESSAGE_PREFIX.concat(message).concat(". Path : ").concat(path), CODE_PREFIX.concat(code));
+    }
 }

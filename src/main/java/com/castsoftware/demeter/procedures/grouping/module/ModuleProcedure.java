@@ -43,109 +43,112 @@ import java.util.stream.Stream;
 
 public class ModuleProcedure {
 
-  @Context public GraphDatabaseService db;
+    @Context
+    public GraphDatabaseService db;
 
-  @Context public Transaction transaction;
+    @Context
+    public Transaction transaction;
 
-  @Context public Log log;
+    @Context
+    public Log log;
 
-  @Procedure(value = "demeter.module.get.hiddenLabel", mode = Mode.WRITE)
-  @Description(
-          "demeter.module.get.hiddenLabel() - Get the hidden label")
-  public Stream<OutputMessage> getHiddenLabel()
-          throws ProcedureException {
-      try {
-         return Stream.of(new OutputMessage(ModuleController.getHiddenPrefix()));
-      } catch (Exception e) {
-        ProcedureException ex = new ProcedureException(e);
-        log.error("An error occurred while executing the procedure", e);
-        throw ex;
-      }
-  }
-
-  @Procedure(value = "demeter.module.hide.byId", mode = Mode.WRITE)
-  @Description(
-          "demeter.module.hide.byId(Long ModuleId) - Hide a specific label")
-  public void hideModule(@Name(value = "ModuleId") Long moduleID)
-          throws ProcedureException {
-    try {
-      Neo4jAL nal = new Neo4jAL(db, transaction, log);
-      ModuleController mc = new ModuleController(nal);
-      mc.hideModuleById(moduleID);
-    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-      ProcedureException ex = new ProcedureException(e);
-      log.error("An error occurred while executing the procedure", e);
-      throw ex;
+    @Procedure(value = "demeter.module.get.hiddenLabel", mode = Mode.WRITE)
+    @Description(
+            "demeter.module.get.hiddenLabel() - Get the hidden label")
+    public Stream<OutputMessage> getHiddenLabel()
+            throws ProcedureException {
+        try {
+            return Stream.of(new OutputMessage(ModuleController.getHiddenPrefix()));
+        } catch (Exception e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
     }
-  }
 
-  @Procedure(value = "demeter.module.display.byId", mode = Mode.WRITE)
-  @Description(
-          "demeter.module.display.byId(Long ModuleId) - Display a specific label")
-  public void displayModule(@Name(value = "ModuleId") Long moduleID)
-          throws ProcedureException {
-    try {
-      Neo4jAL nal = new Neo4jAL(db, transaction, log);
-      ModuleController mc = new ModuleController(nal);
-      mc.displayModuleById(moduleID);
-    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-      ProcedureException ex = new ProcedureException(e);
-      log.error("An error occurred while executing the procedure", e);
-      throw ex;
+    @Procedure(value = "demeter.module.hide.byId", mode = Mode.WRITE)
+    @Description(
+            "demeter.module.hide.byId(Long ModuleId) - Hide a specific label")
+    public void hideModule(@Name(value = "ModuleId") Long moduleID)
+            throws ProcedureException {
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            ModuleController mc = new ModuleController(nal);
+            mc.hideModuleById(moduleID);
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
     }
-  }
 
-  @Procedure(value = "demeter.module.delete.byId", mode = Mode.WRITE)
-  @Description(
-          "demeter.module.delete.byId(Long ModuleId) - Display a specific label")
-  public void deleteModule(@Name(value = "ModuleId") Long moduleID)
-          throws ProcedureException {
-    try {
-      Neo4jAL nal = new Neo4jAL(db, transaction, log);
-      ModuleController mc = new ModuleController(nal);
-      mc.deleteModule(moduleID);
-    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-      ProcedureException ex = new ProcedureException(e);
-      log.error("An error occurred while executing the procedure", e);
-      throw ex;
+    @Procedure(value = "demeter.module.display.byId", mode = Mode.WRITE)
+    @Description(
+            "demeter.module.display.byId(Long ModuleId) - Display a specific label")
+    public void displayModule(@Name(value = "ModuleId") Long moduleID)
+            throws ProcedureException {
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            ModuleController mc = new ModuleController(nal);
+            mc.displayModuleById(moduleID);
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
     }
-  }
 
-  @Procedure(value = "demeter.group.modules", mode = Mode.WRITE)
-  @Description(
-      "demeter.group.modules(String applicationName) - Group the modules following Demeter tags applied")
-  public Stream<NodeResult> groupModules(@Name(value = "ApplicationName") String applicationName)
-      throws ProcedureException {
-
-    try {
-      Neo4jAL nal = new Neo4jAL(db, transaction, log);
-      ModuleGroupController mgc = new ModuleGroupController(nal, applicationName);
-      List<Node> nodes = mgc.launch();
-
-      return nodes.stream().map(NodeResult::new);
-
-    } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException e) {
-      ProcedureException ex = new ProcedureException(e);
-      log.error("An error occurred while executing the procedure", e);
-      throw ex;
+    @Procedure(value = "demeter.module.delete.byId", mode = Mode.WRITE)
+    @Description(
+            "demeter.module.delete.byId(Long ModuleId) - Display a specific label")
+    public void deleteModule(@Name(value = "ModuleId") Long moduleID)
+            throws ProcedureException {
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            ModuleController mc = new ModuleController(nal);
+            mc.deleteModule(moduleID);
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
     }
-  }
 
-  @Procedure(value = "demeter.api.group.modules.all", mode = Mode.WRITE)
-  @Description(
-          "demeter.api.group.modules.all() - Group the modules following Demeter tags applied")
-  public Stream<NodeResult> groupAll()
-          throws ProcedureException {
+    @Procedure(value = "demeter.group.modules", mode = Mode.WRITE)
+    @Description(
+            "demeter.group.modules(String applicationName) - Group the modules following Demeter tags applied")
+    public Stream<NodeResult> groupModules(@Name(value = "ApplicationName") String applicationName)
+            throws ProcedureException {
 
-    try {
-      Neo4jAL nal = new Neo4jAL(db, transaction, log);
-      List<Node> nodes = GroupingUtilsController.groupAllModules(nal);
-      return nodes.stream().map(NodeResult::new);
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            ModuleGroupController mgc = new ModuleGroupController(nal, applicationName);
+            List<Node> nodes = mgc.launch();
 
-    } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
-      ProcedureException ex = new ProcedureException(e);
-      log.error("An error occurred while executing the procedure", e);
-      throw ex;
+            return nodes.stream().map(NodeResult::new);
+
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
     }
-  }
+
+    @Procedure(value = "demeter.api.group.modules.all", mode = Mode.WRITE)
+    @Description(
+            "demeter.api.group.modules.all() - Group the modules following Demeter tags applied")
+    public Stream<NodeResult> groupAll()
+            throws ProcedureException {
+
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            List<Node> nodes = GroupingUtilsController.groupAllModules(nal);
+            return nodes.stream().map(NodeResult::new);
+
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
 }

@@ -27,28 +27,28 @@ import java.nio.file.Path;
 
 public class MetaModelController {
 
-  /**
-   * Generate a template metamodel file.
-   *
-   * @param outputDir Path where the file will be generated
-   * @return
-   * @throws IOException
-   */
-  public static String generateTemplate(String outputDir) throws IOException {
-    Path nf = MetaModel.generateTemplateMetaModel(Path.of(outputDir));
-    return String.format("The template was successfully created : '%s'.", nf.toString());
-  }
+    /**
+     * Generate a template metamodel file.
+     *
+     * @param outputDir Path where the file will be generated
+     * @return
+     * @throws IOException
+     */
+    public static String generateTemplate(String outputDir) throws IOException {
+        Path nf = MetaModel.generateTemplateMetaModel(Path.of(outputDir));
+        return String.format("The template was successfully created : '%s'.", nf.toString());
+    }
 
-  /**
-   * Execute a specific Metamodel file
-   *
-   * @param neo4jAL Neo4j Access Layer
-   * @param metaModelName Name of the meta model to execute.
-   */
-  public static void executeMetamodel(
-      Neo4jAL neo4jAL, String applicationContext, String metaModelName) throws IOException {
-    MetaModel mm =
-        new MetaModel(neo4jAL, metaModelName, applicationContext); // Create the metamodel
-    mm.process(); // Process the metamodel
-  }
+    /**
+     * Execute a specific Metamodel file
+     *
+     * @param neo4jAL       Neo4j Access Layer
+     * @param metaModelName Name of the meta model to execute.
+     */
+    public static void executeMetamodel(
+            Neo4jAL neo4jAL, String applicationContext, String metaModelName) throws IOException {
+        MetaModel mm =
+                new MetaModel(neo4jAL, metaModelName, applicationContext); // Create the metamodel
+        mm.process(); // Process the metamodel
+    }
 }

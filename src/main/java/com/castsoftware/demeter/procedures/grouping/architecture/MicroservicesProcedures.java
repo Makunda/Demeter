@@ -40,52 +40,54 @@ import java.util.stream.Stream;
 
 public class MicroservicesProcedures {
 
-	@Context
-	public GraphDatabaseService db;
+    @Context
+    public GraphDatabaseService db;
 
-	@Context public Transaction transaction;
+    @Context
+    public Transaction transaction;
 
-	@Context public Log log;
+    @Context
+    public Log log;
 
 
-	@Procedure(value = "demeter.extract.microservice", mode = Mode.WRITE)
-	@Description(
-			"demeter.extract.microservice(String applicationName, String prefix) - Extract a part of the application to a whole new microservice")
-	public Stream<OutputMessage> extractMicroservice(@Name(value = "ApplicationName") String applicationName, @Name(value = "Prefix") String prefix)
-			throws ProcedureException {
+    @Procedure(value = "demeter.extract.microservice", mode = Mode.WRITE)
+    @Description(
+            "demeter.extract.microservice(String applicationName, String prefix) - Extract a part of the application to a whole new microservice")
+    public Stream<OutputMessage> extractMicroservice(@Name(value = "ApplicationName") String applicationName, @Name(value = "Prefix") String prefix)
+            throws ProcedureException {
 
-		try {
-			Neo4jAL nal = new Neo4jAL(db, transaction, log);
-			MicroserviceController mc = new MicroserviceController(nal, applicationName);
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            MicroserviceController mc = new MicroserviceController(nal, applicationName);
 
-			mc.extractMicroservice(prefix);
-			return Stream.of(new OutputMessage("OK"));
+            mc.extractMicroservice(prefix);
+            return Stream.of(new OutputMessage("OK"));
 
-		} catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure", e);
-			throw ex;
-		}
-	}
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
 
-	@Procedure(value = "demeter.extract.one.microservice", mode = Mode.WRITE)
-	@Description(
-			"demeter.extract.one.microservice(String applicationName, String prefix, Long idStart) - Extract a part of the application starting with a node")
-	public Stream<OutputMessage> extractOneMicroservice(@Name(value = "ApplicationName") String applicationName, @Name(value = "Prefix") String prefix,  @Name(value = "IdStart") Long idStart)
-			throws ProcedureException {
+    @Procedure(value = "demeter.extract.one.microservice", mode = Mode.WRITE)
+    @Description(
+            "demeter.extract.one.microservice(String applicationName, String prefix, Long idStart) - Extract a part of the application starting with a node")
+    public Stream<OutputMessage> extractOneMicroservice(@Name(value = "ApplicationName") String applicationName, @Name(value = "Prefix") String prefix, @Name(value = "IdStart") Long idStart)
+            throws ProcedureException {
 
-		try {
-			Neo4jAL nal = new Neo4jAL(db, transaction, log);
-			MicroserviceController mc = new MicroserviceController(nal, applicationName);
+        try {
+            Neo4jAL nal = new Neo4jAL(db, transaction, log);
+            MicroserviceController mc = new MicroserviceController(nal, applicationName);
 
-			mc.extractOneMicroservice(prefix, idStart);
-			return Stream.of(new OutputMessage("OK"));
+            mc.extractOneMicroservice(prefix, idStart);
+            return Stream.of(new OutputMessage("OK"));
 
-		} catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jBadNodeFormatException e) {
-			ProcedureException ex = new ProcedureException(e);
-			log.error("An error occurred while executing the procedure", e);
-			throw ex;
-		}
-	}
+        } catch (Exception | Neo4jConnectionError | Neo4jQueryException | Neo4jBadRequestException | Neo4jBadNodeFormatException e) {
+            ProcedureException ex = new ProcedureException(e);
+            log.error("An error occurred while executing the procedure", e);
+            throw ex;
+        }
+    }
 
 }

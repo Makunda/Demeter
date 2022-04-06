@@ -28,38 +28,38 @@ import org.neo4j.graphdb.Node;
 
 public class RenameController {
 
-  private static final String BACKED_UP_BY_REL =
-      Configuration.get("demeter.backup.relationship.type");
+    private static final String BACKED_UP_BY_REL =
+            Configuration.get("demeter.backup.relationship.type");
 
-  /**
-   * Rename a specific level in the application. If two levels have the same name, rename the first
-   * encountered.
-   *
-   * @param neo4jAL Neo4j Access Layer
-   * @param applicationContext Name of the application concerned by this modification
-   * @param toRename Name of the old level
-   * @param newName Name of the new Level
-   * @return true if the renaming operation was successful, false otherwise
-   */
-  public static boolean renameLevel(
-      Neo4jAL neo4jAL, String applicationContext, String toRename, String newName)
-      throws Neo4jNoResult, Neo4jQueryException {
+    /**
+     * Rename a specific level in the application. If two levels have the same name, rename the first
+     * encountered.
+     *
+     * @param neo4jAL            Neo4j Access Layer
+     * @param applicationContext Name of the application concerned by this modification
+     * @param toRename           Name of the old level
+     * @param newName            Name of the new Level
+     * @return true if the renaming operation was successful, false otherwise
+     */
+    public static boolean renameLevel(
+            Neo4jAL neo4jAL, String applicationContext, String toRename, String newName)
+            throws Neo4jNoResult, Neo4jQueryException {
 
-    // Find level to rename
-    Level5Node found = null;
-    for (Level5Node l : Level5Node.getAllNodesByApplication(neo4jAL, applicationContext)) {
-      if (l.getName().equals(toRename)) {
-        found = l;
-        break;
-      }
+        // Find level to rename
+        Level5Node found = null;
+        for (Level5Node l : Level5Node.getAllNodesByApplication(neo4jAL, applicationContext)) {
+            if (l.getName().equals(toRename)) {
+                found = l;
+                break;
+            }
+        }
+
+        // If no level match, return false
+        if (found == null) return false;
+
+        Node levelNode = found.getNode();
+        levelNode.setProperty(Level5Node.getNameProperty(), newName);
+
+        return true;
     }
-
-    // If no level match, return false
-    if (found == null) return false;
-
-    Node levelNode = found.getNode();
-    levelNode.setProperty(Level5Node.getNameProperty(), newName);
-
-    return true;
-  }
 }

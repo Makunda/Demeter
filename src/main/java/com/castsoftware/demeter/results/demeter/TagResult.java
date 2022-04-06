@@ -20,20 +20,20 @@
 package com.castsoftware.demeter.results.demeter;
 
 public class TagResult {
-  public Long id;
-  public String tag;
-  public String description;
-  public Long numMatch;
-  public String categories;
-  public String useCase;
+    public Long id;
+    public String tag;
+    public String description;
+    public Long numMatch;
+    public String categories;
+    public String useCase;
 
-  public TagResult(
-      Long id, String tag, String description, Long numMatch, String categories, String useCase) {
-    this.id = id;
-    this.tag = tag;
-    this.description = description;
-    this.numMatch = numMatch;
-    this.categories = categories;
-    this.useCase = useCase;
-  }
+    public TagResult(
+            Long id, String tag, String description, Long numMatch, String categories, String useCase) {
+        this.id = id;
+        this.tag = tag;
+        this.description = description;
+        this.numMatch = numMatch;
+        this.categories = categories;
+        this.useCase = useCase;
+    }
 }

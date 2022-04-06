@@ -32,38 +32,38 @@ import java.util.regex.Pattern;
  */
 public abstract class TaggingException extends Throwable {
 
-  private static final long serialVersionUID = -8579984202435983804L;
-  private static final Pattern errorCodeReg =
-      Pattern.compile("^[\\w\\d]{3}_[\\w\\d]{2,3}_[\\w\\d]{8,10}$", Pattern.CASE_INSENSITIVE);
-  protected String code;
+    private static final long serialVersionUID = -8579984202435983804L;
+    private static final Pattern errorCodeReg =
+            Pattern.compile("^[\\w\\d]{3}_[\\w\\d]{2,3}_[\\w\\d]{8,10}$", Pattern.CASE_INSENSITIVE);
+    protected String code;
 
-  public TaggingException(String message, Throwable cause, String code) {
-    super(message, cause);
+    public TaggingException(String message, Throwable cause, String code) {
+        super(message, cause);
 
-    Matcher m = errorCodeReg.matcher(code);
-    if (!m.matches()) {
-      message.concat(
-          String.format(
-              " ### Malformed exception code : %s. Please see the recommendations in the documentation.",
-              code));
+        Matcher m = errorCodeReg.matcher(code);
+        if (!m.matches()) {
+            message.concat(
+                    String.format(
+                            " ### Malformed exception code : %s. Please see the recommendations in the documentation.",
+                            code));
+        }
+        this.code = code;
     }
-    this.code = code;
-  }
 
-  public TaggingException(String message, String code) {
-    super(message);
+    public TaggingException(String message, String code) {
+        super(message);
 
-    Matcher m = errorCodeReg.matcher(code);
-    if (!m.matches()) {
-      message.concat(
-          String.format(
-              " ### Malformed exception code : %s. Please see the recommendations in the documentation.",
-              code));
+        Matcher m = errorCodeReg.matcher(code);
+        if (!m.matches()) {
+            message.concat(
+                    String.format(
+                            " ### Malformed exception code : %s. Please see the recommendations in the documentation.",
+                            code));
+        }
+        this.code = code;
     }
-    this.code = code;
-  }
 
-  public String getCode() {
-    return code;
-  }
+    public String getCode() {
+        return code;
+    }
 }

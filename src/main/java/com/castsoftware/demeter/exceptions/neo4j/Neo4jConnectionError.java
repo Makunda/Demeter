@@ -27,15 +27,15 @@ import com.castsoftware.demeter.exceptions.TaggingException;
  */
 public class Neo4jConnectionError extends TaggingException {
 
-  private static final long serialVersionUID = 7522702117300762310L;
-  private static final String MESSAGE_PREFIX = "Error, the connection with neo4j failed : ";
-  private static final String CODE_PREFIX = "NEO_CE_";
+    private static final long serialVersionUID = 7522702117300762310L;
+    private static final String MESSAGE_PREFIX = "Error, the connection with neo4j failed : ";
+    private static final String CODE_PREFIX = "NEO_CE_";
 
-  public Neo4jConnectionError(String message, Throwable cause, String code) {
-    super(MESSAGE_PREFIX.concat(message), cause, CODE_PREFIX.concat(code));
-  }
+    public Neo4jConnectionError(String message, Throwable cause, String code) {
+        super(MESSAGE_PREFIX.concat(message), cause, CODE_PREFIX.concat(code));
+    }
 
-  public Neo4jConnectionError(String message, String code) {
-    super(MESSAGE_PREFIX.concat(message), CODE_PREFIX.concat(code));
-  }
+    public Neo4jConnectionError(String message, String code) {
+        super(MESSAGE_PREFIX.concat(message), CODE_PREFIX.concat(code));
+    }
 }

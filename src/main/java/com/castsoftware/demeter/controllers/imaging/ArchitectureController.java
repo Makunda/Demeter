@@ -27,95 +27,99 @@ import java.util.Map;
 
 public class ArchitectureController {
 
-	private final Neo4jAL neo4jAL;
+    private final Neo4jAL neo4jAL;
 
-	/**
-	 * Get the hidden prefix of Archimodel
-	 * @return The prefix of the Hidden archimodel
-	 */
-	public static String getHiddenArchimodelPrefix() {
-		return Configuration.get("demeter.archimodel.hidden.label");
-	}
+    public ArchitectureController(Neo4jAL neo4jAL) {
+        this.neo4jAL = neo4jAL;
+    }
 
-	/**
-	 * Get the hidden prefix of Subset
-	 * @return The prefix of the Hidden Subset
-	 */
-	public static String getHiddenSubsetPrefix() {
-		return Configuration.get("demeter.subset.hidden.label");
-	}
+    /**
+     * Get the hidden prefix of Archimodel
+     *
+     * @return The prefix of the Hidden archimodel
+     */
+    public static String getHiddenArchimodelPrefix() {
+        return Configuration.get("demeter.archimodel.hidden.label");
+    }
 
+    /**
+     * Get the hidden prefix of Subset
+     *
+     * @return The prefix of the Hidden Subset
+     */
+    public static String getHiddenSubsetPrefix() {
+        return Configuration.get("demeter.subset.hidden.label");
+    }
 
-	/**
-	 * Hide an architecture in the application
-	 * Hiding an architecture will automatically hide the children subset
-	 * @param id Id of the module to hide
-	 */
-	public void hideArchitectureById(Long id) throws Neo4jQueryException {
-		String req = String.format("MATCH (m:ArchiModel) WHERE ID(m)=$IdNode " +
-				"REMOVE m:ArchiModel SET m:`%1$s` " +
-				"WITH m " +
-				"MATCH (m)-[:Contains]->(s:Subset) " +
-				"REMOVE s:Subset SET s:`%2$s` ", getHiddenArchimodelPrefix(), getHiddenSubsetPrefix());
-		Map<String, Object> params = Map.of("IdNode", id);
-		this.neo4jAL.executeQuery(req, params);
-	}
+    /**
+     * Hide an architecture in the application
+     * Hiding an architecture will automatically hide the children subset
+     *
+     * @param id Id of the module to hide
+     */
+    public void hideArchitectureById(Long id) throws Neo4jQueryException {
+        String req = String.format("MATCH (m:ArchiModel) WHERE ID(m)=$IdNode " +
+                "REMOVE m:ArchiModel SET m:`%1$s` " +
+                "WITH m " +
+                "MATCH (m)-[:Contains]->(s:Subset) " +
+                "REMOVE s:Subset SET s:`%2$s` ", getHiddenArchimodelPrefix(), getHiddenSubsetPrefix());
+        Map<String, Object> params = Map.of("IdNode", id);
+        this.neo4jAL.executeQuery(req, params);
+    }
 
-	/**
-	 * Hide an susbset in the application
-	 * @param id Id of the module to hide
-	 */
-	public void hideSubsetById(Long id) throws Neo4jQueryException {
-		String req = String.format("MATCH (m:Subset) WHERE ID(m)=$IdNode " +
-				"REMOVE m:Subset SET m:`%1$s` ", getHiddenSubsetPrefix());
-		Map<String, Object> params = Map.of("IdNode", id);
-		this.neo4jAL.executeQuery(req, params);
-	}
+    /**
+     * Hide an susbset in the application
+     *
+     * @param id Id of the module to hide
+     */
+    public void hideSubsetById(Long id) throws Neo4jQueryException {
+        String req = String.format("MATCH (m:Subset) WHERE ID(m)=$IdNode " +
+                "REMOVE m:Subset SET m:`%1$s` ", getHiddenSubsetPrefix());
+        Map<String, Object> params = Map.of("IdNode", id);
+        this.neo4jAL.executeQuery(req, params);
+    }
 
-	/**
-	 * Display a subset in the application
-	 * Displaying a subset will automatically display the parent ArchiModel
-	 * @param id Id of the module to hide
-	 */
-	public void displaySubsetById(Long id) throws Neo4jQueryException {
-		String req = String.format("MATCH (s:`%1$s`) WHERE ID(s)=$IdNode " +
-				"REMOVE s:`%1$s` SET s:Subset " +
-				"WITH s " +
-				"MATCH (s)<-[:Contains]-(a:`%2$s`) " +
-				"REMOVE a:`%2$s` SET a:ArchiModel ", getHiddenSubsetPrefix(), getHiddenArchimodelPrefix());
-		Map<String, Object> params = Map.of("IdNode", id);
-		this.neo4jAL.executeQuery(req, params);
-	}
+    /**
+     * Display a subset in the application
+     * Displaying a subset will automatically display the parent ArchiModel
+     *
+     * @param id Id of the module to hide
+     */
+    public void displaySubsetById(Long id) throws Neo4jQueryException {
+        String req = String.format("MATCH (s:`%1$s`) WHERE ID(s)=$IdNode " +
+                "REMOVE s:`%1$s` SET s:Subset " +
+                "WITH s " +
+                "MATCH (s)<-[:Contains]-(a:`%2$s`) " +
+                "REMOVE a:`%2$s` SET a:ArchiModel ", getHiddenSubsetPrefix(), getHiddenArchimodelPrefix());
+        Map<String, Object> params = Map.of("IdNode", id);
+        this.neo4jAL.executeQuery(req, params);
+    }
 
-	/**
-	 * Display an architecture in the application and all the subset under it
-	 * @param id Id of the module to hide
-	 */
-	public void displayArchitectureWithChildrenById(Long id) throws Neo4jQueryException {
-		String req = String.format("MATCH (m:`%1$s`) WHERE ID(m)=$IdNode " +
-				"REMOVE m:`%1$s` SET m:ArchiModel " +
-				"WITH m " +
-				"MATCH (m)-[:Contains]->(s:`%2$s`) " +
-				"REMOVE s:`%2$s` SET s:Subset ", getHiddenArchimodelPrefix(), getHiddenSubsetPrefix());
-		Map<String, Object> params = Map.of("IdNode", id);
-		this.neo4jAL.executeQuery(req, params);
-	}
+    /**
+     * Display an architecture in the application and all the subset under it
+     *
+     * @param id Id of the module to hide
+     */
+    public void displayArchitectureWithChildrenById(Long id) throws Neo4jQueryException {
+        String req = String.format("MATCH (m:`%1$s`) WHERE ID(m)=$IdNode " +
+                "REMOVE m:`%1$s` SET m:ArchiModel " +
+                "WITH m " +
+                "MATCH (m)-[:Contains]->(s:`%2$s`) " +
+                "REMOVE s:`%2$s` SET s:Subset ", getHiddenArchimodelPrefix(), getHiddenSubsetPrefix());
+        Map<String, Object> params = Map.of("IdNode", id);
+        this.neo4jAL.executeQuery(req, params);
+    }
 
-	/**
-	 * Display an Architecture by its id. The subset remain untouched
-	 * @param id Id of the architecture
-	 * @throws Neo4jQueryException If the request is not correct
-	 */
-	public void displayArchitectureById(Long id) throws Neo4jQueryException {
-		String req = String.format("MATCH (m:`%1$s`) WHERE ID(m)=$IdNode " +
-				"REMOVE m:`%1$s` SET m:ArchiModel ", getHiddenArchimodelPrefix());
-		Map<String, Object> params = Map.of("IdNode", id);
-		this.neo4jAL.executeQuery(req, params);
-	}
-
-
-
-	public ArchitectureController(Neo4jAL neo4jAL) {
-		this.neo4jAL = neo4jAL;
-	}
+    /**
+     * Display an Architecture by its id. The subset remain untouched
+     *
+     * @param id Id of the architecture
+     * @throws Neo4jQueryException If the request is not correct
+     */
+    public void displayArchitectureById(Long id) throws Neo4jQueryException {
+        String req = String.format("MATCH (m:`%1$s`) WHERE ID(m)=$IdNode " +
+                "REMOVE m:`%1$s` SET m:ArchiModel ", getHiddenArchimodelPrefix());
+        Map<String, Object> params = Map.of("IdNode", id);
+        this.neo4jAL.executeQuery(req, params);
+    }
 }

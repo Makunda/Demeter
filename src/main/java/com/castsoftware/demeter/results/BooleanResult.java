@@ -21,9 +21,9 @@ package com.castsoftware.demeter.results;
 
 public class BooleanResult {
 
-  public Boolean result;
+    public Boolean result;
 
-  public BooleanResult(Boolean result) {
-    this.result = result;
-  }
+    public BooleanResult(Boolean result) {
+        this.result = result;
+    }
 }

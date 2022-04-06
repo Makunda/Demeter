@@ -20,49 +20,49 @@
 package com.castsoftware.demeter.models.aggregation;
 
 public class AggregationNode {
-	private long aggregationDepth;
-	private boolean published;
-	private String createdBy;
-	private String[] collaborators;
-	private String name;
+    private long aggregationDepth;
+    private boolean published;
+    private String createdBy;
+    private String[] collaborators;
+    private String name;
 
-	public long getAggregationDepth() {
-		return aggregationDepth;
-	}
+    public long getAggregationDepth() {
+        return aggregationDepth;
+    }
 
-	public void setAggregationDepth(long aggregationDepth) {
-		this.aggregationDepth = aggregationDepth;
-	}
+    public void setAggregationDepth(long aggregationDepth) {
+        this.aggregationDepth = aggregationDepth;
+    }
 
-	public boolean isPublished() {
-		return published;
-	}
+    public boolean isPublished() {
+        return published;
+    }
 
-	public void setPublished(boolean published) {
-		this.published = published;
-	}
+    public void setPublished(boolean published) {
+        this.published = published;
+    }
 
-	public String getCreatedBy() {
-		return createdBy;
-	}
+    public String getCreatedBy() {
+        return createdBy;
+    }
 
-	public void setCreatedBy(String createdBy) {
-		this.createdBy = createdBy;
-	}
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
 
-	public String[] getCollaborators() {
-		return collaborators;
-	}
+    public String[] getCollaborators() {
+        return collaborators;
+    }
 
-	public void setCollaborators(String[] collaborators) {
-		this.collaborators = collaborators;
-	}
+    public void setCollaborators(String[] collaborators) {
+        this.collaborators = collaborators;
+    }
 
-	public String getName() {
-		return name;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public void setName(String name) {
-		this.name = name;
-	}
+    public void setName(String name) {
+        this.name = name;
+    }
 }
